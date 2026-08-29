@@ -1,0 +1,102 @@
+{
+  "_readme": [
+    "The corpus source list, FIXED BEFORE ANYTHING WAS FETCHED.",
+    "",
+    "Why a fixed list matters here even though the content does not: the experiment measures",
+    "whether a training run reproduces bit for bit, not what the model learns. Corpus content is",
+    "irrelevant to every one of the seven measurements. What the corpus MUST be is licence-clean",
+    "and redistributable, because a corpus we cannot redistribute makes the replication package",
+    "impossible -- and the replication package is the thing the paper is about.",
+    "",
+    "So the selection rule is not about quality or representativeness. It is:",
+    "",
+    "  1. published before 1929 and in the public domain in the United States",
+    "  2. available from Project Gutenberg as a plain-text file",
+    "  3. English prose or drama, so a single tokenizer is defensible",
+    "  4. fixed in this file, with digests recorded on first fetch, before the Merkle root is",
+    "     committed and before the first training step",
+    "",
+    "Project Gutenberg's licence attaches to its TRADEMARK and its boilerplate, not to the",
+    "public-domain works themselves. build_corpus.py strips everything outside the START/END",
+    "markers, so the corpus carries no PG branding and no PG licence obligation. This is the",
+    "arrangement PG's own terms describe for public-domain texts with the trademark removed.",
+    "",
+    "raw_sha256 is filled by fetch_corpus.py on first retrieval and never edited afterwards. A",
+    "changed upstream file is a FINDING -- Project Gutenberg does revise its texts -- and it is",
+    "reported, not silently absorbed."
+  ],
+  "fixed_at": "2026-08-29",
+  "selection_rule": "pre-1929 US public domain, plain text from Project Gutenberg, English, boilerplate stripped; content is irrelevant to the measurements and the list is fixed before fetching so it cannot be tuned",
+  "texts": [
+    {
+      "id": 1342,
+      "title": "Pride and Prejudice",
+      "author": "Austen",
+      "year": 1813,
+      "raw_sha256": "70603ec2589cfae0e7b6bd0cc5afea039301404cfff993818a2583fffd7a52dd"
+    },
+    {
+      "id": 11,
+      "title": "Alice's Adventures in Wonderland",
+      "author": "Carroll",
+      "year": 1865,
+      "raw_sha256": "01b38ea4c710a84bc18d0bd41271a5a1a92b94e97b2812f4dece97d4a694725e"
+    },
+    {
+      "id": 84,
+      "title": "Frankenstein",
+      "author": "Shelley",
+      "year": 1818,
+      "raw_sha256": "7810cd483cffcf2cc8a1d8f0d5807931e69d4f48cd14149b8c76f88af82fead3"
+    },
+    {
+      "id": 1661,
+      "title": "The Adventures of Sherlock Holmes",
+      "author": "Doyle",
+      "year": 1892,
+      "raw_sha256": "922e2a12ccb43a4c9544c260b2166c6ad2097aeb5957faeee113f173bb857cd0"
+    },
+    {
+      "id": 2701,
+      "title": "Moby Dick",
+      "author": "Melville",
+      "year": 1851,
+      "raw_sha256": "9a6844ac0703853720010787c7b6c70b0020f1ab1862dcd74452fa46474d1215"
+    },
+    {
+      "id": 98,
+      "title": "A Tale of Two Cities",
+      "author": "Dickens",
+      "year": 1859,
+      "raw_sha256": "d54c2b80d40a40b982cd88852c6180bb944d95acdb028af3d0e01a1750681784"
+    },
+    {
+      "id": 1400,
+      "title": "Great Expectations",
+      "author": "Dickens",
+      "year": 1861,
+      "raw_sha256": "9a637118af8e953e9764ec603d9b0a032883384d465acac2e27966a80cf1c6f8"
+    },
+    {
+      "id": 345,
+      "title": "Dracula",
+      "author": "Stoker",
+      "year": 1897,
+      "raw_sha256": "96cd16eacdbfebae8fdda5591f66e0cc8ee76be18e0cd1aca02bc00615782d28"
+    },
+    {
+      "id": 74,
+      "title": "The Adventures of Tom Sawyer",
+      "author": "Twain",
+      "year": 1876,
+      "raw_sha256": "74d77384b123a6360db9ab58463cff8b38df8525fbdc6000c81ee388e1f3cf10"
+    },
+    {
+      "id": 2542,
+      "title": "A Doll's House",
+      "author": "Ibsen",
+      "year": 1879,
+      "raw_sha256": "d72a481b08ca7ace73e8ca2087b2baec29fc00e0d6e493f5e877b12116bccf4f"
+    }
+  ]
+}

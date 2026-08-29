@@ -1,0 +1,6 @@
+# The raw Project Gutenberg downloads are NOT committed: they carry PG boilerplate and its
+# trademark licence, and sources.json records their digests, which is what makes them checkable.
+# clean/ IS committed -- it is public-domain text with the boilerplate removed, and it is the
+# corpus the manifest commits to and the model trains on.
+raw/
+*.part
