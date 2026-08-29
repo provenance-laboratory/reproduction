@@ -1,0 +1,115 @@
+name: Reproduction report
+description: Report the result of re-running the published training package — whether it matched or not
+title: "[reproduction] <your hardware> — <matched / did not match>"
+labels: ["reproduction-report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **A run that did not match is exactly as useful as one that did**, and both are reported in
+        the paper. A divergence tells us where bit-identity breaks, which is the question. Please do
+        not tune anything to make it match — report what happened.
+
+        You do not need permission and you do not need to know us. Everything needed is in the
+        published package.
+
+  - type: input
+    id: package
+    attributes:
+      label: Package digest
+      description: SHA-256 of the archive you ran, as printed by the package's own verify step.
+      placeholder: "e.g. 674715f54d2e69da..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: Outcome
+      options:
+        - Weights matched bit for bit
+        - Weights did NOT match
+        - Could not complete the run
+    validations:
+      required: true
+
+  - type: textarea
+    id: hardware
+    attributes:
+      label: Hardware
+      description: >
+        CPU model, physical/logical core count, and instruction sets. On Linux:
+        `lscpu | head -20`. A run that cannot report these is not admissible, so please paste
+        the raw output rather than summarising it.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: >
+        OS and version, Python version, and the exact versions of every numerical library used.
+        Paste the output of the package's environment-report command if you ran it.
+      render: shell
+    validations:
+      required: true
+
+  - type: input
+    id: digest
+    attributes:
+      label: Resulting weights digest
+      description: SHA-256 of the weights your run produced, whatever it is.
+    validations:
+      required: true
+
+  - type: input
+    id: walltime
+    attributes:
+      label: Wall-clock time for the training run
+      placeholder: "e.g. 3h 41m"
+    validations:
+      required: true
+
+  - type: textarea
+    id: divergence
+    attributes:
+      label: If it did not match — where does it first diverge?
+      description: >
+        Optional, and genuinely optional: reporting only that it did not match is a complete and
+        useful report. If the package's comparison tool ran, paste its output — the first
+        differing tensor and the magnitude are what measurement 5 asks for.
+      render: shell
+
+  - type: dropdown
+    id: assistance
+    attributes:
+      label: Did you receive any assistance from the authors in getting this to run?
+      description: >
+        We have committed publicly not to assist, because assistance would change what is being
+        measured from "can a third party reproduce this" to "can we make it work with our help".
+        Any assistance is reported in the paper and the run is reported separately. Answering
+        "yes" costs you nothing and protects the result.
+      options:
+        - "No — I ran it from the published package only"
+        - "Yes — I asked a question or received help (please describe below)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: >
+        Including anything you found wrong, unclear, or broken in the package. A defect report is
+        as welcome as a successful run.
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        **What happens to this report.** It is cited in the paper by its issue number, and readers
+        can open it. We do not edit, curate, or characterise reports; the thread is the record. If
+        the paper is already published when you file, the report is added to the record and the
+        paper is revised at its next version.

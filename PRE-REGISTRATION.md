@@ -46,6 +46,61 @@ check        AN INDEPENDENT PARTY re-runs and compares weights BIT FOR BIT
 built the pipeline is not evidence. Without a second party this is a blog post, and the second
 party must be secured *before* training starts, not recruited afterwards to bless a result.
 
+## 2a. The hardware matrix, named before any run
+
+Measurement 4 asks whether bit-identity holds across different hardware. A single "different
+machine" makes that a coin toss; a designed matrix makes it a gradient. Fixed now:
+
+```
+A  Intel Core i5-1240P    hybrid 4 P-cores + 8 E-cores, 16 threads, AVX2, no AVX-512
+B  AMD Ryzen 9 5900HX     8 homogeneous cores, 16 threads, AVX2, no AVX-512
+C  cloud instance         server-class x86, ISA recorded at run time (AVX-512 if present)
+D  second cloud instance  different provider, ISA recorded at run time
+```
+
+⇒ **A vs B is the isolating comparison, and it is the reason this matrix is worth stating in
+advance.** Same instruction-set family, different vendor, different core topology. If bit-identity
+fails between them, the cause cannot be "one had AVX-512"; it is microarchitecture or thread
+scheduling, which is the sharper finding. A hybrid P/E scheduler is itself a plausible source of
+reduction-order variation and will be recorded rather than controlled away.
+
+⚠️ **Every configuration reports its CPU model, thread count, instruction sets, library versions
+and kernel selection.** If a run cannot report those, its result is not admissible.
+
+## 2b. The reproduction call, and the rule we bind ourselves with
+
+The independent re-run is solicited by a **public, open request** — a template anyone may file
+against, published with the artifacts, with no party approached in a way that is not equally
+available to everyone.
+
+⛔ **WE DO NOT ASSIST.** A reproducer receives the published package and nothing else. If we help
+someone get it working, we have measured *whether we can make it work with our help*, which is not
+the question. **Any assistance given, of any kind, is logged and reported in the paper**, and a run
+that received assistance is reported separately from runs that did not.
+
+⛔ **WE DO NOT CHARACTERISE INDEPENDENCE.** The paper will report what was filed, by whom, at a
+public address a reader can open. It will not assert that a reproducer is independent, because that
+is the reader's judgement to make from the thread rather than ours to assert on their behalf.
+
+**Every report is reported.** A failed reproduction is data. A reproduction that diverges is
+measurement 5. A reproduction we dislike is still in the paper.
+
+## 2c. ⛔ The null outcome, pre-registered before it can be known
+
+**If nobody reproduces the artifact within a stated window, that is a reported result and not a
+gap.**
+
+Paper A measured twelve releases against 22 axes and found that *independent reproduction of either
+kind is satisfied by none of them*. If an artifact published expressly to be reproduced — tiny,
+licensing-clean, deterministic by construction, with every input hashed — also goes unreproduced,
+then the barrier Paper A measured applies to a case constructed to remove every excuse for it.
+
+⇒ That would be a finding about the ecosystem rather than about the artifact, and it is written
+here **before the window opens**, so it cannot later look like a consolation prize assembled after
+silence.
+
+The window and its close date are fixed when the artifacts are published, and stated in the paper.
+
 ## 3. The measurements
 
 These are the paper, not the model.
