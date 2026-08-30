@@ -131,8 +131,12 @@ now applies at the commitment step as well as at the window's close.
 
 ---
 
-⚠️ **Status at signing: the pilot is complete; nothing is published; no reproducer has been
-approached; no confirmatory run exists.** This document is timestamped on writing and is not in
-force until its proof carries a Bitcoin attestation.
+⚠️ **Status: the pilot is complete; nothing is published; no reproducer has been approached; no
+confirmatory run exists.**
+
+⭐ **This document's proof now carries a Bitcoin attestation, and so does the corpus manifest's**
+-- verify with `python anchor_status.py`, which reads the proof bytes rather than a log line.
+The precondition in §3 step 1 is therefore met, and step 2 may proceed when the author chooses
+to open the window.
 
 **NOT a product, and not a recommendation.**

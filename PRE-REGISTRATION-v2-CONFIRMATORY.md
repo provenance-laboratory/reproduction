@@ -34,8 +34,8 @@ wrong has succeeded when it does.
 
 ```
 1  this document is frozen and OpenTimestamped                          <- before anything else
-2  the corpus manifest is frozen and TIMESTAMPED                           done: 2006b732...
-   ⛔ Bitcoin anchoring PENDING. Do not proceed to step 3 until it is not.
+2  the corpus manifest is frozen and ANCHORED                              2006b732...
+   (superseded by v3; retained because v2 is part of the record)
 3  the package and the reproduction call are PUBLISHED
 4  at least one reproducer COMMITS PUBLICLY, through the open call, before any reference run
 5  the reference run is performed and its digest published

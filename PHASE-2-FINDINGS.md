@@ -46,9 +46,11 @@ stand, and their digest observations describe a superseded artifact and are repo
 old proof is kept as `MANIFEST.json.ots.superseded-814acd24`; it still attests exactly what it
 always attested.
 
-⛔ **And it is currently the STRONGER proof.** The superseded corpus proof carries a Bitcoin
-attestation; the proof over the corpus actually in use does not yet. Run `anchor_status.py` before
-repeating any sentence in this document that uses the word *anchored*.
+⚠️ **For several hours it was the STRONGER proof** -- the superseded corpus proof carried a
+Bitcoin attestation while the proof over the corpus actually in use did not, and three documents
+said 'anchored' regardless. Both round-2 reviewers caught it. Both are anchored now, and
+`anchor_status.py` decides the question by reading the proof bytes so that the prose cannot drift
+from it again.
 
 ## 3. Measurement 1 — and the number has now moved twice
 
