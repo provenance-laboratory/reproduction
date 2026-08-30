@@ -87,7 +87,7 @@
       }
     },
     "B": {
-      "run": "runs\\amd-thr-1\\run.json",
+      "run": "runs\\amd-thr-1-no-pyyaml\\run.json",
       "cpu": "AMD Ryzen 9 5900HX with Radeon Graphics",
       "weights_sha256": "a4afb5c86dd88ae5ce7a475d448ee6bab18f6bc4e3c6c59721511f98f1c23d38",
       "environment": {
