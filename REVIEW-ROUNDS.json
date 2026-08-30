@@ -2,7 +2,7 @@
   "_readme": [
     "The review history for Paper B, as a record the packet builder reads.",
     "",
-    "⛔ WHY THIS FILE EXISTS. The round-1 packet was circulated with a covering note claiming",
+    "\u26d4 WHY THIS FILE EXISTS. The round-1 packet was circulated with a covering note claiming",
     "'+37%', 'divergence at step 8', '83% of parameters' and 'numerically indistinguishable' --",
     "all four withdrawn in the findings document the packet claimed to summarise. The note was a",
     "hardcoded string; a patch meant to update it matched nothing, printed success, and the stale",
@@ -30,7 +30,7 @@
       "summary": "Both reviewers required a v3 pre-registration, and both were right again. Round 2's repairs each needed their own repair.",
       "changed": [
         "`blas_kernel_selected` was NOT the selected kernel -- it is the build-configuration line, and a reviewer's run recorded `Haswell MAX_THREADS=64` while the same process reported a SkylakeX runtime architecture. Renamed to `blas_build_config_line`, with `blas_runtime_arch` recorded where observable.",
-        "That field was also REQUIRED by the §2a gate, which refused conda/MKL, macOS Accelerate and non-DYNAMIC_ARCH OpenBLAS outright -- three honest installs that could file nothing but 'I could not run it', which §2c would have scored as an ecosystem finding about our own gate. Now recorded as an absence, exactly as §5 already settled for the effective thread count.",
+        "That field was also REQUIRED by the \u00a72a gate, which refused conda/MKL, macOS Accelerate and non-DYNAMIC_ARCH OpenBLAS outright -- three honest installs that could file nothing but 'I could not run it', which \u00a72c would have scored as an ecosystem finding about our own gate. Now recorded as an absence, exactly as \u00a75 already settled for the effective thread count.",
         "An off-by-one in the sampling range excluded the last valid (context, target) pair. Negligible in effect, and part of the model specification, so it changes every digest.",
         "The trace began after the first update, so it could show the arrays DIFFER at step 0 but not that they STARTED identical. It now records the initialisation as step -1.",
         "'Final loss identical to eight decimals' was false: 3.21813250 against 3.21812963. It was the sentence written to replace a claim withdrawn in round 1.",
@@ -38,6 +38,22 @@
         "The v2 ordering was defeated by the package: the reference run predates the document that orders it, and EXPECTED.json shipped the target inside the package handed out before the commitment step."
       ],
       "deadline": "v3 is required. The corpus, model and pipeline are NOT frozen until v3 is anchored and its proofs carry a Bitcoin attestation -- so a finding in any of them is still cheap to act on, and is wanted now rather than after publication."
+    },
+    {
+      "round": 3,
+      "summary": "Both reviewers refused the freeze again, and the central finding is the worst error of this project: the governing protocol was never in the package.",
+      "changed": [
+        "v3 was written, stamped, announced as governing -- and never added to CONTENTS or SEND. The package shipped v1 and a v2 whose own text says 'superseded by v3'. It ships now, and build_package refuses without it.",
+        "v2 and v3 were each stamped and then EDITED, so their proofs bound bytes that no longer existed. v3 was edited to say 'now anchored' -- the sentence whose truth the edit destroyed. v3 now makes no claim about its own anchoring; anchor_status.py's output is the claim.",
+        "anchor_status.py was a dead control: a reviewer passed it with 35 bytes of junk, with 16 bytes of a real proof, and by DELETING EVERY PROOF. It now takes an explicit required list, recomputes each digest, requires the proof to contain it, and fails closed on absence -- and states that tag presence is not path verification.",
+        "The packet's cross-check contained literal BACKSPACE bytes where word boundaries were meant, so it matched nothing; and its refusal used an undefined name. It now carries a canary that proves it can fire before it is trusted.",
+        "m5 and m7 were the last hardcoded figures and were one and two rounds stale. They are computed into MEASUREMENT-5-7.json and read as fields.",
+        "m7 is not separable from the seed: varying only the seed moves the differing fraction 25.4 points against a thread spread of 41.6. The doctrine 'a single timing is one sample' had been applied to m1 three times and never to divergence.",
+        "measurement 1 is marked DESCRIPTIVE: the schedule is fixed alternation, not randomised, so there is no design-based randomisation distribution; and its p is a magnitude-weighted sign-flip test, not the sign test it was called.",
+        "verify_package accepted an unlisted forged EXPECTED.json as authoritative. It now rejects any file not in SHA256SUMS and requires exactly one stage marker.",
+        "The packet claimed a reviewer's own run could falsify configuration A. It cannot -- it measures a different machine, and the script said so while the packet said the opposite."
+      ],
+      "deadline": "v3 is anchored ONLY when anchor_status.py says so over its CURRENT bytes -- it is pending as this goes out, and the package carries ANCHOR-STATUS.txt saying it is not publishable in this state. A finding in train.py, the corpus or the model spec still forces v4."
     }
   ]
 }

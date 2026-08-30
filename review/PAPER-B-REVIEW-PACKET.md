@@ -1,4 +1,4 @@
-# Paper B (`reproduction`) — internal review packet, round 3
+# Paper B (`reproduction`) — internal review packet, round 4
 
 *Every figure below is read from the measurement files, and every claim is lifted from `PHASE-2-FINDINGS.md` rather than retyped. `build_review_packet.py` refuses to write if a figure it prints is absent from that document.*
 
@@ -6,27 +6,29 @@
 
 ```
 paper-b-review.zip     28 files
-  sha256 28ceb057047c507a48002d9609ee6e1b0c80f20db4244e4def31f875118ffa00
+  sha256 109ad99f1649f85b67b890a5c2e19f7cc059e53b470f5a47da4c890e64902b8c
 this file
 ```
 
-Repository `provenance-laboratory/reproduction`, commit `efc3f07`  ⚠️ TREE DIRTY.
+Repository `provenance-laboratory/reproduction`, commit `23df27d`  ⚠️ TREE DIRTY.
 
 ---
 
 ## ★ THE COVERING NOTE — paste this verbatim
 
-> **This is round 3.** Both reviewers required a v3 pre-registration, and both were right again. Round 2's repairs each needed their own repair.
+> **This is round 4.** Both reviewers refused the freeze again, and the central finding is the worst error of this project: the governing protocol was never in the package.
 >
-> - `blas_kernel_selected` was NOT the selected kernel -- it is the build-configuration line, and a reviewer's run recorded `Haswell MAX_THREADS=64` while the same process reported a SkylakeX runtime architecture. Renamed to `blas_build_config_line`, with `blas_runtime_arch` recorded where observable.
-> - That field was also REQUIRED by the §2a gate, which refused conda/MKL, macOS Accelerate and non-DYNAMIC_ARCH OpenBLAS outright -- three honest installs that could file nothing but 'I could not run it', which §2c would have scored as an ecosystem finding about our own gate. Now recorded as an absence, exactly as §5 already settled for the effective thread count.
-> - An off-by-one in the sampling range excluded the last valid (context, target) pair. Negligible in effect, and part of the model specification, so it changes every digest.
-> - The trace began after the first update, so it could show the arrays DIFFER at step 0 but not that they STARTED identical. It now records the initialisation as step -1.
-> - 'Final loss identical to eight decimals' was false: 3.21813250 against 3.21812963. It was the sentence written to replace a claim withdrawn in round 1.
-> - Nothing is anchored: both active OpenTimestamps proofs carry calendar attestations only, while three documents said 'anchored'. The retired pilot's proof is the stronger one. `anchor_status.py` now decides this by reading the proof bytes.
-> - The v2 ordering was defeated by the package: the reference run predates the document that orders it, and EXPECTED.json shipped the target inside the package handed out before the commitment step.
+> - v3 was written, stamped, announced as governing -- and never added to CONTENTS or SEND. The package shipped v1 and a v2 whose own text says 'superseded by v3'. It ships now, and build_package refuses without it.
+> - v2 and v3 were each stamped and then EDITED, so their proofs bound bytes that no longer existed. v3 was edited to say 'now anchored' -- the sentence whose truth the edit destroyed. v3 now makes no claim about its own anchoring; anchor_status.py's output is the claim.
+> - anchor_status.py was a dead control: a reviewer passed it with 35 bytes of junk, with 16 bytes of a real proof, and by DELETING EVERY PROOF. It now takes an explicit required list, recomputes each digest, requires the proof to contain it, and fails closed on absence -- and states that tag presence is not path verification.
+> - The packet's cross-check contained literal BACKSPACE bytes where word boundaries were meant, so it matched nothing; and its refusal used an undefined name. It now carries a canary that proves it can fire before it is trusted.
+> - m5 and m7 were the last hardcoded figures and were one and two rounds stale. They are computed into MEASUREMENT-5-7.json and read as fields.
+> - m7 is not separable from the seed: varying only the seed moves the differing fraction 25.4 points against a thread spread of 41.6. The doctrine 'a single timing is one sample' had been applied to m1 three times and never to divergence.
+> - measurement 1 is marked DESCRIPTIVE: the schedule is fixed alternation, not randomised, so there is no design-based randomisation distribution; and its p is a magnitude-weighted sign-flip test, not the sign test it was called.
+> - verify_package accepted an unlisted forged EXPECTED.json as authoritative. It now rejects any file not in SHA256SUMS and requires exactly one stage marker.
+> - The packet claimed a reviewer's own run could falsify configuration A. It cannot -- it measures a different machine, and the script said so while the packet said the opposite.
 >
-> ⚠️ **v3 is required. The corpus, model and pipeline are NOT frozen until v3 is anchored and its proofs carry a Bitcoin attestation -- so a finding in any of them is still cheap to act on, and is wanted now rather than after publication.**
+> ⚠️ **v3 is anchored ONLY when anchor_status.py says so over its CURRENT bytes -- it is pending as this goes out, and the package carries ANCHOR-STATUS.txt saying it is not publishable in this state. A finding in train.py, the corpus or the model spec still forces v4.**
 
 ## ⭐ CHECK THE FINDINGS, NOT ONLY THE PACKAGING
 
@@ -34,7 +36,11 @@ Repository `provenance-laboratory/reproduction`, commit `efc3f07`  ⚠️ TREE D
 python reproduce_findings.py     five training runs, ~2 minutes, nothing timed
 ```
 
-It re-derives the thread partition, the divergence table, the relative figure this paper declines to headline, and the step at which the loss curves first differ — from nothing but the corpus and `train.py`. **If its numbers disagree with `PHASE-2-FINDINGS.md`, the findings are wrong**, and that is the most valuable outcome this review could have. Contention cannot move any of it: every number is a digest or a difference, and nothing in that script is timed.
+It re-derives the thread partition and the divergence table **on YOUR stack**, from nothing but the corpus and `train.py`.
+
+⛔ **It does not adjudicate the findings, and an earlier version of this packet said it did.** The sentence read *if its numbers disagree with PHASE-2-FINDINGS.md, the findings are wrong* — which is false, because the script measures a DIFFERENT MACHINE. A reviewer whose stack produced one digest across all five thread counts got exactly that disagreement, and the script itself said correctly that this does not contradict configuration A while the packet said it did. Both could not be true.
+
+⇒ To audit the CONFIGURATION-A numbers rather than your own, use the reference bundle: `reference/` ships the arrays and `MEASUREMENT-5-7.json` the derived values, so the published figures can be recomputed from published bytes without training anything.
 
 ```
 python verify_package.py         the package run in a directory it has never seen
@@ -50,9 +56,9 @@ m1  cost of pinning     ratio 1.303  95% CI [1.268, 1.343]  sign-test p=4.9e-04 
       ⚠ the p is a SIGN TEST, not the randomisation distribution of a
       balanced design, whose space is C(n, n/2) rather than 2^n
       -> report as: roughly +30%, CI [+27%, +34%]. NOT as a decimal percentage
-m2  apparatus           200163 bytes on 9530566 of artifact (2.100%); 165718 if train.py and
+m2  apparatus           202660 bytes on 9530566 of artifact (2.126%); 167631 if train.py and
       build_corpus.py are called artifact instead -- the boundary is arguable and
-      measure_storage.py reports it both ways. Timestamp proofs: 4806 bytes
+      measure_storage.py reports it both ways. Timestamp proofs: 5773 bytes
       ⚠ the PERCENTAGE does not transfer: the apparatus is near-
       constant and this artifact is deliberately tiny
 m3  REPEATABILITY, same hw one digest across 12 runs at threads=1
@@ -89,7 +95,7 @@ threads=16   d0dcb2066db6a2f6f3a9e54e52869ce9a658a07c87e5bca0
 corpus        6312982 clean bytes, 10 texts, merkle 2006b7327c616f0ca5f9c0b9c3e766b5
 model         8-byte context, d_emb 64, d_hid 1024, 300 steps, batch 256, float32
 weights       sha256 a4afb5c86dd88ae5ce7a475d448ee6bab18f6bc4e3c6c59721511f98f1c23d38
-published as  package/ -- 30 files; OUR WEIGHTS ARE NOT IN IT, only the digest
+published as  package/ -- 33 files; OUR WEIGHTS ARE NOT IN IT, only the digest
 ```
 
 ## ⚠️ Known-weak, and a reviewer should push here

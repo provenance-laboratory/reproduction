@@ -71,7 +71,14 @@ NL = chr(10)
 HERE = pathlib.Path(__file__).resolve().parent
 
 # ── the specification. Every number here is part of the published artifact ────────────────────
+# ⚠ THE SEED IS PART OF THE SPECIFICATION and v3 commits to 20260829. `--seed` exists only so
+# that the DEPENDENCE on the seed can be measured -- a reviewer showed the divergence magnitude
+# moves substantially with it, and this project had applied "one sample is not a measurement" to
+# the timing three times and never to the divergence. A run with a non-default seed is a
+# SENSITIVITY probe and is not a confirmatory run; its run.json says so.
 SEED = 20260829            # the pilot's date, fixed before the corpus existed
+if "--seed" in sys.argv:
+    SEED = int(sys.argv[sys.argv.index("--seed") + 1])
 CONTEXT = 8                # bytes of context
 D_EMB = 64
 D_HID = 1024
@@ -377,7 +384,8 @@ def main():
         h.update(np.ascontiguousarray(weights[k]).tobytes())
     wdigest = h.hexdigest()
 
-    rec = {"spec": {"seed": SEED, "context": CONTEXT, "d_emb": D_EMB, "d_hid": D_HID,
+    rec = {"is_confirmatory_spec": SEED == 20260829,
+           "spec": {"seed": SEED, "context": CONTEXT, "d_emb": D_EMB, "d_hid": D_HID,
                     "steps": STEPS, "batch": BATCH, "lr": LR, "dtype": str(np.dtype(DTYPE)),
                     "vocab": vocab},
            "corpus_merkle_root": merkle,

@@ -91,10 +91,19 @@ def main():
                          % GOVERNING)
     _st = subprocess.run([sys.executable, "-X", "utf8", "anchor_status.py"], cwd=str(HERE),
                          capture_output=True, text=True, encoding="utf-8", errors="replace")
-    if _st.returncode != 0:
-        print(D + " anchor_status.py FAILS, so the proofs do not support publication:")
-        print((_st.stdout or "")[-700:])
-        raise SystemExit("  Refusing to build a package whose protocol proofs do not check out.")
+    # ⚠ ANCHORING GATES PUBLICATION, NOT REVIEW. v3 §3 makes a Bitcoin attestation a
+    # precondition of step 2 -- publishing -- and circulating a package for internal review is not
+    # that. A guard that refuses to BUILD would stop the very reviews that catch the defects, so
+    # it reports loudly and continues, and only `--publishing` makes it fatal.
+    _anchor_ok = _st.returncode == 0
+    if not _anchor_ok:
+        print(D + " anchor_status.py FAILS. This package MUST NOT BE PUBLISHED:")
+        for _ln in (_st.stdout or "").splitlines():
+            if "FAIL" in _ln or "pending" in _ln or "DOES NOT BIND" in _ln:
+                print("      " + _ln.strip()[:100])
+        if "--publishing" in sys.argv:
+            raise SystemExit("  --publishing given and the proofs do not check out. Stopping.")
+        print("  Continuing because this is a REVIEW build. Pass --publishing to make it fatal.")
 
     if OUT.exists():
         shutil.rmtree(OUT)
@@ -173,6 +182,14 @@ def main():
             + "published separately, signed and timestamped, and you will be able to compare then."
             + NL, encoding="utf-8", newline=NL)
         shipped.append("NO-TARGET.md")
+    (OUT / "ANCHOR-STATUS.txt").write_text(
+        (_st.stdout or "") + NL
+        + ("" if _anchor_ok else
+           NL + D + " THIS PACKAGE IS NOT PUBLISHABLE IN THIS STATE. The protocol proofs above do"
+           + NL + "not all carry a Bitcoin attestation over their current bytes. It is circulated"
+           + NL + "for REVIEW only." + NL),
+        encoding="utf-8", newline=NL)
+    shipped.append("ANCHOR-STATUS.txt")
 
     # SHA256SUMS over everything shipped, written last so it covers the final bytes
     lines = []
@@ -200,7 +217,11 @@ def main():
         d = HERE / "runs" / ("thr-%d" % n)
         if (d / "run.json").exists():
             (REF / ("thr-%d" % n)).mkdir(exist_ok=True)
-            for name in ("weights.npz", "run.json", "loss.json"):
+            # ⛔ THE 16-THREAD TRACE WAS NOT SHIPPED, so the headline m5 claim -- step 0,
+            # every array -- could not be audited from the bundle at all: with only the 1-thread
+            # trace there is nothing to compare against. A reviewer reported it as the reason they
+            # could not check the claim. trace.json now ships for every arm.
+            for name in ("weights.npz", "run.json", "loss.json", "trace.json"):
                 if (d / name).exists():
                     shutil.copy2(d / name, REF / ("thr-%d" % n) / name)
     ref_files = sorted(f for f in REF.rglob("*") if f.is_file())

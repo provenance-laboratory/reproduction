@@ -149,12 +149,19 @@ def main():
     A("python reproduce_findings.py     five training runs, ~2 minutes, nothing timed")
     A("```")
     A("")
-    A("It re-derives the thread partition, the divergence table, the relative figure this paper "
-      "declines to headline, and the step at which the loss curves first differ — from "
-      "nothing but the corpus and `train.py`. **If its numbers disagree with "
-      "`PHASE-2-FINDINGS.md`, the findings are wrong**, and that is the most valuable outcome "
-      "this review could have. Contention cannot move any of it: every number is a digest or a "
-      "difference, and nothing in that script is timed.")
+    A("It re-derives the thread partition and the divergence table **on YOUR stack**, from "
+      "nothing but the corpus and `train.py`.")
+    A("")
+    A("⛔ **It does not adjudicate the findings, and an earlier version of this packet said "
+      "it did.** The sentence read *if its numbers disagree with PHASE-2-FINDINGS.md, the "
+      "findings are wrong* — which is false, because the script measures a DIFFERENT "
+      "MACHINE. A reviewer whose stack produced one digest across all five thread counts got "
+      "exactly that disagreement, and the script itself said correctly that this does not "
+      "contradict configuration A while the packet said it did. Both could not be true.")
+    A("")
+    A("⇒ To audit the CONFIGURATION-A numbers rather than your own, use the reference "
+      "bundle: `reference/` ships the arrays and `MEASUREMENT-5-7.json` the derived values, so "
+      "the published figures can be recomputed from published bytes without training anything.")
     A("")
     A("```")
     A("python verify_package.py         the package run in a directory it has never seen")

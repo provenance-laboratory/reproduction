@@ -77,7 +77,16 @@ def one(threads):
 
 
 def permutation_p(diffs):
-    """The EXACT TWO-SIDED SIGN TEST over the paired differences. Named for what it is.
+    """A magnitude-weighted exact sign-flip test. NOT a sign test, though it coincides here.
+
+    ⛔ NAMED WRONG TWICE. It was first called a permutation test attributed to the
+    counterbalanced randomisation -- which the design does not have, since the schedule is fixed.
+    It was then called an exact SIGN TEST, which it also is not: it enumerates sign flips weighted
+    by the MAGNITUDE of each difference, so it agrees with the binomial sign test only when every
+    difference shares a sign, as here (12 of 12 gives 4.88e-04 either way). On other data they
+    diverge. A reviewer separated the two.
+
+    ⇒ Reported as what it computes, with the coincidence stated.
 
     ⛔ THIS WAS REPORTED AS "exact over all 4,096 sign assignments" AND ATTRIBUTED TO THE
     COUNTERBALANCED RANDOMISATION. It is not that. The design draws from balanced schedules with
@@ -96,7 +105,7 @@ def permutation_p(diffs):
         for mask in range(1 << n):
             s = sum(d if (mask >> i) & 1 else -d for i, d in enumerate(diffs))
             hits += abs(s) >= obs
-        return hits / float(1 << n), "exact two-sided SIGN TEST over all %d assignments" % (1 << n)
+        return hits / float(1 << n), "exact magnitude-weighted sign-flip test, all %d assignments; equals the binomial sign test here only because all differences share a sign" % (1 << n)
     rng = random.Random(ORDER_SEED)
     trials = 200000
     hits = sum(abs(sum(d if rng.random() < 0.5 else -d for d in diffs)) >= obs
@@ -146,8 +155,21 @@ def main():
     # disagreed materially (AB median ratio 1.114, BA 1.177). Counterbalancing that can put half
     # its blocks consecutively is counterbalancing in name. Alternating guarantees the orders are
     # interleaved and the warm-up is split between them.
+    # ⛔ THIS IS NOT RANDOMISED, AND THE CODE DISCUSSED A RANDOMISATION DISTRIBUTION IT
+    # DOES NOT HAVE. Strict alternation is a FIXED schedule: ORDER_SEED does not determine it, so
+    # there is no balanced randomisation distribution of size C(12,6) to draw inference from -- a
+    # reviewer pointed out that the docstring reasoned about a space the design never sampled.
+    #
+    # ⚠ And the alternation makes the order comparison partly circular: AB pairs are the
+    # odd positions and BA the even ones, so under smooth session drift the two medians must
+    # converge whether or not order matters. The near-equal AB/BA medians are therefore WEAKER
+    # evidence than they look, and are reported as descriptive rather than as the design working.
+    #
+    # ⇒ Randomised balanced blocks are what the inference would need. This does not implement
+    # them, because the estimate is reported as descriptive and pilot-level; implementing them is
+    # listed as required work for the confirmatory measurement.
     seq = ["AB" if i % 2 == 0 else "BA" for i in range(reps)]
-    if "--shuffle" in sys.argv:                # kept so the old design can be reproduced
+    if "--shuffle" in sys.argv:                # kept so the round-2 design can be reproduced
         random.Random(ORDER_SEED).shuffle(seq)
 
     print("=" * 78)
@@ -203,10 +225,11 @@ def main():
             print("    " + W + " the two orders DISAGREE by more than 3 points, so the estimate is")
             print("    order-sensitive and the interval below should be read as the wider claim")
     print("    paired differences positive in %d of %d pairs" % (sum(d > 0 for d in diffs), reps))
-    print("    sign-test p                    %.2e   (%s)" % (p, how))
-    print("    " + W + " NOT the randomisation p of this design: the schedule space is the")
-    print("    balanced one, C(%d,%d), not 2^%d. The sign test is the claim being made."
-          % (reps, reps // 2, reps))
+    print("    sign-flip p                    %.2e" % p)
+    print("    %s" % how)
+    print("    " + W + " THIS DESIGN HAS NO RANDOMISATION DISTRIBUTION. The schedule is fixed")
+    print("    alternation, not a draw from balanced schedules, so nothing here is design-based")
+    print("    inference. Report the estimate as DESCRIPTIVE and configuration-specific.")
     print("    ratio of medians               %.3f" % ratio)
     print("    bootstrap 95%% interval         [%.3f, %.3f]" % (lo, hi))
     print()
@@ -233,6 +256,12 @@ def main():
            "order_effect": {"AB_median_ratio": (statistics.median(_ab) if _ab else None),
                             "BA_median_ratio": (statistics.median(_ba) if _ba else None)},
            "bootstrap_95_ratio": [lo, hi],
+           "inference_status": ("DESCRIPTIVE. The schedule is fixed alternation, not randomised, "
+                               "so there is no design-based randomisation distribution; the "
+                               "bootstrap treats sequential pairs as independent and does not "
+                               "model session drift. Confirmatory inference needs randomised "
+                               "balanced blocks across multiple sessions with a predeclared "
+                               "warm-up discard."),
            "reported": ("pinning to one thread costs roughly %d%% on this configuration, "
                         "95%% CI [+%d%%, +%d%%]"
                         % (round((ratio - 1) * 100), round((lo - 1) * 100),
