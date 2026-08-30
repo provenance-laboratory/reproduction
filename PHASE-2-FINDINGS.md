@@ -241,62 +241,73 @@ derives the governing version from what is on disk rather than naming one in a c
 closed on an empty parse, and is fatal inside `build_package.py`. Four positive controls, including
 one that deletes v5 to confirm v3 does not silently resume governing.
 
-## 10. Measurement 4 — taken, and currently CONFOUNDED on a recording gap
+## 10. Measurement 4 — ISOLATING, and bit-identical
 
-⛔ **As v3 specified it, this comparison could not isolate anything.** CPU vendor, operating system,
-Python, numpy and the OpenBLAS build all moved at once, so a byte difference was attributable to any
-of five things and the measurement was designed to attribute it to one. An earlier revision of this
-section said the condition *"has to be added to §2a before measurement 4 is run"*. It was never
-added. `PRE-REGISTRATION-v4-CONFIRMATORY.md` adds it, and was written and anchored while
-measurement 4 had **no data at all** — which is the difference between a condition and an excuse.
+⛔ **As v3 specified it, this comparison could not isolate anything.** CPU vendor, operating
+system, Python, numpy and the OpenBLAS build all moved at once, so a byte difference was
+attributable to any of five things and the measurement was designed to attribute it to one. An
+earlier revision of this section said the condition *"has to be added to §2a before measurement 4 is
+run"*. It never was. `PRE-REGISTRATION-v4-CONFIRMATORY.md` adds it, and was written and anchored
+while measurement 4 had **no data at all** — which is the difference between a condition and an
+excuse.
 
-The first pair under that protocol:
+The pair, under v4's conditions and with every protocol version carrying a Bitcoin attestation:
 
 ```
-arm A   Intel Core i5-1240P     Windows-11  Python 3.14.3  numpy 2.5.1  OpenBLAS Haswell
-arm B   AMD Ryzen 9 5900HX      Windows-11  Python 3.14.7  numpy 2.5.1  build line NOT RECORDED
+arm A   Intel Core i5-1240P      Windows-11  Python 3.14.3  numpy 2.5.1  OpenBLAS Haswell MAX_THREADS=24
+arm B   AMD Ryzen 9 5900HX       Windows-11  Python 3.14.7  numpy 2.5.1  OpenBLAS Haswell MAX_THREADS=24
 
+conditions 1-5          all met
 weights, both arms      a4afb5c86dd88ae5ce7a475d448ee6bab18f6bc4e3c6c59721511f98f1c23d38
 BIT-IDENTICAL           yes
-VERDICT                 CONFOUNDED on condition 4
+VERDICT                 ISOLATING
 ```
 
-⚠️ **The verdict labels the comparison, not the result, and this pair shows why the distinction is
-needed: it is bit-identical AND confounded.** Arm B recorded no OpenBLAS build line — not because
-its BLAS differed, but because `pyyaml` was absent, so numpy's configuration output took a format
-the parser cannot read. A **recording gap**, not an observed difference. Arm A happened to have the
-package installed and nobody had noticed it mattered; the second machine's requirement list was
-written by hand rather than derived from what arm A depends on, and was wrong the first time it was
-used.
+⇒ **Two machines of different CPU vendors, matched on operating system, Python, numpy and the
+OpenBLAS build, produced the same bytes.** Within the variables this protocol observes, the CPU is
+what differed, and it did not change the artifact.
 
-⇒ The pair is retained as `runs/amd-thr-1-no-pyyaml` with its own record rather than deleted. It is
-evidence of what a recording gap looks like when the underlying result was bit-identical all along,
-and keeping only the clean answer would leave no trace of how it was reached.
+⚠️ **What that does NOT establish, stated because the sentence is easy to over-read.** It isolates
+the CPU *only among the variables v4 §2 lists*. Microcode revision, BIOS and firmware settings,
+kernel scheduling and CPU feature availability beyond the recorded SIMD baseline are neither held
+constant nor observed. And both arms selected the **same OpenBLAS microkernel** — `Haswell` — so
+what is shown is that two vendors running the same reduction shape agree, not that vendor is
+irrelevant to bit-identity in general. A machine selecting a different kernel is a different
+experiment, and §7's finding says that is where divergence lives.
 
-⛔ **This section is provisional and says so.** A re-run of arm B with `pyyaml` installed, under the
-now-anchored v4 and v5, is pending. Until it lands, **nothing here may be cited for a claim about
-CPU vendor**, and the honest statement of what is known is: *two machines matched on operating
-system, Python and numpy produced identical bytes, with one environment field unrecorded on one
-side.*
+⛔ **The first attempt at this pair was CONFOUNDED, and it is retained rather than deleted.** Arm B
+recorded no OpenBLAS build line — `pyyaml` was absent, so numpy's configuration output took a
+format the parser cannot read. A **recording gap**, not a different BLAS: the pair was
+bit-identical *and* confounded, which is why the verdict labels the comparison rather than the
+result. It survives as `runs/amd-thr-1-no-pyyaml` with its own record, because keeping only the
+clean answer would leave no trace of how it was reached. The dependency list that omitted `pyyaml`
+was hand-written from what seemed relevant rather than derived from what arm A depends on, and was
+wrong the first time it was used.
 
-⚠️ **And a limit that cannot be closed retroactively for this pair.** `run.json` records wall-clock
-*duration* but not *when* a run happened, so the artifacts cannot establish whether an arm ran
-before or after a given anchor. This one ran while v4's proof was still calendar-only; v4 anchored
-afterwards, at Bitcoin block 964775. `measure_hardware.py` records the anchoring state in its output
-and names it as the state when the record was written, not at run time.
+⚠️ **A limit these artifacts cannot close.** `run.json` records wall-clock *duration* but not
+*when* a run happened, so nothing in the package establishes whether an arm ran before or after a
+given anchor, in either direction. For the first pair it demonstrably ran early; for this one the
+protocol was anchored first, and the artifacts cannot show it. Closing that means recording a
+timestamp in `run.json` — and `train.py` is pinned by digest in `PRE-REGISTRATION-v5-CONFIRMATORY.md`
+§3, so it is a v6 and not an edit.
 
 ## 11. What one machine still cannot say
 
 ```
 §2b            the independent re-run does not exist, and by §2b we may not produce one
-MEASUREMENT 4  isolates the CPU only among the variables v4 §2 lists. Microcode, BIOS
-               settings, kernel scheduling and CPU features beyond the recorded SIMD
-               baseline are neither held constant nor observed
+MEASUREMENT 4  isolates the CPU only among the variables v4 §2 lists, and both arms
+               selected the SAME OpenBLAS microkernel. Microcode, BIOS settings, kernel
+               scheduling and CPU features beyond the recorded SIMD baseline are neither
+               held constant nor observed
+ORDERING       run.json carries no timestamp, so no artifact here shows whether a run
+               preceded or followed an anchor
 ```
 
-⇒ Even a clean ISOLATING result answers *"do these two machines, matched on software, produce the
-same bytes"*. It does not establish that CPU vendor is the cause, and nothing in this document may
-be written as though it did.
+⇒ The ISOLATING result answers *"do these two machines, matched on software, produce the same
+bytes"*. It does not establish that CPU vendor is irrelevant to bit-identity, and nothing in this
+document may be written as though it did. **Two vendors agreeing on one microkernel is not the same
+claim as vendor-independence**, and §7 already locates divergence in the reduction shape rather than
+in the hardware.
 
 ---
 

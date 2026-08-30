@@ -153,7 +153,7 @@ def main():
     print("  B  %-34s %s" % (b["environment"].get("cpu", "?")[:34], pb))
     print()
 
-    # {D} THE INPUTS MUST BE THE SAME QUESTION. Comparing two runs of different specifications
+    # ⛔ THE INPUTS MUST BE THE SAME QUESTION. Comparing two runs of different specifications
     # would produce a difference that says nothing about hardware, and nothing else here checks it.
     same_input = True
     for key in ("spec", "corpus_merkle_root"):
@@ -231,8 +231,8 @@ def main():
         "_anchoring_caveat": (
             "This is the anchoring state WHEN THIS RECORD WAS WRITTEN, which is not necessarily "
             "the state when either arm was RUN -- and the two differed for the first real pair: "
-            "the second-machine arm was run while v4's proof was still calendar-only, and v4 "
-            "anchored afterwards. The artifacts cannot settle that ordering by themselves, "
+            "the FIRST pair's second-machine arm was run while v4's proof was still "
+            "calendar-only. The artifacts cannot settle that ordering by themselves, "
             "because run.json carries no timestamp: it records wall-clock DURATION but not when "
             "the run happened. That is a gap in the pipeline's record, stated here rather than "
             "papered over, and it cannot be closed retroactively for this pair."),
@@ -251,10 +251,17 @@ def main():
         print("  no Bitcoin attestation yet, so the commitment precedes the data only as far as")
         print("  the calendars are trusted. Recorded in the output rather than argued about.")
     print()
+    # ⛔ THIS PARAGRAPH USED TO END "For the first real pair it did not: the second-machine arm
+    # ran while v4 was still calendar-only" -- typed prose about ONE historical pair, printed on
+    # EVERY run. It was still printing that on a pair whose protocol was fully anchored before the
+    # run. A dead noun beside a live number, in the tool built to keep them apart. The historical
+    # fact lives in the retained record for the pair it is about; what is printed here is only
+    # what these artifacts can support.
     print("  " + W + " AND THIS IS THE STATE NOW, NOT AT RUN TIME. run.json records wall-clock")
-    print("  DURATION but not WHEN a run happened, so the artifacts cannot establish whether a")
-    print("  run preceded or followed an anchor. For the first real pair it did not: the")
-    print("  second-machine arm ran while v4 was still calendar-only.")
+    print("  DURATION but not WHEN a run happened, so THESE ARTIFACTS CANNOT ESTABLISH whether")
+    print("  either arm ran before or after any anchor -- in either direction. Closing that would")
+    print("  mean recording a timestamp in run.json, and train.py is pinned by digest in the")
+    print("  protocol, so it is a v6 and not an edit.")
 
     print()
     print("  written to %s" % args.out)
