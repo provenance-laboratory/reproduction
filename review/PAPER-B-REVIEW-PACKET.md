@@ -5,11 +5,11 @@
 ## ⇒ SEND THESE TWO
 
 ```
-paper-b-review.zip     18 files, sha256 3c34cbce3c07962f41e961347ed4170a
+paper-b-review.zip     22 files, sha256 ddab141d5e07f0d23b3823a2f2eade6d
 this file
 ```
 
-Repository `provenance-laboratory/reproduction`, commit `c6949a7`.
+Repository `provenance-laboratory/reproduction`, commit `0e7720d`  ⚠️ TREE DIRTY.
 
 ---
 
@@ -38,29 +38,35 @@ python verify_package.py         the package run in a directory it has never see
 ## What is measured, and by what
 
 ```
-m1  cost of determinism   about +37% (37.05%)   11 interleaved reps, ranges do not overlap
-      pinned  median 6.59 s   min 5.87   max 9.52
-      free    median 4.80 s   min 4.66   max 5.75
-m2  apparatus             48555 bytes on 9530916 bytes of artifact (0.509%)
-      of which timestamp proofs   7387 bytes
-m3  bit-identity, same hw  one digest across 11 runs -- but see below
-      ⛔ NOT YET A FINDING OF THIS PAPER. Section 6 makes reporting
-      bit-identity without an independent party's re-run an invalidating condition.
-      Three of OUR OWN runs agreeing is an internal phase record, nothing more.
+m1  cost of pinning     ratio 1.102  95% CI [1.072, 1.192]  p=4.9e-04  12 pairs
+      threads=1  median 5.95 s      threads=16 median 5.40 s
+      counterbalanced, paired, stored in execution order; both arms PINNED
+      -> report as: roughly +10%, CI [+7%, +19%]. NOT as a decimal percentage
+m2  apparatus           182542 bytes on 9530566 of artifact (1.915%); 152726 if train.py and
+      build_corpus.py are called artifact instead -- the boundary is arguable and
+      measure_storage.py reports it both ways. Timestamp proofs: 4171 bytes
+      ⚠ the PERCENTAGE does not transfer: the apparatus is near-
+      constant and this artifact is deliberately tiny
+m3  REPEATABILITY, same hw one digest across 12 runs at threads=1
+      ⛔ NOT REPORTED AS BIT-IDENTITY. Section 6 makes that an
+      invalidating condition without an independent re-run. The previous revision of
+      the findings said measurement 3 -HOLDS-; that was a violation and is withdrawn.
 m4  bit-identity, diff hw  NOT MEASURED -- needs configurations B, C, D
 m5  divergence             first differs at step 8; relative L2 8.0e-06;
                            83% of 804,096 parameters differ between threads 1 and 16
-m6  engineering hours      self-reported; flagged as the weakest evidence in the study
+m6  engineering hours     NOT MEASURABLE under this design, and reported as such.
+                           The estimand never existed: nothing was made deterministic
+m7  monotonicity          NOT monotone: 97.3, 97.6, 97.5, 96.8 per cent differing
 ```
 
 ## The thread sweep, read from the runs
 
 ```
-threads=1    ccf303f04e8ab1f02723f199137f9eb237bd042bd754bb87
-threads=2    639bc3afab0add2aea194f82a0bb110a1a3c7526ede565f8
-threads=4    9aef82f7a8400bddc12e8f9f1c0e6969977867f26984ab1f
-threads=8    3d73f3c2c76fc828c2d8a8577a2a64b8b072b9013b9f8201
-threads=16   479add43eee1ae443fe2f4038ac322cf8e7bcad09356de8c
+threads=1    59d07fa0811667df8a9dd606f9ff7842265fd0cac605812f
+threads=2    48b1241b245931126edcc57ec3f3fb80971e38fa204b3bbf
+threads=4    63a77c3c178c9b33d9be5768b81bf50250b3007ffc167ed0
+threads=8    53e63c7c05544cecb0ac0cf8c17ac9d94fa00f2bc47de984
+threads=16   e2d154eb756fc8e9e45544f243b54a9f5ff0a03bdac9a074
 ```
 
 ⭐ **`--unconstrained` produces the threads=16 digest byte for byte**, so 'unconstrained' is not a separate condition on this machine — it is 16 threads. An identification, not an inference.
@@ -68,16 +74,16 @@ threads=16   479add43eee1ae443fe2f4038ac322cf8e7bcad09356de8c
 ## The artifact under test
 
 ```
-corpus        6313332 clean bytes, 10 texts, merkle 814acd249a2988da156438d4fda68066
+corpus        6312982 clean bytes, 10 texts, merkle 2006b7327c616f0ca5f9c0b9c3e766b5
 model         8-byte context, d_emb 64, d_hid 1024, 300 steps, batch 256, float32
-weights       sha256 ccf303f04e8ab1f02723f199137f9eb237bd042bd754bb87e09a0333a19e18cd
-published as  package/ -- 27 files; OUR WEIGHTS ARE NOT IN IT, only the digest
+weights       sha256 59d07fa0811667df8a9dd606f9ff7842265fd0cac605812f96981d6b04ded8b5
+published as  package/ -- 30 files; OUR WEIGHTS ARE NOT IN IT, only the digest
 ```
 
 ## ⚠️ Known-weak, and a reviewer should push here
 
 - **n = 1 machine.** Configuration A only. Measurement 4 is the paper's second half and is not done.
-- **The m1 ranges separate by 0.12 s.** Non-overlapping, but thin enough that a twelfth repetition landing badly would close it. Read it as *roughly a third*, not as 37.1%.
+- **Measurement 1 was +37% in the previous revision and is +10% now.** The design was at fault, not the machine: fixed order, an "unconstrained" arm that was not a condition, and arrays sorted separately before storage. Ask whether the repaired design has its own faults.
 - **The model is an MLP, not a transformer.** Defensible — the mechanism under test is BLAS reduction order and capability is explicitly out of scope — but a reviewer may reasonably argue the finding does not transfer to attention kernels or to CUDA, where atomics add a second source of the same phenomenon.
 - **Measurement 6 is a memory.** Everything else is a digest or a timing a stranger can re-run. That page cannot be checked and says so.
 - **The independent reproduction does not exist**, and by section 2b we may not produce one. If nobody answers the call, section 2c pre-registered that silence as a result — a reviewer should decide whether that is a finding or a rationalisation, because it was written before the window opened precisely so that question could be asked.
@@ -86,5 +92,5 @@ published as  package/ -- 27 files; OUR WEIGHTS ARE NOT IN IT, only the digest
 
 - that a package running on the machine that built it is evidence of anything beyond completeness;
 - that the unconstrained runs agreeing three times means unconstrained training is reproducible — they agreed because nothing was contending;
-- that about +37% is *the* cost of determinism rather than the cost on one configuration, on one pipeline, at one size.
+- that about +10% is *the* cost of determinism. It is the cost of pinning to one thread rather than requesting 16, on one configuration, at one size -- and which constraint actually buys identity is not known until measurement 4 is done.
 

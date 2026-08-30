@@ -3,11 +3,26 @@
 **We trained a small model and published everything needed to train it again. We are asking anyone
 to re-run it and report whether the weights come out bit-for-bit identical.**
 
-You do not need permission, you do not need to tell us in advance, and you do not need to succeed.
-**A failed reproduction is the same kind of result as a successful one and is reported the same
-way.**
+You do not need permission, you do not need to succeed, and a failed attempt is the same kind of
+result as a successful one.
 
 ---
+
+## ⛔ First, if you are willing: say so BEFORE you see the target
+
+The protocol ([`PRE-REGISTRATION-v2-CONFIRMATORY.md`](PRE-REGISTRATION-v2-CONFIRMATORY.md) §2)
+puts a public commitment **before** the reference digest is published, and the reason is not
+ceremony:
+
+> A reference digest published before anyone has committed is a target that reproducers
+> self-select against. A commitment made before the target exists cannot be.
+
+So if you intend to try, **file a one-line commitment issue first.** It costs you nothing, binds
+you to nothing, and you may still report whatever you get — including that you gave up.
+
+⚠️ **We are also measuring whether anyone commits.** If nobody does, that is a reported result
+about how hard it is to get a deliberately trivial artifact reproduced, and it was written down
+before the call went out so that it cannot later look like a consolation prize.
 
 ## What you need
 
@@ -77,7 +92,7 @@ their independence measures the author's persuasiveness.
 ## ⛔ If nobody answers, that is the finding
 
 This was written before the window opened, and it is in the pre-registration
-([`PRE-REGISTRATION.md`](PRE-REGISTRATION.md) §2c) so that it cannot later look like a consolation
+([`PRE-REGISTRATION-v2-CONFIRMATORY.md`](PRE-REGISTRATION-v2-CONFIRMATORY.md) §2, §7) so that it cannot later look like a consolation
 prize assembled after silence.
 
 The companion paper measured twelve public model releases against 22 axes and found that
@@ -89,19 +104,30 @@ rather than about this artifact, and a sharper one than a successful reproductio
 
 ## What we already know, so you are not chasing our bugs
 
-Reported here rather than discovered by you, because withholding it would waste your time and
-measure nothing:
+Reported here rather than left for you to discover, because withholding it would waste your time
+and measure nothing:
 
-- **Thread count alone changes the weights.** On our machine, `threads=1,2,4,8,16` produced five
-  distinct models. That is why the pin is in `train.py` before `import numpy` — OpenBLAS reads
-  those variables at load time, so setting them later silently does nothing.
-- **The models differ in their bits and not in their behaviour.** Between our threads=1 and
-  threads=16 runs, the relative L2 difference is about `8e-06` and the final loss agrees to seven
-  significant figures, while 83% of parameters differ. **If your digest differs from ours, the model
-  is probably fine and the artifact is still not reproducible.** Both halves of that sentence are
-  the point.
-- **We have only run configuration A** — one Intel hybrid-core laptop. Whether bit-identity survives
-  a different vendor or a different instruction set is exactly what we cannot answer alone.
+- **Thread count can change the weights, and whether it does depends on your machine.** On ours,
+  requesting 1, 2, 4, 8 and 16 threads produced five distinct models. On a reviewer's machine the
+  same five requests produced **one** model — their request for 16 was granted as 9. The mechanism
+  is the effective *reduction shape*; an environment variable only requests it. That is why the pin
+  sits before `import numpy` in `train.py`: OpenBLAS reads those variables at load time, so setting
+  them afterwards does nothing at all.
+- **The models differ in their bits while agreeing closely on the reported metrics.** Between our
+  1-thread and 16-thread runs the relative L2 difference is `2.0e-05`, the final loss is identical
+  to eight decimals, and 96.8% of parameters differ. ⚠️ We do **not** claim they are behaviourally
+  equivalent — nothing here tested that, and capability testing is out of scope. **If your digest
+  differs from ours, the model is probably fine and the artifact is still not reproducible**, and
+  both halves of that sentence are the point.
+- **Divergence appears at the first step, in every array.** Not at some later step: reduction order
+  enters at the first matmul. An earlier draft of ours said "step 8", which was a fact about the
+  rounding in our loss file rather than about the model. A reviewer caught it.
+- **We have run one machine.** Whether bit-identity survives a different vendor, OS, Python, numpy
+  or BLAS build is exactly what we cannot answer alone — and a reviewer's differing digest cannot
+  answer it either, because all five of those changed at once.
+
+⚠️ **A digest that differs from ours is a result we want, not a mistake to fix before reporting.**
+`verify_package.py` prints a mismatch as a finding and exits successfully, for that reason.
 
 ---
 

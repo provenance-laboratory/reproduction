@@ -1,0 +1,15 @@
+{
+  "_what": "The exact interpreter and library this reference run used. A reproducer matching these is testing the pipeline; a reproducer NOT matching them is testing something more interesting, and both are wanted.",
+  "_limit": "\u26a0 THIS IS A RECORD, NOT A LOCK. A real lock pins wheel hashes and an installer enforces them. numpy ships different BLAS builds per platform and per wheel, and the BLAS is the thing that actually matters here -- so the fields below that decide the result are the OpenBLAS build and the SELECTED KERNEL, neither of which a requirements file can pin. They are recorded per run in run.json instead. Calling this a lock would be the kind of overstatement this study exists to measure.",
+  "python": "3.14.3",
+  "python_full": "3.14.3 (tags/v3.14.3:323c59a, Feb  3 2026, 16:04:56) [MSC v.1944 64 bit (AMD64)]",
+  "implementation": "CPython",
+  "numpy": "2.5.1",
+  "requires": [
+    "numpy"
+  ],
+  "does_not_require": [
+    "threadpoolctl (used if present, recorded as absent if not)"
+  ],
+  "network_access_during_run": false
+}

@@ -29,7 +29,12 @@ OUT = HERE / "package"
 CONTENTS = (
     ("train.py", "the pipeline. One file, numpy only, no network"),
     ("REPRODUCTION-CALL.md", "what we are asking for and the two rules we bind ourselves with"),
-    ("PRE-REGISTRATION.md", "what was committed to before any of this ran"),
+    ("PRE-REGISTRATION-v2-CONFIRMATORY.md",
+     "the protocol this study runs under. Version 1 is retained as the PILOT"),
+    ("PRE-REGISTRATION-v2-CONFIRMATORY.md.ots", "its proof"),
+    ("ENVIRONMENT-LOCK.json",
+     "the interpreter and library recorded -- NOT a lock; see the file"),
+    ("PRE-REGISTRATION.md", "version 1, retained: the pilot protocol"),
     ("PRE-REGISTRATION.md.ots", "its OpenTimestamps proof, anchored in a Bitcoin block"),
     ("PILOT-2026-08-29.md", "the observation that made the thread pin part of the protocol"),
     ("AMENDMENT-2026-08-30.md",
