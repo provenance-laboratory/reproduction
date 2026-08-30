@@ -32,6 +32,8 @@ CONTENTS = (
     ("PRE-REGISTRATION.md", "what was committed to before any of this ran"),
     ("PRE-REGISTRATION.md.ots", "its OpenTimestamps proof, anchored in a Bitcoin block"),
     ("PILOT-2026-08-29.md", "the observation that made the thread pin part of the protocol"),
+    ("AMENDMENT-2026-08-30.md",
+     "a deviation from the protocol, disclosed to the reproducer rather than to a reader later"),
     ("corpus/MANIFEST.json", "the corpus, its digests and its Merkle root"),
     ("corpus/MANIFEST.json.ots", "the proof the corpus was fixed BEFORE the first training step"),
     ("corpus/sources.json", "where each text came from, so the corpus can be rebuilt from source"),
