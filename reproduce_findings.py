@@ -157,8 +157,21 @@ def main():
         print("  That does not contradict the configuration-A measurement. It shows the partition")
         print("  depends on the EFFECTIVE reduction shape, which a thread request only influences.")
         print("  Report this: it is the more informative outcome of the two.")
-    print("  Whether bit-identity survives different hardware is measurement 4, which is not done")
-    print("  and which this script cannot answer.")
+    # ⛔ THIS SENTENCE SAID "measurement 4, which is not done" AFTER IT WAS DONE. A typed status
+    # in the script whose job is to re-derive findings is the dead-noun-beside-a-live-number defect
+    # in the last place it should appear. The status is read from the measurement records now, so
+    # it cannot be stale in one file and current in another.
+    _m4 = sorted(HERE.glob("MEASUREMENT-4*.json"))
+    if _m4:
+        _r = json.loads(_m4[-1].read_text(encoding="utf-8"))
+        print("  Whether bit-identity survives different hardware is measurement 4. It has been")
+        print("  TAKEN and the comparison is %s: bit-identical %s. Read %s; this script"
+              % (_r.get("verdict"), _r.get("bit_identical"), _m4[-1].name))
+        print("  does not repeat it, and a %s pair may not be cited for a vendor claim."
+              % _r.get("verdict"))
+    else:
+        print("  Whether bit-identity survives different hardware is measurement 4, NOT DONE.")
+    print("  Either way this script cannot answer it: it runs on one machine.")
     print("=" * 78)
     return 0
 
