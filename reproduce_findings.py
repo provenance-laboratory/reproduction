@@ -90,8 +90,33 @@ def main():
     L16 = json.loads((HERE / "runs" / "check-thr-16" / "loss.json").read_text(encoding="utf-8"))
     first = next((i for i, (x, y) in enumerate(zip(L1, L16)) if x != y), None)
     print()
-    print("  FINDING 4  the loss curves first differ at step %s; final loss %.8f vs %.8f"
-          % (first, L1[-1], L16[-1]))
+    # ⛔ BOTH ANSWERS, BECAUSE THE DIFFERENCE BETWEEN THEM WAS THE ERROR. The previous
+    # revision reported the loss-curve answer as though it were the model's. Two traced runs cost
+    # a few more seconds and settle it: the loss file is rounded to 8 decimals, the median
+    # parameter difference is of that order, so the curve cannot see what it is asked about.
+    print("  FINDING 4  where does divergence FIRST appear?")
+    print("             in the rounded loss curve                    step %s" % first)
+    for n in (1, 16):
+        subprocess.run([sys.executable, "-X", "utf8", "train.py", "--out",
+                        str(HERE / "runs" / ("check-trace-%d" % n)),
+                        "--threads", str(n), "--trace"], cwd=str(HERE),
+                       capture_output=True, text=True)
+    try:
+        ta = json.loads((HERE / "runs" / "check-trace-1" / "trace.json").read_text())
+        tb = json.loads((HERE / "runs" / "check-trace-16" / "trace.json").read_text())
+        firsts = {}
+        for i, (x, y) in enumerate(zip(ta, tb)):
+            for k in x:
+                if k not in firsts and x[k] != y[k]:
+                    firsts[k] = i
+        print("             in the WEIGHTS, per array                    %s"
+              % ", ".join("%s=%s" % (k, firsts.get(k, "never")) for k in ("E", "W1", "b1",
+                                                                          "W2", "b2")))
+        print("             -> there is no first LAYER: reduction order enters at the first")
+        print("                matmul, so every array diverges at the same step")
+    except Exception as e:                                                  # noqa: BLE001
+        print("             " + D + " could not read the traces: %s" % e)
+    print("             final loss %.8f vs %.8f" % (L1[-1], L16[-1]))
     print()
     # ⛔ THIS PARAGRAPH USED TO SAY "It confirms that thread count partitions the model
     # HERE" NO MATTER WHAT THE RUN FOUND. A reviewer's machine produced ONE digest across all five
