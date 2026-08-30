@@ -1,0 +1,46 @@
+{
+  "reps": 11,
+  "quiet_machine_verified_between_every_rep": true,
+  "loop_seconds": {
+    "pinned": [
+      5.8712,
+      6.0163,
+      6.1809,
+      6.399,
+      6.4139,
+      6.5852,
+      7.029,
+      7.0512,
+      7.4362,
+      9.4755,
+      9.5164
+    ],
+    "free": [
+      4.6553,
+      4.6807,
+      4.6925,
+      4.7739,
+      4.8036,
+      4.8049,
+      4.9794,
+      5.456,
+      5.4896,
+      5.4997,
+      5.7544
+    ]
+  },
+  "median": {
+    "pinned": 6.5852,
+    "free": 4.8049
+  },
+  "determinism_overhead_percent": 37.05,
+  "ranges_overlap": false,
+  "distinct_digests": {
+    "pinned": [
+      "ccf303f04e8ab1f02723f199137f9eb237bd042bd754bb87e09a0333a19e18cd"
+    ],
+    "free": [
+      "479add43eee1ae443fe2f4038ac322cf8e7bcad09356de8cc8dd426559a46928"
+    ]
+  }
+}

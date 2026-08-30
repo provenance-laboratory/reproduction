@@ -1,0 +1,46 @@
+{
+  "spec": {
+    "seed": 20260829,
+    "context": 8,
+    "d_emb": 64,
+    "d_hid": 1024,
+    "steps": 300,
+    "batch": 256,
+    "lr": 0.05,
+    "dtype": "float32",
+    "vocab": 256
+  },
+  "corpus_merkle_root": "814acd249a2988da156438d4fda68066227d56055028dd8f58fcd07b060d1c21",
+  "environment": {
+    "cpu": "12th Gen Intel(R) Core(TM) i5-1240P",
+    "logical_processors": 16,
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.14.3",
+    "numpy": "2.5.1",
+    "blas": [
+      "openblas configuration: OpenBLAS 0.3.33.112.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY",
+      "version: '3.14'",
+      "version: 0.3.33.112.0",
+      "version: 19.44.35228",
+      "version: 3.2.8"
+    ],
+    "simd_baseline": [
+      "X86_V2"
+    ],
+    "simd_found": [
+      "X86_V3"
+    ],
+    "threads_env": {
+      "OMP_NUM_THREADS": "8",
+      "OPENBLAS_NUM_THREADS": "8",
+      "MKL_NUM_THREADS": "8"
+    },
+    "unconstrained": false,
+    "digest": "8cceceea5b7941a493a12ab93d2b60140b8d4c58b9c3aa82253f1e48f59f2622"
+  },
+  "wall_clock_seconds": 5.2152,
+  "final_loss": 3.27143693,
+  "loss_first": 5.54422808,
+  "weights_sha256": "3d73f3c2c76fc828c2d8a8577a2a64b8b072b9013b9f820189ea82fe5a414275",
+  "weights_npz_bytes": 3217584
+}

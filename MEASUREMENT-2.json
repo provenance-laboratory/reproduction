@@ -1,0 +1,23 @@
+{
+  "artifact_bytes": {
+    "corpus": 6313332,
+    "weights": 3217584,
+    "total": 9530916
+  },
+  "apparatus_bytes": {
+    "corpus/MANIFEST.json": 4431,
+    "corpus/MANIFEST.json.ots": 3746,
+    "corpus/sources.json": 3944,
+    "PRE-REGISTRATION.md": 8831,
+    "PRE-REGISTRATION.md.ots": 3641,
+    "runs/det-1/run.json": 1225,
+    "runs/det-1/loss.json": 3575,
+    "train.py": 10762,
+    "corpus/build_corpus.py": 8400
+  },
+  "apparatus_total": 48555,
+  "timestamp_proof_bytes": 7387,
+  "overhead_percent_of_artifact": 0.5094,
+  "overhead_percent_excluding_code": 0.3084,
+  "_caveat": "The apparatus is NEAR-CONSTANT in size -- a manifest, two OpenTimestamps proofs and a run record do not grow with the model -- while this artifact is deliberately tiny. On a release 1000x larger the same apparatus is ~0.0005%. So the percentage does not transfer and the ABSOLUTE figure is the one that carries: 48,555 bytes of provenance, 7,387 of it timestamp proofs."
+}
