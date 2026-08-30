@@ -5,12 +5,12 @@
 ## ⇒ SEND THESE TWO
 
 ```
-paper-b-review.zip     28 files
-  sha256 109ad99f1649f85b67b890a5c2e19f7cc059e53b470f5a47da4c890e64902b8c
+paper-b-review.zip     41 files
+  sha256 b25e2a7eeda7be8fd56bfd3945f04a2620288f0eb9c46a5921c846ad7d71a8a3
 this file
 ```
 
-Repository `provenance-laboratory/reproduction`, commit `fc6c7fc`.
+Repository `provenance-laboratory/reproduction`, commit `f00458b`  ⚠️ TREE DIRTY.
 
 ---
 
@@ -95,7 +95,7 @@ threads=16   d0dcb2066db6a2f6f3a9e54e52869ce9a658a07c87e5bca0
 corpus        6312982 clean bytes, 10 texts, merkle 2006b7327c616f0ca5f9c0b9c3e766b5
 model         8-byte context, d_emb 64, d_hid 1024, 300 steps, batch 256, float32
 weights       sha256 a4afb5c86dd88ae5ce7a475d448ee6bab18f6bc4e3c6c59721511f98f1c23d38
-published as  package/ -- 33 files; OUR WEIGHTS ARE NOT IN IT, only the digest
+published as  package/ -- 39 files; OUR WEIGHTS ARE NOT IN IT, only the digest
 ```
 
 ## ⚠️ Known-weak, and a reviewer should push here

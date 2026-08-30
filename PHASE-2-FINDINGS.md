@@ -195,19 +195,108 @@ kept, so a retrospective figure would be inadmissible. The "afternoon" and "two 
 earlier revision are withdrawn as quantitative evidence and remain in
 [`MEASUREMENT-6.md`](MEASUREMENT-6.md) as process history, labelled as such.
 
-## 9. What one machine still cannot say
+## 9. ⛔ The pre-registration was void for a day, and every tool reported success
+
+v3 §2 pins four files by SHA-256 and states that a change to any of them voids the
+pre-registration — *"it named files, and a name is not a commitment"*. **Nothing enforced that
+sentence.**
+
+It was found on 2026-08-31 by writing the control that should always have existed. Two violations
+were standing at that moment:
 
 ```
-MEASUREMENT 4   bit-identity across hardware. NOT DONE. The two reviewer runs are early and
-                confounded -- CPU, OS, Python, numpy and OpenBLAS all differ at once -- and they
-                predate the corpus correction, so they cannot be compared to current digests
+corpus/build_corpus.py   edited minutes earlier, to add a verification mode.
+                         Digest 2d3ce23b -> d9fd717e. REVERTED; it is the committed file again
+train.py                 edited on 2026-08-30 in the round-3 commit, which added --seed and
+                         is_confirmatory_spec and left §2 untouched. Digest aa893adb -> 1231a42a.
+                         THE PRE-REGISTRATION HAD BEEN VOID FOR A DAY
+```
+
+⚠️ **Throughout that day the package rebuilt, `verify_package.py` passed, and `SHA256SUMS` was
+regenerated over the new bytes.** A checksum derived from the bytes it polices cannot notice a
+substitution — which is the whole reason the digests were written into an anchored document in the
+first place, and exactly the property that document was unable to enforce about itself.
+
+⭐ **`train.py` is not reverted, and the change is shown to be numerically inert rather than
+asserted to be.** `--seed` exists because a round-2 reviewer required measurement 7's
+seed-sensitivity arm; reverting would delete a measurement a review demanded. So the committed
+pipeline was checked out of git and run:
+
+```
+train.py @ aa893adb (committed)   weights a4afb5c86dd88ae5ce7a475d448ee6bab18f6bc4e3c6c59721511f98f1c23d38
+train.py @ 1231a42a (in use)      weights a4afb5c86dd88ae5ce7a475d448ee6bab18f6bc4e3c6c59721511f98f1c23d38
+```
+
+Bit-identical. Without `--seed` the computation is unchanged and one key is added to `run.json`. **No
+measurement in this document is affected.**
+
+⛔ **That does not make the violation harmless, and it is not filed as though it were.** The
+commitment exists precisely so nobody has to take *"the change was inert"* on trust. It was inert
+here; the point is that for a day nothing in this project could have told the difference, and the
+same silence would have covered a change that was not.
+
+`PRE-REGISTRATION-v5-CONFIRMATORY.md` re-commits the digests and discloses all of it.
+`check_commitments.py` **parses the table out of the anchored document** rather than restating it,
+derives the governing version from what is on disk rather than naming one in a constant, fails
+closed on an empty parse, and is fatal inside `build_package.py`. Four positive controls, including
+one that deletes v5 to confirm v3 does not silently resume governing.
+
+## 10. Measurement 4 — taken, and currently CONFOUNDED on a recording gap
+
+⛔ **As v3 specified it, this comparison could not isolate anything.** CPU vendor, operating system,
+Python, numpy and the OpenBLAS build all moved at once, so a byte difference was attributable to any
+of five things and the measurement was designed to attribute it to one. An earlier revision of this
+section said the condition *"has to be added to §2a before measurement 4 is run"*. It was never
+added. `PRE-REGISTRATION-v4-CONFIRMATORY.md` adds it, and was written and anchored while
+measurement 4 had **no data at all** — which is the difference between a condition and an excuse.
+
+The first pair under that protocol:
+
+```
+arm A   Intel Core i5-1240P     Windows-11  Python 3.14.3  numpy 2.5.1  OpenBLAS Haswell
+arm B   AMD Ryzen 9 5900HX      Windows-11  Python 3.14.7  numpy 2.5.1  build line NOT RECORDED
+
+weights, both arms      a4afb5c86dd88ae5ce7a475d448ee6bab18f6bc4e3c6c59721511f98f1c23d38
+BIT-IDENTICAL           yes
+VERDICT                 CONFOUNDED on condition 4
+```
+
+⚠️ **The verdict labels the comparison, not the result, and this pair shows why the distinction is
+needed: it is bit-identical AND confounded.** Arm B recorded no OpenBLAS build line — not because
+its BLAS differed, but because `pyyaml` was absent, so numpy's configuration output took a format
+the parser cannot read. A **recording gap**, not an observed difference. Arm A happened to have the
+package installed and nobody had noticed it mattered; the second machine's requirement list was
+written by hand rather than derived from what arm A depends on, and was wrong the first time it was
+used.
+
+⇒ The pair is retained as `runs/amd-thr-1-no-pyyaml` with its own record rather than deleted. It is
+evidence of what a recording gap looks like when the underlying result was bit-identical all along,
+and keeping only the clean answer would leave no trace of how it was reached.
+
+⛔ **This section is provisional and says so.** A re-run of arm B with `pyyaml` installed, under the
+now-anchored v4 and v5, is pending. Until it lands, **nothing here may be cited for a claim about
+CPU vendor**, and the honest statement of what is known is: *two machines matched on operating
+system, Python and numpy produced identical bytes, with one environment field unrecorded on one
+side.*
+
+⚠️ **And a limit that cannot be closed retroactively for this pair.** `run.json` records wall-clock
+*duration* but not *when* a run happened, so the artifacts cannot establish whether an arm ran
+before or after a given anchor. This one ran while v4's proof was still calendar-only; v4 anchored
+afterwards, at Bitcoin block 964775. `measure_hardware.py` records the anchoring state in its output
+and names it as the state when the record was written, not at run time.
+
+## 11. What one machine still cannot say
+
+```
 §2b            the independent re-run does not exist, and by §2b we may not produce one
+MEASUREMENT 4  isolates the CPU only among the variables v4 §2 lists. Microcode, BIOS
+               settings, kernel scheduling and CPU features beyond the recorded SIMD
+               baseline are neither held constant nor observed
 ```
 
-⚠️ **A vs B is not an isolating comparison unless OS, Python, numpy and the BLAS build are held
-constant too.** Otherwise vendor, operating system, library version and selected microkernel move
-together, and the matrix's one clean contrast is lost. That condition has to be added to §2a before
-measurement 4 is run, or the comparison it was designed to make cannot be made.
+⇒ Even a clean ISOLATING result answers *"do these two machines, matched on software, produce the
+same bytes"*. It does not establish that CPU vendor is the cause, and nothing in this document may
+be written as though it did.
 
 ---
 

@@ -45,14 +45,58 @@ SEND = (
     ("verify_package.py", "the package run as a stranger would"),
     ("build_review_packet.py", "this packet's own builder -- a reviewer asked for it"),
     ("REVIEW-ROUNDS.json", "the round record the covering note is generated from"),
-    ("anchor_status.py", "what each OpenTimestamps proof actually attests"),
     ("measure_cost.py", "measurement 1's instrument"),
     ("reproduce_findings.py",
      "re-derives the headline findings from scratch -- five runs, no timing, so a"
      " reviewer checks the RESULTS rather than the prose"),
     ("corpus/MANIFEST.json", "the corpus and its Merkle root"),
     ("corpus/MANIFEST.json.ots", "committed BEFORE the first training step, now anchored"),
+    ("corpus/build_corpus.py", "the corpus derivation, pinned by digest"),
+    ("corpus/sources.json", "the ten texts and where they came from, pinned by digest"),
+    ("corpus/verify_shipped.py",
+     "checks a SHIPPED corpus using only what a package contains -- build_corpus.py --verify "
+     "cannot, because it re-derives from raw/ and raw/ is not shipped"),
+    ("PRE-REGISTRATION-v4-CONFIRMATORY.md",
+     "measurement 4's admissibility, committed while measurement 4 had NO data"),
+    ("PRE-REGISTRATION-v4-CONFIRMATORY.md.ots", "its proof"),
+    ("PRE-REGISTRATION-v5-CONFIRMATORY.md",
+     "THE DIGEST COMMITMENTS, re-committed after v3 §2 went unenforced for a day"),
+    ("PRE-REGISTRATION-v5-CONFIRMATORY.md.ots", "its proof"),
+    ("check_commitments.py",
+     "the control that enforces the digest commitments -- v3 §2 was prose, and was broken the "
+     "next day without anything noticing"),
+    ("measure_hardware.py", "measurement 4's instrument, which labels the COMPARISON"),
+    ("MEASUREMENT-4-confounded-no-pyyaml.json",
+     "the first hardware pair: bit-identical AND confounded, retained as record"),
+    ("MEASUREMENT-4-RUNBOOK.md", "the second-machine procedure, and the two errors it contained"),
+    ("MEASUREMENT-5-7.json", "measurements 5 and 7, computed rather than typed"),
+    ("measure_divergence.py", "their instrument, including the seed-sensitivity arm"),
+    ("seed_sensitivity.py", "the seed arm's driver"),
 )
+
+# {D} SEND WAS A HAND-KEPT LIST AND IT HAD ALREADY DRIFTED TWICE OVER: `anchor_status.py` appeared
+# in it TWICE, so the zip carried a duplicate entry -- silently, because zipfile only warns -- and
+# every file added by two rounds of work was missing from a packet whose entire job is to show a
+# reviewer everything. A reader would have judged the round on an artifact that omitted the
+# governing protocol version, the control enforcing its digests, and the measurement instrument.
+#
+# ⇒ The descriptions stay curated, because they carry judgement a projection cannot. What is
+# PROJECTED is the coverage check: every candidate file must be named in SEND or excused by name.
+EXCLUDED = {
+    "REVIEW-ROUNDS.json": "listed above; kept here so the excuse list is exhaustive",
+    "MEASUREMENT-4.json": ("written by the pending re-run; absent until measurement 4 is retaken "
+                           "with the recording gap closed"),
+}
+
+
+def unclassified(here):
+    """Files a reviewer could reasonably expect, that SEND neither ships nor excuses."""
+    named = {rel for rel, _why in SEND} | set(EXCLUDED)
+    seen = []
+    for pat in ("*.py", "*.md", "*.json", "*.ots"):
+        seen += [p.relative_to(here).as_posix() for p in here.glob(pat)]
+        seen += [p.relative_to(here).as_posix() for p in (here / "corpus").glob(pat)]
+    return sorted(set(seen) - named)
 
 
 def main():
@@ -82,6 +126,22 @@ def main():
 
     OUT.mkdir(exist_ok=True)
     zp = OUT / "paper-b-review.zip"
+    _dupes = sorted({r for r, _w in SEND if [x for x, _ in SEND].count(r) > 1})
+    if _dupes:
+        raise SystemExit(D + " SEND names the same file twice: %s. A duplicate zip entry is "
+                         "written silently and a reader may extract either copy, so this is a "
+                         "substitution vector, not a cosmetic slip." % _dupes)
+    _missing = [rel for rel, _w in SEND if not (HERE / rel).exists()]
+    if _missing:
+        raise SystemExit(D + " SEND names %d file(s) that do not exist: %s" % (len(_missing),
+                                                                              _missing))
+    _un = unclassified(HERE)
+    if _un:
+        raise SystemExit(D + " file(s) in neither SEND nor EXCLUDED: " + NL
+                         + NL.join("      " + u for u in _un) + NL
+                         + "  Ship each or excuse it by name. A review packet that omits work the "
+                         + "round did is a packet the reviewer cannot judge the round from.")
+
     with zipfile.ZipFile(zp, "w", zipfile.ZIP_DEFLATED) as z:
         for rel, _why in SEND:
             z.write(HERE / rel, rel)
