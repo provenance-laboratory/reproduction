@@ -1,0 +1,166 @@
+{
+  "_what": "Measurement 4 under PRE-REGISTRATION-v4-CONFIRMATORY.md. The verdict labels the COMPARISON, not the result: a confounded pair is reported, never dropped.",
+  "verdict": "CONFOUNDED",
+  "bit_identical": true,
+  "conditions": [
+    {
+      "n": 1,
+      "condition": "operating system recorded and matching",
+      "met": true,
+      "observed": "Windows-11 vs Windows-11"
+    },
+    {
+      "n": 2,
+      "condition": "Python matching to major.minor",
+      "met": true,
+      "observed": "3.14.3 vs 3.14.7"
+    },
+    {
+      "n": 3,
+      "condition": "numpy matching exactly",
+      "met": true,
+      "observed": "2.5.1 vs 2.5.1"
+    },
+    {
+      "n": 4,
+      "condition": "OpenBLAS build configuration matching",
+      "met": false,
+      "observed": "NOT RECORDED on arm B (recorded on the other as 'Haswell MAX_THREADS=24'). This is usually a MISSING `pyyaml`, not a different BLAS: without it numpy's config output takes a format the parser cannot read. `pip install pyyaml` on arm B and re-run that arm."
+    },
+    {
+      "n": 5,
+      "condition": "runtime architecture and effective threads OBSERVED in both",
+      "met": true,
+      "observed": "A observed / B observed"
+    }
+  ],
+  "conditions_failed": [
+    4
+  ],
+  "same_input_specification": true,
+  "arms": {
+    "A": {
+      "run": "runs\\tpc-thr-1\\run.json",
+      "cpu": "12th Gen Intel(R) Core(TM) i5-1240P",
+      "weights_sha256": "a4afb5c86dd88ae5ce7a475d448ee6bab18f6bc4e3c6c59721511f98f1c23d38",
+      "environment": {
+        "cpu": "12th Gen Intel(R) Core(TM) i5-1240P",
+        "logical_processors": 16,
+        "platform": "Windows-11-10.0.26200-SP0",
+        "machine": "AMD64",
+        "python": "3.14.3",
+        "numpy": "2.5.1",
+        "blas_build_config_line": "Haswell MAX_THREADS=24",
+        "blas_runtime_arch": "Haswell",
+        "blas_config_sha256": "fed9f6fc970729b5cdc97f61197497bf5fcf85793600dbd4058d80b86edd5e19",
+        "blas_config_full": "Build Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: C:/Users/runneradmin/AppData/Local/Temp/cibw-run-5fu_d2xs/cp314-win_amd64/build/venv/Lib/site-packages/scipy_openblas64/include\n    lib directory: C:/Users/runneradmin/AppData/Local/Temp/cibw-run-5fu_d2xs/cp314-win_amd64/build/venv/Lib/site-packages/scipy_openblas64/lib\n    name: scipy-openblas\n    openblas configuration: OpenBLAS 0.3.33.112.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY\n      Haswell MAX_THREADS=24\n    pc file directory: D:/a/numpy-release/numpy-release/.openblas\n    version: 0.3.33.112.0\n  lapack:\n    detection method: pkgconfig\n    found: true\n    include directory: C:/Users/runneradmin/AppData/Local/Temp/cibw-run-5fu_d2xs/cp314-win_amd64/build/venv/Lib/site-packages/scipy_openblas64/include\n    lib directory: C:/Users/runneradmin/AppData/Local/Temp/cibw-run-5fu_d2xs/cp314-win_amd64/build/venv/Lib/site-packages/scipy_openblas64/lib\n    name: scipy-openblas\n    openblas configuration: OpenBLAS 0.3.33.112.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY\n      Haswell MAX_THREADS=24\n    pc file directory: D:/a/numpy-release/numpy-release/.openblas\n    version: 0.3.33.112.0\nCompilers:\n  c:\n    commands: cl\n    linker: link\n    name: msvc\n    version: 19.44.35228\n  c++:\n    commands: cl\n    linker: link\n    name: msvc\n    version: 19.44.35228\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.2.8\nMachine Information:\n  build:\n    cpu: x86_64\n    endian: little\n    family: x86_64\n    system: windows\n  host:\n    cpu: x86_64\n    endian: little\n    family: x86_64\n    system: windows\nPython Information:\n  path: C:\\Users\\runneradmin\\AppData\\Local\\Temp\\build-env-77jx58qm\\Scripts\\python.exe\n  version: '3.14'\nSIMD Extensions:\n  baseline:\n  - X86_V2\n  found:\n  - X86_V3\n\n",
+        "simd_baseline": [
+          "X86_V2"
+        ],
+        "simd_found": [
+          "X86_V3"
+        ],
+        "threads_requested": "1",
+        "threads_env": {
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1",
+          "MKL_NUM_THREADS": "1",
+          "NUMEXPR_NUM_THREADS": "1",
+          "VECLIB_MAXIMUM_THREADS": "1"
+        },
+        "threads_effective": [
+          {
+            "user_api": "blas",
+            "internal_api": "openblas",
+            "num_threads": 1,
+            "prefix": "libscipy_openblas",
+            "version": "0.3.33.112.0",
+            "architecture": "Haswell"
+          }
+        ],
+        "threads_effective_note": null,
+        "show_runtime": "[{'numpy_version': '2.5.1',\n  'python': '3.14.3 (tags/v3.14.3:323c59a, Feb  3 2026, 16:04:56) [MSC v.1944 '\n            '64 bit (AMD64)]',\n  'uname': uname_result(system='Windows', node='LAPTOP-L9LKIF8J', release='11', version='10.0.26200', machine='AMD64')},\n {'simd_extensions': {'baseline': ['X86_V2'],\n                      'found': ['X86_V3'],\n                      'not_found': []}},\n {'ignore_floating_point_errors_in_matmul': False},\n {'architecture': 'Haswell',\n  'filepath': 'C:\\\\Users\\\\Yoga\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\Lib\\\\site-packages\\\\numpy.libs\\\\libscipy_openblas64_-b788215d9d47792bcba3a2e2a7114320.dll',\n  'internal_api': 'openblas',\n  'num_threads': 1,\n  'prefix': 'libscipy_openblas',\n  'threading_layer': 'pthreads',\n  'user_api': 'blas',\n  'version': '0.3.33.112.0'}]\n",
+        "unconstrained": false,
+        "admissible_for_causal_attribution": true,
+        "_attribution_note": "A run is admissible for kernel/thread causal attribution only if it OBSERVED the runtime architecture and the effective thread count. The build-config line is not the selected kernel and is never treated as it.",
+        "digest": "9e3f1bc1e8a7e1e79b95cf92fa9de37a32d21232445065d28410d57232df1ac0"
+      }
+    },
+    "B": {
+      "run": "runs\\amd-thr-1\\run.json",
+      "cpu": "AMD Ryzen 9 5900HX with Radeon Graphics",
+      "weights_sha256": "a4afb5c86dd88ae5ce7a475d448ee6bab18f6bc4e3c6c59721511f98f1c23d38",
+      "environment": {
+        "cpu": "AMD Ryzen 9 5900HX with Radeon Graphics",
+        "logical_processors": 16,
+        "platform": "Windows-11-10.0.26200-SP0",
+        "machine": "AMD64",
+        "python": "3.14.7",
+        "numpy": "2.5.1",
+        "blas_build_config_line": null,
+        "blas_runtime_arch": "Haswell",
+        "blas_config_sha256": "a30e74a04c7b4af2f5ad2571be8e57762cd9384853f9421c0d0ef12f36ed333f",
+        "blas_config_full": "{\n  \"Compilers\": {\n    \"c\": {\n      \"name\": \"msvc\",\n      \"linker\": \"link\",\n      \"version\": \"19.44.35228\",\n      \"commands\": \"cl\"\n    },\n    \"cython\": {\n      \"name\": \"cython\",\n      \"linker\": \"cython\",\n      \"version\": \"3.2.8\",\n      \"commands\": \"cython\"\n    },\n    \"c++\": {\n      \"name\": \"msvc\",\n      \"linker\": \"link\",\n      \"version\": \"19.44.35228\",\n      \"commands\": \"cl\"\n    }\n  },\n  \"Machine Information\": {\n    \"host\": {\n      \"cpu\": \"x86_64\",\n      \"family\": \"x86_64\",\n      \"endian\": \"little\",\n      \"system\": \"windows\"\n    },\n    \"build\": {\n      \"cpu\": \"x86_64\",\n      \"family\": \"x86_64\",\n      \"endian\": \"little\",\n      \"system\": \"windows\"\n    }\n  },\n  \"Build Dependencies\": {\n    \"blas\": {\n      \"name\": \"scipy-openblas\",\n      \"found\": true,\n      \"version\": \"0.3.33.112.0\",\n      \"detection method\": \"pkgconfig\",\n      \"include directory\": \"C:/Users/runneradmin/AppData/Local/Temp/cibw-run-5fu_d2xs/cp314-win_amd64/build/venv/Lib/site-packages/scipy_openblas64/include\",\n      \"lib directory\": \"C:/Users/runneradmin/AppData/Local/Temp/cibw-run-5fu_d2xs/cp314-win_amd64/build/venv/Lib/site-packages/scipy_openblas64/lib\",\n      \"openblas configuration\": \"OpenBLAS 0.3.33.112.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=24\",\n      \"pc file directory\": \"D:/a/numpy-release/numpy-release/.openblas\"\n    },\n    \"lapack\": {\n      \"name\": \"scipy-openblas\",\n      \"found\": true,\n      \"version\": \"0.3.33.112.0\",\n      \"detection method\": \"pkgconfig\",\n      \"include directory\": \"C:/Users/runneradmin/AppData/Local/Temp/cibw-run-5fu_d2xs/cp314-win_amd64/build/venv/Lib/site-packages/scipy_openblas64/include\",\n      \"lib directory\": \"C:/Users/runneradmin/AppData/Local/Temp/cibw-run-5fu_d2xs/cp314-win_amd64/build/venv/Lib/site-packages/scipy_openblas64/lib\",\n      \"openblas configuration\": \"OpenBLAS 0.3.33.112.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=24\",\n      \"pc file directory\": \"D:/a/numpy-release/numpy-release/.openblas\"\n    }\n  },\n  \"Python Information\": {\n    \"path\": \"C:\\\\Users\\\\runneradmin\\\\AppData\\\\Local\\\\Temp\\\\build-env-77jx58qm\\\\Scripts\\\\python.exe\",\n    \"version\": \"3.14\"\n  },\n  \"SIMD Extensions\": {\n    \"baseline\": [\n      \"X86_V2\"\n    ],\n    \"found\": [\n      \"X86_V3\"\n    ]\n  }\n}\n",
+        "simd_baseline": [
+          "X86_V2"
+        ],
+        "simd_found": [
+          "X86_V3"
+        ],
+        "threads_requested": "1",
+        "threads_env": {
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1",
+          "MKL_NUM_THREADS": "1",
+          "NUMEXPR_NUM_THREADS": "1",
+          "VECLIB_MAXIMUM_THREADS": "1"
+        },
+        "threads_effective": [
+          {
+            "user_api": "blas",
+            "internal_api": "openblas",
+            "num_threads": 1,
+            "prefix": "libscipy_openblas",
+            "version": "0.3.33.112.0",
+            "architecture": "Haswell"
+          }
+        ],
+        "threads_effective_note": null,
+        "show_runtime": "[{'numpy_version': '2.5.1',\n  'python': '3.14.7 (tags/v3.14.7:823f032, Aug  5 2026, 10:51:32) [MSC v.1944 '\n            '64 bit (AMD64)]',\n  'uname': uname_result(system='Windows', node='DESKTOP-0GQRA3J', release='11', version='10.0.26200', machine='AMD64')},\n {'simd_extensions': {'baseline': ['X86_V2'],\n                      'found': ['X86_V3'],\n                      'not_found': []}},\n {'ignore_floating_point_errors_in_matmul': False},\n {'architecture': 'Haswell',\n  'filepath': 'C:\\\\Users\\\\CoreX\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python314\\\\Lib\\\\site-packages\\\\numpy.libs\\\\libscipy_openblas64_-b788215d9d47792bcba3a2e2a7114320.dll',\n  'internal_api': 'openblas',\n  'num_threads': 1,\n  'prefix': 'libscipy_openblas',\n  'threading_layer': 'pthreads',\n  'user_api': 'blas',\n  'version': '0.3.33.112.0'}]\n",
+        "unconstrained": false,
+        "admissible_for_causal_attribution": true,
+        "_attribution_note": "A run is admissible for kernel/thread causal attribution only if it OBSERVED the runtime architecture and the effective thread count. The build-config line is not the selected kernel and is never treated as it.",
+        "digest": "260b5783d65ce8257b2d920c4c92bfb721632b8cdda5c640a61138322a4aabbd"
+      }
+    }
+  },
+  "protocol_anchoring_when_this_record_was_written": {
+    "PRE-REGISTRATION-v2-CONFIRMATORY.md": {
+      "proof": true,
+      "binds_document": true,
+      "bitcoin_attestation": true
+    },
+    "PRE-REGISTRATION-v3-CONFIRMATORY.md": {
+      "proof": true,
+      "binds_document": true,
+      "bitcoin_attestation": true
+    },
+    "PRE-REGISTRATION-v4-CONFIRMATORY.md": {
+      "proof": true,
+      "binds_document": true,
+      "bitcoin_attestation": true
+    },
+    "PRE-REGISTRATION-v5-CONFIRMATORY.md": {
+      "proof": true,
+      "binds_document": true,
+      "bitcoin_attestation": false
+    },
+    "PRE-REGISTRATION.md": {
+      "proof": true,
+      "binds_document": true,
+      "bitcoin_attestation": true
+    }
+  },
+  "_anchoring_caveat": "This is the anchoring state WHEN THIS RECORD WAS WRITTEN, which is not necessarily the state when either arm was RUN -- and the two differed for the first real pair: the second-machine arm was run while v4's proof was still calendar-only, and v4 anchored afterwards. The artifacts cannot settle that ordering by themselves, because run.json carries no timestamp: it records wall-clock DURATION but not when the run happened. That is a gap in the pipeline's record, stated here rather than papered over, and it cannot be closed retroactively for this pair.",
+  "_limits": "An ISOLATING verdict isolates the CPU only among the variables listed in v4 \u00a72. Microcode, BIOS settings, kernel scheduling and CPU features beyond the recorded SIMD baseline are neither held constant nor observed."
+}

@@ -38,6 +38,13 @@ CONTENTS = (
     ("PRE-REGISTRATION-v4-CONFIRMATORY.md",
      "AND MEASUREMENT 4'S ADMISSIBILITY -- v3 governs everything else"),
     ("PRE-REGISTRATION-v4-CONFIRMATORY.md.ots", "its proof"),
+    ("PRE-REGISTRATION-v5-CONFIRMATORY.md",
+     "AND THE DIGEST COMMITMENTS, which replace v3 §2"),
+    ("PRE-REGISTRATION-v5-CONFIRMATORY.md.ots", "its proof"),
+    ("check_commitments.py",
+     "the control that enforces them -- v3 §2 was prose and was broken the next day"),
+    ("corpus/verify_shipped.py",
+     "check the shipped corpus against the manifest, using only what the package contains"),
     ("PRE-REGISTRATION-v2-CONFIRMATORY.md", "version 2, superseded, retained as record"),
     ("PRE-REGISTRATION-v2-CONFIRMATORY.md.ots", "its proof"),
     ("ENVIRONMENT-LOCK.json",
@@ -90,6 +97,18 @@ def main():
     # is now two files and a refusal that checks only one of them is the same defect again.
     GOVERNING = "PRE-REGISTRATION-v3-CONFIRMATORY.md"
     GOVERNING_M4 = "PRE-REGISTRATION-v4-CONFIRMATORY.md"
+    # ⛔ v3 §2 SAID A CHANGED DIGEST VOIDS THE PRE-REGISTRATION, AND NOTHING CHECKED IT. train.py
+    # was edited the next day and every tool here reported success for a day, SHA256SUMS included
+    # -- a checksum regenerated from the bytes it polices cannot notice a substitution. The
+    # commitment is verified before a package is built, not described in a document.
+    _cc = subprocess.run([sys.executable, "-X", "utf8", "check_commitments.py"], cwd=str(HERE),
+                         capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if _cc.returncode != 0:
+        print((_cc.stdout or "") + (_cc.stderr or ""))
+        raise SystemExit(D + " a file the protocol commits by digest has changed. The "
+                         "pre-registration is void until it is restored, or until a new version "
+                         "re-commits it with the change justified. Not a build problem to route "
+                         "around.")
     if not (HERE / GOVERNING_M4).exists():
         raise SystemExit(D + " %s is missing. It carries measurement 4's admissibility "
                          "conditions, committed before any second-machine run exists. A package "

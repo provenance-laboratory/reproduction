@@ -49,6 +49,8 @@ BITCOIN_TAG = bytes([0x05, 0x88, 0x96, 0x0d, 0x73, 0xd7, 0x19, 0x01])
 # ⛔ EXPLICIT, because "whatever is on disk" is how a missing governing document passed.
 # Adding a protocol version means adding it here; that is the point.
 REQUIRED = [
+    ("PRE-REGISTRATION-v5-CONFIRMATORY.md",
+     "the digest commitments, re-committed after v3 §2 went unenforced for a day"),
     ("PRE-REGISTRATION-v4-CONFIRMATORY.md",
      "measurement 4's admissibility, committed before any second-machine run exists"),
     ("PRE-REGISTRATION-v3-CONFIRMATORY.md", "the protocol the study runs under"),

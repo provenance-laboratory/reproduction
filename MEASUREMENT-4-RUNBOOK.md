@@ -6,6 +6,12 @@ is *our* comparison of two machines we control. It is **not** the independent re
 described as independent, and this document deliberately contains **no trained-artifact digest**,
 because publishing one before a public commitment exists would void the pre-registration (v3 §6).
 
+⛔ **Before anything else, on this machine: `python check_commitments.py`.** It verifies that the
+files the protocol pins by digest still hash to those digests. That check did not exist until
+2026-08-31, and when it was written it immediately found that `train.py` had been edited on
+2026-08-30 and the pre-registration had been void ever since, with every other tool reporting
+success throughout. Do not take a measurement under a pipeline whose commitment is stale.
+
 ⚠️ **Read `PRE-REGISTRATION-v4-CONFIRMATORY.md` first.** It sets five conditions that decide
 whether the result can be called a vendor comparison at all. A pair failing any of them is still
 reported — labelled `CONFOUNDED`, naming every variable that moved. So a mismatch costs you the
@@ -45,6 +51,14 @@ effective thread count are now *observed*, which v4 condition 5 requires of **bo
 | **numpy 2.5.1**, exactly | must match exactly | 3 |
 | installed from **PyPI wheels** | the wheel carries the same bundled OpenBLAS, so the build-configuration line matches by construction | 4 |
 | **threadpoolctl** | without it the runtime architecture and effective thread count are unobserved | 5 |
+| **pyyaml** | without it numpy's config output takes a format the parser cannot read, so the OpenBLAS build line is **not recorded at all** | 4 |
+
+⛔ **`pyyaml` was missing from the first version of this table, and the omission cost a run.** Arm A
+happened to have it installed, so the build line was recorded there and nowhere else, and the first
+real pair came back CONFOUNDED on condition 4 for a reason that had nothing to do with either
+machine's BLAS. The table was written by hand from what seemed relevant instead of derived from
+what arm A actually depends on — and a hand-kept list is wrong the first time it is used.
+`measure_hardware.py` now names this case apart from a real difference and prints the remedy.
 
 ⚠️ **If the AMD machine cannot run Windows 11, run it anyway.** The comparison will be labelled
 `CONFOUNDED` on condition 1 and reported as such. That is a worse result, not a wasted one — and
@@ -86,10 +100,10 @@ cd package
 python -c "import hashlib,pathlib,sys;bad=[l.split()[1] for l in pathlib.Path('SHA256SUMS').read_text().splitlines() if l.strip() and hashlib.sha256(pathlib.Path(l.split()[1]).read_bytes()).hexdigest()!=l.split()[0]];print('MISMATCH:',bad) if bad else print('all files match SHA256SUMS')"
 ```
 
-Then confirm the corpus itself re-derives to the committed Merkle root:
+Then confirm the shipped corpus matches the anchored manifest, file by file and by Merkle root:
 
 ```bash
-python corpus/build_corpus.py --verify
+python corpus/verify_shipped.py
 ```
 
 If either check fails, stop. The two arms would not share an input, and `measure_hardware.py`
