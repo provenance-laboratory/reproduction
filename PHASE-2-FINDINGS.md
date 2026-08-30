@@ -114,23 +114,26 @@ say consistent-with, and `reproduce_findings.py` prints the same qualification.
 `round(x, 8)` — a floor of 5 × 10⁻⁹, the same order as the median parameter difference. The loss
 curve could never see what it was asked about.
 
-**Magnitude on the v3 pipeline, threads=1 against threads=16, over 804,096 parameters:**
+**Magnitude on the v3 pipeline, threads=1 against threads=16, over 804096 parameters:**
 
 ```
-relative L2            2.708e-05
-max |difference|       1.802e-04
-parameters differing   97.6%
+relative L2            2.7084e-05
+max |difference|       1.8023e-04
+parameters differing   97.55%
 final loss             3.25522614 vs 3.25522804   -- agree to 5 decimals, NOT identical
+sign-test p (m1)       4.9e-04
 ```
 
-⛔ **An earlier revision said the final losses were identical to eight decimals. They are not**, and
-both round-2 reviewers checked the shipped numbers and found it false. It was the sentence written
-to *replace* a claim withdrawn in round 1 — a correction that introduced a new overstatement, which
-is the failure mode this paper exists to measure.
+⛔ **An earlier revision said the final losses were identical to eight decimals. They are not.** It
+was the sentence written to *replace* a claim withdrawn in round 1 — a correction that introduced a
+new overstatement.
 
 ⚠️ **"Numerically indistinguishable" stays withdrawn.** No behavioural equivalence was tested and
-capability testing is out of scope. The defensible statement is *close under the reported parameter
-metrics, with final losses agreeing to five decimals*.
+capability testing is out of scope.
+
+⚠️ **A number this study declines to headline.** The maximum *relative* difference over all
+parameters is meaningless — entirely parameters near zero. Reporting it would be a true number
+selected to mislead.
 
 ## 5. Measurement 3 — internal repeatability, and not more
 
@@ -142,17 +145,32 @@ and was "now measured". That was a violation of the pre-registration by this doc
 withdrawn. Three of our own runs agreeing is **internal repeatability**. It becomes evidence about
 bit-identity when someone unconnected to this project reproduces it, and not before.
 
-## 6. Measurement 7 — divergence is NOT monotone in thread count
+## 6. Measurement 7 — not monotone, and not separable from the seed
 
 ```
-threads     2       4       8       16
-differing   58.0%   56.0%   86.2%   97.6%
+threads     2       4       8       16     
+differing   58.0%   56.0%   86.2%   97.6%  
 ```
 
-⇒ **Not monotone**: the fraction falls between 2 and 4 threads before rising. The overall trend is
-upward on the v3 pipeline where the earlier one showed a flat 97% band with a dip at the end, so
-the shape of this relationship is not stable across pipeline revisions either. Whatever governs the
-magnitude, "more threads, more disagreement" is not it.
+⇒ **Not monotone.** But that shape is a claim about **one trajectory**, and it should not be read
+as more:
+
+```
+spread across thread counts (this seed)   41.5 percentage points
+spread across five seeds, threads 1 vs 16 25.4 percentage points
+relative L2 across those seeds            varies 6.0x
+```
+
+⛔ **The seed spread is 61% of the thread spread**, so m7's shape at one seed cannot be
+distinguished from trajectory noise. A reviewer found this by varying only the seed and observing
+that a one-index change to the sampling range had already moved m7 from `97.3/97.6/97.5/96.8` to
+its present values between two pipeline revisions.
+
+⚠️ **This project applied "a single timing is one sample from a distribution nobody looked at" to
+measurement 1 three times, and never once to the divergence measurements.** The doctrine was
+available the whole time and was not carried across. `measure_divergence.py` now reports both
+spreads, and m7 is stated as *not monotone at this seed, with the seed accounting for most of the
+range* rather than as a property of thread count.
 
 ## 7. ⛔ The headline claim, narrowed by a laptop
 

@@ -134,9 +134,15 @@ now applies at the commitment step as well as at the window's close.
 ⚠️ **Status: the pilot is complete; nothing is published; no reproducer has been approached; no
 confirmatory run exists.**
 
-⭐ **This document's proof now carries a Bitcoin attestation, and so does the corpus manifest's**
--- verify with `python anchor_status.py`, which reads the proof bytes rather than a log line.
-The precondition in §3 step 1 is therefore met, and step 2 may proceed when the author chooses
-to open the window.
+⛔ **This document deliberately makes no claim about its own anchoring, because the previous
+version did and that is what destroyed it.** v2 and an earlier v3 were each stamped and then edited
+to say *"now anchored"* — and editing a document after stamping means its proof no longer commits
+to it. The sentence asserting the anchoring was the change that falsified the anchoring. Both
+proofs still sat beside their documents, still carried the Bitcoin tag, and bound bytes that no
+longer existed; the control meant to notice checked only for the tag, so it reported success.
+
+⇒ **Anchoring status is not stated in prose anywhere.** `anchor_status.py` recomputes each
+document's digest, requires the adjacent proof to contain it, and fails closed on a missing
+document, a missing proof, or an empty set. Run it. Its output is the claim.
 
 **NOT a product, and not a recommendation.**

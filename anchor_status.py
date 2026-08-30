@@ -1,22 +1,41 @@
-"""What each OpenTimestamps proof actually attests — parsed, never inferred from prose.
+"""Does each REQUIRED proof exist, bind the document beside it, and carry a Bitcoin attestation?
 
-⛔ THREE DOCUMENTS SAID "ANCHORED" WHILE NOTHING WAS. Both round-2 reviewers checked and both
-reported the same thing: the corpus proof and the v2 pre-registration proof carry calendar
-attestations only, and the sole Bitcoin attestations in this study belong to the SUPERSEDED corpus
-proof and the RETIRED v1 pre-registration. **The pilot has the stronger guarantee than the
-protocol that replaced it**, which is exactly backwards and was stated nowhere.
+⛔ THE PREVIOUS VERSION OF THIS FILE WAS A DEAD CONTROL, AND IT IS THE REASON EVERYTHING ELSE GOT
+THROUGH. It globbed whatever `*.ots` files happened to exist and searched each for an eight-byte
+tag. A round-3 reviewer demonstrated three ways to pass it:
 
-⚠️ A PENDING PROOF IS NOT A WEAK ANCHOR, IT IS NOT AN ANCHOR. A calendar attestation is a promise
-by a server that it will include the digest in a future Merkle tree. Until a Bitcoin block confirms
-it, the only thing standing behind the timestamp is the calendar operator -- which is precisely the
-kind of trusted third party the timestamp exists to remove.
+    35 bytes of junk containing the tag        -> ANCHORED
+    the last 16 bytes of a real proof          -> ANCHORED
+    deleting every proof in the directory      -> "every active proof carries a Bitcoin
+                                                  attestation", exit 0
 
-⇒ So the word "anchored" is reserved for a proof carrying the Bitcoin attestation tag, this script
-decides which those are by reading the bytes, and the documents say "timestamped; Bitcoin anchoring
-pending" until it says otherwise.
+⇒ **It reported success while the governing pre-registration had no proof, no presence in the
+package, and no existence in the review archive.** A control that enumerates what it finds cannot
+notice what is missing, and this one was written specifically to stop a claim about anchoring from
+drifting from the facts. It drifted further than the prose it was policing.
+
+⛔ AND THE SECOND FAILURE IT MISSED: A PROOF BINDS BYTES, NOT A FILENAME. v2 and v3 were both
+stamped and then EDITED -- v3 to say "now anchored", which is the sentence whose truth the edit
+destroyed. Their proofs still sat beside them, still contained the tag, and no longer committed to
+the documents they were named for. Checking the tag says a calendar answered; checking the digest
+says WHAT it answered about.
+
+⇒ So this now:
+
+    * takes an EXPLICIT REQUIRED LIST -- absence is a failure, not an empty success
+    * recomputes each document's sha256 and requires the proof to contain it
+    * requires the Bitcoin attestation tag
+    * refuses on an empty set, a malformed proof, or an unlisted extra
+
+⚠️ WHAT IT STILL DOES NOT DO, STATED SO NOBODY READS MORE INTO A PASS. It does not walk the
+attestation path to a block header, and tag presence is not verification. Confirming that a proof
+actually commits to a Bitcoin block requires an OpenTimestamps verifier against a node or a
+calendar, which is a network operation and belongs in the publication checklist rather than here.
+A pass means *this proof is over these bytes and claims a Bitcoin attestation* -- no more.
 
     python anchor_status.py
 """
+import hashlib
 import io
 import pathlib
 import sys
@@ -25,49 +44,88 @@ NL = chr(10)
 D = chr(0x26D4)
 W = chr(0x26A0)
 HERE = pathlib.Path(__file__).resolve().parent
-# The OpenTimestamps Bitcoin attestation tag. Presence of these eight bytes is the difference
-# between "a calendar server said so" and "a block confirms it".
 BITCOIN_TAG = bytes([0x05, 0x88, 0x96, 0x0d, 0x73, 0xd7, 0x19, 0x01])
 
+# ⛔ EXPLICIT, because "whatever is on disk" is how a missing governing document passed.
+# Adding a protocol version means adding it here; that is the point.
+REQUIRED = [
+    ("PRE-REGISTRATION-v3-CONFIRMATORY.md", "the protocol the study runs under"),
+    ("corpus/MANIFEST.json", "the corpus the model is trained on"),
+    ("PRE-REGISTRATION.md", "version 1, retained as the pilot protocol"),
+    ("PRE-REGISTRATION-v2-CONFIRMATORY.md", "version 2, retained as part of the record"),
+]
+# Proofs that are deliberately historical: they bind bytes that have been superseded, and their
+# failure to bind anything current is the fact they exist to record.
+SUPERSEDED_SUFFIXES = (".superseded-814acd24", ".superseded-metadata-only")
 
-def status(p):
-    b = p.read_bytes()
-    return ("ANCHORED" if BITCOIN_TAG in b else "pending"), len(b)
+
+def check(rel):
+    doc = HERE / rel
+    proof = HERE / (rel + ".ots")
+    if not doc.exists():
+        return "DOCUMENT MISSING", 0
+    if not proof.exists():
+        return "NO PROOF", 0
+    blob = proof.read_bytes()
+    if len(blob) < 32:
+        return "PROOF TOO SHORT TO BE ONE", len(blob)
+    digest = hashlib.sha256(doc.read_bytes()).digest()
+    if digest not in blob:
+        return "PROOF DOES NOT BIND THIS DOCUMENT", len(blob)
+    if BITCOIN_TAG not in blob:
+        return "pending (calendar only)", len(blob)
+    return "ANCHORED", len(blob)
 
 
 def main():
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-    proofs = sorted(f for f in HERE.rglob("*.ots*")
-                    if "package" not in f.parts and "review" not in f.parts)
     print("=" * 78)
-    print("  OPENTIMESTAMPS STATUS — read from the proof bytes")
+    print("  OPENTIMESTAMPS — presence, binding, and attestation, over a REQUIRED list")
     print("=" * 78)
     print()
-    active_pending = []
-    for f in proofs:
-        st, n = status(f)
-        superseded = "superseded" in f.name
-        tag = "  (superseded)" if superseded else ""
-        print("  %-9s %6d B  %s%s" % (st, n, f.relative_to(HERE), tag))
-        if st != "ANCHORED" and not superseded:
-            active_pending.append(f.relative_to(HERE))
+
+    bad = []
+    for rel, why in REQUIRED:
+        st, n = check(rel)
+        ok = st == "ANCHORED"
+        print("  %-34s %6d B  %-46s %s" % (st, n, rel, why))
+        if not ok:
+            bad.append((rel, st))
+
+    extras = sorted(p for p in HERE.rglob("*.ots")
+                    if "package" not in p.parts and "review" not in p.parts
+                    and str(p.relative_to(HERE)).replace(chr(92), "/")
+                    not in {r + ".ots" for r, _ in REQUIRED}
+                    and not any(str(p).endswith(s) for s in SUPERSEDED_SUFFIXES))
     print()
-    if active_pending:
-        print("  " + D + " %d ACTIVE proof(s) are NOT anchored:" % len(active_pending))
-        for f in active_pending:
-            print("      %s" % f)
+    for p in sorted(HERE.rglob("*.ots*")):
+        if any(str(p).endswith(s) for s in SUPERSEDED_SUFFIXES):
+            print("  (superseded, binds historical bytes)  %s" % p.relative_to(HERE))
+    if extras:
         print()
-        print("  Until these carry a Bitcoin attestation, no document may say the corpus or the")
-        print("  protocol is ANCHORED. The honest phrase is 'timestamped; Bitcoin anchoring")
-        print("  pending'. Run `python ../../_ots_upgrade.py` once a block has confirmed them.")
+        print("  " + W + " %d proof(s) present but not in the required list:" % len(extras))
+        for p in extras:
+            print("      %s" % p.relative_to(HERE))
+        print("  An unlisted proof is not a failure, but it is not evidence for anything either.")
+
+    print()
+    if bad:
+        print("  " + D + " %d REQUIRED proof(s) do not pass:" % len(bad))
+        for rel, st in bad:
+            print("      %-46s %s" % (rel, st))
         print()
-        print("  " + W + " AND DO NOT PUBLISH BEFORE THEY UPGRADE. The proofs are covered by the")
-        print("  package's SHA256SUMS, so upgrading one after publication changes a file every")
-        print("  reproducer has already checksummed -- `sha256sum -c` then fails for all of them,")
-        print("  on a file that grew for the right reason. Publishing after anchoring costs a")
-        print("  few hours and removes the choice between a broken checksum and a weak proof.")
+        print("  Nothing may be published, and no document may say ANCHORED, until this is empty.")
+        print("  " + W + " 'PROOF DOES NOT BIND THIS DOCUMENT' usually means the document was")
+        print("  EDITED AFTER STAMPING. Stamp last. If the text must change, retire the old proof")
+        print("  under a name that says what it binds and create a new one.")
         return 1
-    print("  every active proof carries a Bitcoin attestation")
+
+    print("  every required document exists, its proof binds its current bytes, and each proof")
+    print("  carries a Bitcoin attestation tag")
+    print()
+    print("  " + W + " Tag presence is NOT full verification. Confirming the attestation path to a")
+    print("  block requires an OpenTimestamps verifier against a node or calendar -- a network")
+    print("  step, listed in PUBLICATION-CHECKLIST.md and deliberately not done here.")
     print("=" * 78)
     return 0
 

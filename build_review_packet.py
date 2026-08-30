@@ -17,13 +17,17 @@ import sys
 import zipfile
 
 NL = chr(10)
+D = chr(0x26D4)
+W = chr(0x26A0)
 HERE = pathlib.Path(__file__).resolve().parent
 OUT = HERE / "review"
 
 SEND = (
-    ("PRE-REGISTRATION-v2-CONFIRMATORY.md",
-     "the confirmatory protocol -- READ THIS FIRST"),
+    ("PRE-REGISTRATION-v3-CONFIRMATORY.md", "THE CONFIRMATORY PROTOCOL -- READ THIS FIRST"),
+    ("PRE-REGISTRATION-v3-CONFIRMATORY.md.ots", "its proof"),
+    ("PRE-REGISTRATION-v2-CONFIRMATORY.md", "version 2, superseded, retained as record"),
     ("PRE-REGISTRATION-v2-CONFIRMATORY.md.ots", "its proof"),
+    ("anchor_status.py", "the proof check -- run it; a pass is narrower than it sounds"),
     ("ENVIRONMENT-LOCK.json", "interpreter and library, recorded not locked"),
     ("MEASUREMENT-2.json", "storage overhead, from measure_storage.py"),
     ("measure_storage.py", "measurement 2's derivation, with its boundary declared"),
@@ -190,11 +194,23 @@ def main():
     A("      invalidating condition without an independent re-run. The previous revision of")
     A("      the findings said measurement 3 -HOLDS-; that was a violation and is withdrawn.")
     A("m4  bit-identity, diff hw  NOT MEASURED -- needs configurations B, C, D")
-    A("m5  divergence             first differs at step 8; relative L2 8.0e-06;")
-    A("                           83% of 804,096 parameters differ between threads 1 and 16")
+    _md = json.loads((HERE / "MEASUREMENT-5-7.json").read_text(encoding="utf-8"))
+    _m5 = _md["m5_threads_1_vs_16"]
+    A("m5  divergence            step 0 in EVERY array (trace records step -1 as the initial")
+    A("                           state, and it is identical). relative L2 %.4e, %.2f%% of %d"
+      % (_m5["relative_l2"], _m5["percent_differing"], _m5["params_total"]))
+    A("                           parameters differ between threads 1 and 16")
     A("m6  engineering hours     NOT MEASURABLE under this design, and reported as such.")
     A("                           The estimand never existed: nothing was made deterministic")
-    A("m7  monotonicity          NOT monotone: 97.3, 97.6, 97.5, 96.8 per cent differing")
+    A("m7  monotonicity         %s: %s per cent differing"
+      % ("monotone" if _md["m7_monotone_in_thread_count"] else "NOT monotone",
+         ", ".join("%.1f" % v for v in _md["m7_percent_differing_by_thread_count"].values())))
+    A("      " + chr(0x26D4) + " AND NOT SEPARABLE FROM THE SEED. Varying only the seed moves the")
+    A("      differing fraction by %.1f percentage points and the relative L2 by %.1fx, against a"
+      % (_md["seed_spread_percent_points"], _md["seed_relative_l2_ratio"]))
+    A("      thread-count spread of %.1f points. m7's SHAPE is a claim about one trajectory."
+      % (max(_md["m7_percent_differing_by_thread_count"].values())
+         - min(_md["m7_percent_differing_by_thread_count"].values())))
     A("```")
     A("")
     A("## The thread sweep, read from the runs")
@@ -234,7 +250,8 @@ def main():
       "reduction order and capability is explicitly out of scope — but a reviewer may reasonably "
       "argue the finding does not transfer to attention kernels or to CUDA, where atomics add a "
       "second source of the same phenomenon.")
-    A("- **Measurement 6 is a memory.** Everything else is a digest or a timing a stranger can "
+    A("- **Measurement 6 is reported NOT MEASURABLE.** Everything else is a digest or a "
+      "timing a stranger can "
       "re-run. That page cannot be checked and says so.")
     A("- **The independent reproduction does not exist**, and by section 2b we may not produce "
       "one. If nobody answers the call, section 2c pre-registered that silence as a result — a "
@@ -253,19 +270,53 @@ def main():
       % (round((m1["ratio_of_medians"] - 1) * 100), m1["threads_b"]))
     A("")
 
-    # ⛔ THE CROSS-CHECK. Every figure this packet prints must appear in the findings
-    # document it claims to summarise. The round-1 packet printed four numbers that had been
-    # withdrawn there, and nothing compared the two files -- so the packet could contradict the
-    # study and still be produced by a script advertising that it reads the measurement files.
+    # ⛔ THE CROSS-CHECK WAS DEAD TWICE OVER, AND IT IS WHY THE STALE PACKET SHIPPED.
+    #
+    #   1. its pattern contained literal BACKSPACE bytes (0x08) where word boundaries were
+    #      intended -- a `\b` written into a non-raw string and then saved. It matched nothing,
+    #      so the "absent figures" set was always empty and the guard never fired.
+    #   2. the name `D` in its refusal was never assigned in this file, so even had it fired it
+    #      would have raised NameError instead of reporting -- the same defect fixed in
+    #      reproduce_findings.py one round earlier and reintroduced here.
+    #
+    # A reviewer ran the guard as written over the shipped packet and got the empty set, then ran
+    # an ordinary pattern and got {'step 0', 'step 8', '8.0e-06', '4.9e-04'}. The guard's job was
+    # to prevent exactly the shipment it permitted.
+    #
+    # ⚠ A REGEX OVER PROSE IS A PROXY, so this does two things instead of one: it checks the
+    # figures, AND it proves at build time that it is capable of failing.
     import re as _re
     _txt = NL.join(L)
-    _nums = set(_re.findall(r"\d+\.\d+e-\d+|\d{1,3}\.\d\s?%|step \d+", _txt))
-    _absent = sorted(n for n in _nums if n not in _find and n.replace(" ", "") not in
-                     _find.replace(" ", ""))
+
+    def _figures(s):
+        """Numbers that read as measurements: exponentials, percentages, and step counts."""
+        pats = (r"(?<![\w.])\d+\.\d+e[-+]\d+(?![\w.])",
+                r"(?<![\w.])\d{1,3}\.\d\s?%",
+                r"(?<![\w])step -?\d+(?![\w])")
+        out = set()
+        for p in pats:
+            out |= {m.group(0).strip() for m in _re.finditer(p, s)}
+        return out
+
+    # ⛔ THE NEGATIVE TEST. A guard nobody has watched fail is indistinguishable from a comment,
+    # and this project has now shipped four of those. Inject a figure the findings cannot contain
+    # and require the check to notice; if it does not, the guard is broken and the build stops
+    # before it can bless anything.
+    _canary = "step 99999"
+    if _canary in _find or not (_figures(_txt + " " + _canary) - _figures(_txt)):
+        raise SystemExit(D + " the packet's cross-check cannot detect an injected figure, so it "
+                         "cannot detect a stale one either. Fix the check before building.")
+
+    _absent = sorted(f for f in _figures(_txt)
+                     if f not in _find and f.replace(" ", "") not in _find.replace(" ", ""))
     if _absent:
-        raise SystemExit(D + " this packet prints figure(s) that do not appear in "
-                         "PHASE-2-FINDINGS.md: %s. A packet that can contradict the study is "
-                         "how the round-1 packet shipped withdrawn claims." % _absent)
+        raise SystemExit(
+            D + " this packet prints figure(s) that do not appear in PHASE-2-FINDINGS.md: %s."
+            % _absent + NL
+            + "  That is how the round-1 and round-2 packets shipped withdrawn claims -- +37%, "
+            + "step 8, 83% and 8.0e-06 -- while asserting every figure was measured." + NL
+            + "  Either the findings are stale or the packet is. Do not resolve it here.")
+
     (OUT / "PAPER-B-REVIEW-PACKET.md").write_text(NL.join(L) + NL, encoding="utf-8", newline=NL)
     print("  wrote review/PAPER-B-REVIEW-PACKET.md")
     print("  wrote review/paper-b-review.zip  (%.2f MB, sha256 %s)"

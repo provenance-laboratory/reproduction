@@ -58,6 +58,27 @@ def main():
                 bad.append("%s MISSING" % rel)
             elif hashlib.sha256(f.read_bytes()).hexdigest() != want:
                 bad.append("%s DIGEST MISMATCH" % rel)
+        # ⛔ AN UNLISTED FILE PASSED. A reviewer dropped a forged EXPECTED.json into the
+        # extraction: every listed checksum still matched, so this reported 0 problems, and then
+        # READ THE FORGERY as authoritative. SHA256SUMS says what the listed files are; it says
+        # nothing about what else is present, and a checksum manifest that only looks at its own
+        # list cannot see an addition. This is not only a tampering story -- an overlaid extraction
+        # or a stale directory produces it by accident.
+        _listed = {ln.split("  ", 1)[1] for ln in sums if "  " in ln}
+        _present = {str(f.relative_to(work)).replace(chr(92), "/")
+                    for f in work.rglob("*") if f.is_file()}
+        _extra = sorted(_present - _listed - {"SHA256SUMS"}
+                        - {f for f in _present if f.startswith("my-run/")})
+        if _extra:
+            bad += ["%s IS NOT LISTED in SHA256SUMS" % e for e in _extra[:5]]
+        # ⛔ AND EXACTLY ONE STAGE. The input package carries NO-TARGET.md and no
+        # EXPECTED.json; the target package carries EXPECTED.json and no NO-TARGET.md. Both, or
+        # neither, means the package does not know which stage of the protocol it is.
+        _has_target = "EXPECTED.json" in _present
+        _has_notarget = "NO-TARGET.md" in _present
+        if _has_target == _has_notarget:
+            bad.append("the package declares %s stage: EXPECTED.json=%s NO-TARGET.md=%s"
+                       % ("BOTH" if _has_target else "NEITHER", _has_target, _has_notarget))
         print("  SHA256SUMS   %d entries, %d problem(s)" % (len(sums), len(bad)))
         for b in bad[:5]:
             print("      " + chr(0x26D4) + " " + b)

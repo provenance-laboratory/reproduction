@@ -1,0 +1,63 @@
+{
+  "reference_seed": 20260829,
+  "m5_threads_1_vs_16": {
+    "relative_l2": 2.708403838805981e-05,
+    "max_abs_diff": 0.0001802290789783001,
+    "params_differing": 784397,
+    "params_total": 804096,
+    "percent_differing": 97.5502
+  },
+  "m7_percent_differing_by_thread_count": {
+    "2": 57.9551,
+    "4": 56.0121,
+    "8": 86.2467,
+    "16": 97.5502
+  },
+  "m7_monotone_in_thread_count": false,
+  "seed_sensitivity": {
+    "20260829": {
+      "relative_l2": 2.708403838805981e-05,
+      "max_abs_diff": 0.0001802290789783001,
+      "params_differing": 784397,
+      "params_total": 804096,
+      "percent_differing": 97.5502
+    },
+    "1": {
+      "relative_l2": 6.697401027784899e-06,
+      "max_abs_diff": 7.227621972560883e-05,
+      "params_differing": 581953,
+      "params_total": 804096,
+      "percent_differing": 72.3736
+    },
+    "2": {
+      "relative_l2": 4.523953960380223e-06,
+      "max_abs_diff": 2.5403685867786407e-05,
+      "params_differing": 580486,
+      "params_total": 804096,
+      "percent_differing": 72.1911
+    },
+    "3": {
+      "relative_l2": 2.704370976168452e-05,
+      "max_abs_diff": 0.00015386415179818869,
+      "params_differing": 783230,
+      "params_total": 804096,
+      "percent_differing": 97.405
+    },
+    "4": {
+      "relative_l2": 1.0091716060803324e-05,
+      "max_abs_diff": 7.946696132421494e-05,
+      "params_differing": 705859,
+      "params_total": 804096,
+      "percent_differing": 87.7829
+    }
+  },
+  "reference_digests": {
+    "thr-1": "d0895e8578218af57b02362b82ad35b65800f9ff3227871efa6a69c99bd065aa",
+    "thr-2": "8e07ffa7f78a3d76fe2961dab05d399f1b3b74a13e44ed1ca1a1a32aa57c8716",
+    "thr-4": "c3d79025c91624e4ed0a0a5d5015de56515b6de17fac635d6f37e5f9dabdd692",
+    "thr-8": "0a34f6cd3d91e63f3daedcc82c4ca19834a29040f27130d04cd8896bb41b5cca",
+    "thr-16": "d865d27438239c6fb8cc909bee92bccc56b3e3331f90460c58681fcf46ab4981"
+  },
+  "seed_spread_percent_points": 25.3591,
+  "seed_relative_l2_ratio": 5.9868
+}

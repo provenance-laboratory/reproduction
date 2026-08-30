@@ -5,12 +5,12 @@
 ## ⇒ SEND THESE TWO
 
 ```
-paper-b-review.zip     25 files
-  sha256 e83687fe94f0239b91af43b8034f0b80952f9cf210e1e2b2b0947ca9c7b1ca18
+paper-b-review.zip     28 files
+  sha256 28ceb057047c507a48002d9609ee6e1b0c80f20db4244e4def31f875118ffa00
 this file
 ```
 
-Repository `provenance-laboratory/reproduction`, commit `1bd6873`.
+Repository `provenance-laboratory/reproduction`, commit `efc3f07`  ⚠️ TREE DIRTY.
 
 ---
 
@@ -60,11 +60,15 @@ m3  REPEATABILITY, same hw one digest across 12 runs at threads=1
       invalidating condition without an independent re-run. The previous revision of
       the findings said measurement 3 -HOLDS-; that was a violation and is withdrawn.
 m4  bit-identity, diff hw  NOT MEASURED -- needs configurations B, C, D
-m5  divergence             first differs at step 8; relative L2 8.0e-06;
-                           83% of 804,096 parameters differ between threads 1 and 16
+m5  divergence            step 0 in EVERY array (trace records step -1 as the initial
+                           state, and it is identical). relative L2 2.7084e-05, 97.55% of 804096
+                           parameters differ between threads 1 and 16
 m6  engineering hours     NOT MEASURABLE under this design, and reported as such.
                            The estimand never existed: nothing was made deterministic
-m7  monotonicity          NOT monotone: 97.3, 97.6, 97.5, 96.8 per cent differing
+m7  monotonicity         NOT monotone: 58.0, 56.0, 86.2, 97.6 per cent differing
+      ⛔ AND NOT SEPARABLE FROM THE SEED. Varying only the seed moves the
+      differing fraction by 25.4 percentage points and the relative L2 by 6.0x, against a
+      thread-count spread of 41.5 points. m7's SHAPE is a claim about one trajectory.
 ```
 
 ## The thread sweep, read from the runs
@@ -93,7 +97,7 @@ published as  package/ -- 30 files; OUR WEIGHTS ARE NOT IN IT, only the digest
 - **n = 1 machine.** Configuration A only. Measurement 4 is the paper's second half and is not done.
 - **Measurement 1 was +37% in the previous revision and is +30% now.** The design was at fault, not the machine: fixed order, an "unconstrained" arm that was not a condition, and arrays sorted separately before storage. Ask whether the repaired design has its own faults.
 - **The model is an MLP, not a transformer.** Defensible — the mechanism under test is BLAS reduction order and capability is explicitly out of scope — but a reviewer may reasonably argue the finding does not transfer to attention kernels or to CUDA, where atomics add a second source of the same phenomenon.
-- **Measurement 6 is a memory.** Everything else is a digest or a timing a stranger can re-run. That page cannot be checked and says so.
+- **Measurement 6 is reported NOT MEASURABLE.** Everything else is a digest or a timing a stranger can re-run. That page cannot be checked and says so.
 - **The independent reproduction does not exist**, and by section 2b we may not produce one. If nobody answers the call, section 2c pre-registered that silence as a result — a reviewer should decide whether that is a finding or a rationalisation, because it was written before the window opened precisely so that question could be asked.
 
 ## ⛔ What the reviewer should NOT accept without pushing

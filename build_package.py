@@ -18,9 +18,12 @@ import io
 import json
 import pathlib
 import shutil
+import subprocess
 import sys
 
 NL = chr(10)
+D = chr(0x26D4)
+W = chr(0x26A0)
 HERE = pathlib.Path(__file__).resolve().parent
 OUT = HERE / "package"
 
@@ -29,8 +32,10 @@ OUT = HERE / "package"
 CONTENTS = (
     ("train.py", "the pipeline. One file, numpy only, no network"),
     ("REPRODUCTION-CALL.md", "what we are asking for and the two rules we bind ourselves with"),
-    ("PRE-REGISTRATION-v2-CONFIRMATORY.md",
-     "the protocol this study runs under. Version 1 is retained as the PILOT"),
+    ("PRE-REGISTRATION-v3-CONFIRMATORY.md",
+     "THE PROTOCOL THIS STUDY RUNS UNDER"),
+    ("PRE-REGISTRATION-v3-CONFIRMATORY.md.ots", "its proof"),
+    ("PRE-REGISTRATION-v2-CONFIRMATORY.md", "version 2, superseded, retained as record"),
     ("PRE-REGISTRATION-v2-CONFIRMATORY.md.ots", "its proof"),
     ("ENVIRONMENT-LOCK.json",
      "the interpreter and library recorded -- NOT a lock; see the file"),
@@ -68,6 +73,28 @@ def main():
         got = hashlib.sha256(p.read_bytes()).hexdigest()
         if got != e["clean_sha256"]:
             raise SystemExit(chr(0x26D4) + " %s does not match the manifest" % e["file"])
+
+    # ⛔ THE GOVERNING PROTOCOL WAS NOT IN THE PACKAGE. v3 was written, stamped and
+    # announced as in force, and never added to CONTENTS -- so the published package shipped v1
+    # and a v2 whose own text says "superseded by v3", and NO-TARGET.md cited a §3 no reproducer
+    # could read. Both round-3 reviewers found it within minutes, from the file listing.
+    #
+    # A list of files to ship cannot notice the one file that makes the rest interpretable. So the
+    # governing version is named ONCE, here, and its absence stops the build.
+    GOVERNING = "PRE-REGISTRATION-v3-CONFIRMATORY.md"
+    if not (HERE / GOVERNING).exists():
+        raise SystemExit(D + " the governing protocol %s does not exist. A package without it is "
+                         "a package whose rules cannot be read." % GOVERNING)
+    if GOVERNING not in [c[0] for c in CONTENTS]:
+        raise SystemExit(D + " %s exists and is NOT in CONTENTS. That is exactly the defect two "
+                         "reviewers found: the protocol governs a package it is not inside."
+                         % GOVERNING)
+    _st = subprocess.run([sys.executable, "-X", "utf8", "anchor_status.py"], cwd=str(HERE),
+                         capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if _st.returncode != 0:
+        print(D + " anchor_status.py FAILS, so the proofs do not support publication:")
+        print((_st.stdout or "")[-700:])
+        raise SystemExit("  Refusing to build a package whose protocol proofs do not check out.")
 
     if OUT.exists():
         shutil.rmtree(OUT)
