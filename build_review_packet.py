@@ -108,13 +108,13 @@ def main():
     A("> ⭐ **The headline arrived from a direction the pre-registration did not predict.** "
       "Section 4 expected bit-identity to fail ACROSS hardware, for principled reasons. It fails "
       "**within one machine, on thread count alone** — five thread counts, five distinct models, "
-      "with 83%% of parameters differing between 1 and 16. The conclusion the paper was written to "
+      "with 83% of parameters differing between 1 and 16. The conclusion the paper was written to "
       "be publishable under therefore holds *a fortiori*, and with a far smaller apparatus than "
       "the argument needed.")
     A(">")
     A("> ⚠️ **And the two models are numerically indistinguishable.** Relative L2 8e-06, final "
       "loss agreeing to seven significant figures. Any tolerance-based provenance claim passes; "
-      "the bit-identity claim fails on 83%% of the parameters. **That gap is the paper.**")
+      "the bit-identity claim fails on 83% of the parameters. **That gap is the paper.**")
     A(">")
     A("> ⛔ **Measurement 1 took three attempts and the first two are reported, not replaced.** "
       "The first was contaminated by a build running in another window. The guard written to "
@@ -142,9 +142,9 @@ def main():
     A("## What is measured, and by what")
     A("")
     A("```")
-    A("m1  cost of determinism   +%.1f%%   %d interleaved reps, ranges %s"
-      % (m1["determinism_overhead_percent"], m1["reps"],
-         "OVERLAP" if m1["ranges_overlap"] else "do not overlap"))
+    A("m1  cost of determinism   about +%d%% (%.2f%%)   %d interleaved reps, ranges %s"
+      % (round(m1["determinism_overhead_percent"]), m1["determinism_overhead_percent"],
+         m1["reps"], "OVERLAP" if m1["ranges_overlap"] else "do not overlap"))
     A("      pinned  median %.2f s   min %.2f   max %.2f"
       % (m1["median"]["pinned"], m1["loop_seconds"]["pinned"][0],
          m1["loop_seconds"]["pinned"][-1]))
@@ -166,7 +166,7 @@ def main():
     A("      Three of OUR OWN runs agreeing is an internal phase record, nothing more.")
     A("m4  bit-identity, diff hw  NOT MEASURED -- needs configurations B, C, D")
     A("m5  divergence             first differs at step 8; relative L2 8.0e-06;")
-    A("                           83%% of 804,096 parameters differ between threads 1 and 16")
+    A("                           83% of 804,096 parameters differ between threads 1 and 16")
     A("m6  engineering hours      self-reported; flagged as the weakest evidence in the study")
     A("```")
     A("")
@@ -219,8 +219,9 @@ def main():
       "completeness;")
     A("- that the unconstrained runs agreeing three times means unconstrained training is "
       "reproducible — they agreed because nothing was contending;")
-    A("- that +%.1f%% is *the* cost of determinism rather than the cost on one configuration, on "
-      "one pipeline, at one size." % m1["determinism_overhead_percent"])
+    A("- that about +%d%% is *the* cost of determinism rather than the cost on one "
+      "configuration, on one pipeline, at one size."
+      % round(m1["determinism_overhead_percent"]))
     A("")
 
     (OUT / "PAPER-B-REVIEW-PACKET.md").write_text(NL.join(L) + NL, encoding="utf-8", newline=NL)

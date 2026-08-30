@@ -125,7 +125,7 @@ headline number was wrong and the tool said so in the same breath — because it
 whether the two distributions separate rather than to report a ratio. **A ratio between two
 distributions nobody characterised is the same error as a single timing, one level up.**
 
-## 6. Measurement 1 — the cost of determinism: **+37.0%**
+## 6. Measurement 1 — the cost of determinism: **about +37%**
 
 Eleven interleaved repetitions, the machine verified quiet **between every repetition**:
 
@@ -134,13 +134,21 @@ Eleven interleaved repetitions, the machine verified quiet **between every repet
 threads pinned to 1      6.59 s     5.87 s    9.52 s
 threads unconstrained    4.80 s     4.66 s    5.75 s
 
-determinism costs +37.0% of wall-clock on configuration A
+determinism costs 37.05% of wall-clock on configuration A
 ```
 
 **The ranges do not overlap, so the separation is resolved at 11 repetitions** — and only just:
 the slowest unconstrained run (5.75 s) is 0.12 s faster than the fastest pinned one (5.87 s).
 ⚠️ **That margin is thin enough to report as thin.** A twelfth repetition landing badly would close
-it, and the honest reading is *the cost is real and is roughly a third*, not *the cost is 37.1%*.
+it, and the honest reading is *the cost is real and is roughly a third*, not *the cost is
+37.05%*.
+
+⛔ **One decimal place of that figure was already inconsistent across two artifacts.** The
+measurement tool printed `+37.1%` from the live computation while the review packet printed
+`+37.0%` from a value the same tool had rounded to two places before storing it. One measurement,
+two numbers, neither wrong. The stored value is now unrounded and both consumers round it once, at
+the point of display — but the deeper point is that **at a 0.12 s margin the first decimal was
+never meaningful**, and printing it invited exactly this.
 
 ⇒ **What is being bought for that third is the only thing that makes the artifact checkable at
 all.** The unconstrained runs were faster and produced a model no third party can confirm they

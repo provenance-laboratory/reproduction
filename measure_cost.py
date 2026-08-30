@@ -126,7 +126,12 @@ def main():
 
     rec = {"reps": reps, "quiet_machine_verified_between_every_rep": True, "loop_seconds": {"pinned": dl, "free": fl},
            "median": {"pinned": md, "free": mf},
-           "determinism_overhead_percent": round(over, 2),
+           # ⛔ STORED UNROUNDED. The console printed 37.1 from the live
+           # computation while the packet printed 37.0 from a value rounded
+           # to 2 places -- two artifacts, two numbers, one measurement.
+           "determinism_overhead_percent": over,
+           "determinism_overhead_reported": "roughly a third; the ranges separate by only %.2f s, so one decimal place is false precision"
+                                             % (dl[0] - fl[-1]),
            "ranges_overlap": bool(dl[0] <= fl[-1] and fl[0] <= dl[-1]),
            "distinct_digests": {k: sorted(v) for k, v in digests.items()}}
     (HERE / "MEASUREMENT-1.json").write_text(json.dumps(rec, indent=2) + NL,

@@ -33,7 +33,7 @@
     "pinned": 6.5852,
     "free": 4.8049
   },
-  "determinism_overhead_percent": 37.05,
+  "determinism_overhead_percent": 37.05184,
   "ranges_overlap": false,
   "distinct_digests": {
     "pinned": [
@@ -42,5 +42,6 @@
     "free": [
       "479add43eee1ae443fe2f4038ac322cf8e7bcad09356de8cc8dd426559a46928"
     ]
-  }
+  },
+  "determinism_overhead_reported": "roughly a third; the ranges separate by only 0.12 s, so one decimal place is false precision"
 }
