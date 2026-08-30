@@ -35,6 +35,9 @@ SEND = (
     ("measure_cost.py", "measurement 1's instrument"),
     ("build_package.py", "what a reproducer receives"),
     ("verify_package.py", "the package run as a stranger would"),
+    ("reproduce_findings.py",
+     "re-derives the headline findings from scratch -- five runs, no timing, so a"
+     " reviewer checks the RESULTS rather than the prose"),
     ("corpus/MANIFEST.json", "the corpus and its Merkle root"),
     ("corpus/MANIFEST.json.ots", "committed BEFORE the first training step, now anchored"),
 )
@@ -118,6 +121,23 @@ def main():
       "prevent that failed the same way — it checked once, found the machine quiet, and a build "
       "started a second later. A precondition checked once at the start is not a precondition held "
       "throughout.")
+    A("")
+    A("## ⭐ CHECK THE FINDINGS, NOT ONLY THE PACKAGING")
+    A("")
+    A("```")
+    A("python reproduce_findings.py     five training runs, ~2 minutes, nothing timed")
+    A("```")
+    A("")
+    A("It re-derives the thread partition, the divergence table, the relative figure this paper "
+      "declines to headline, and the step at which the loss curves first differ — from "
+      "nothing but the corpus and `train.py`. **If its numbers disagree with "
+      "`PHASE-2-FINDINGS.md`, the findings are wrong**, and that is the most valuable outcome "
+      "this review could have. Contention cannot move any of it: every number is a digest or a "
+      "difference, and nothing in that script is timed.")
+    A("")
+    A("```")
+    A("python verify_package.py         the package run in a directory it has never seen")
+    A("```")
     A("")
     A("## What is measured, and by what")
     A("")
