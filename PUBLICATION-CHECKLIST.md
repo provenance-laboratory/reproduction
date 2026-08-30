@@ -27,12 +27,28 @@ schedule. The date is cheap to choose now and impossible to choose honestly late
 ## 2. Before the bytes leave
 
 ```
-python build_package.py       assemble
+python check_commitments.py   FIRST. Do the files the protocol pins by digest still hash to
+                              those digests? If not, the pre-registration is VOID and nothing
+                              below is worth doing
+python anchor_status.py       is every REQUIRED proof present, binding its current bytes, and
+                              carrying a Bitcoin attestation? A calendar receipt is not an anchor
+python build_package.py       assemble. It re-runs check_commitments and refuses if it fails
 python verify_package.py      run it as a stranger: sums, no absolute paths, digest matches
 python ../../_ots_stamp.py package/SHA256SUMS
                               timestamp the package as published. NOT the same as the corpus
                               proof, which commits the INPUTS; this commits what was OFFERED
 ```
+
+⛔ **The first two lines are new, and their absence is why they are there.** This checklist
+described the act of publishing without running either control that decides whether publishing is
+legitimate. `train.py` sat with a digest that did not match its commitment for a day while the
+package rebuilt, `verify_package.py` passed, and `SHA256SUMS` was regenerated over the changed
+bytes — a checksum derived from what it polices cannot notice a substitution. A checklist that does
+not run its own gates is the same object as a pre-registration nothing enforces.
+
+⚠ **`anchor_status.py` covers v1 through v5 and the corpus manifest.** Adding a protocol version
+means adding it to that list; that is deliberate, and it is the reason a missing governing document
+fails loudly instead of passing as an empty success.
 
 ⚠️ **Stamp last, and only once the package is final.** A proof over bytes that then change is not
 wrong, it is irrelevant — and an irrelevant proof sitting beside a real one is worse than none,
