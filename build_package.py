@@ -110,18 +110,42 @@ def main():
         "configuration_A_environment_digest": run["environment"]["digest"],
         "configuration_A": {k: run["environment"][k] for k in
                             ("cpu", "logical_processors", "platform", "machine", "python",
-                             "numpy", "blas_openblas_line", "blas_kernel_selected",
-                             "blas_config_sha256", "simd_baseline", "simd_found",
-                             "threads_requested", "threads_effective",
-                             "threads_effective_note")},
+                             "numpy", "blas_openblas_line", "blas_build_config_line",
+                             "blas_runtime_arch", "blas_config_sha256", "simd_baseline",
+                             "simd_found", "threads_requested", "threads_effective",
+                             "threads_effective_note",
+                             "admissible_for_causal_attribution")
+                            if k in run["environment"]},
         "_known": ("Thread count alone changes the result: on configuration A, threads "
                    "1/2/4/8/16 produced five distinct models. If your digest differs, check "
                    "your thread environment first -- and note that a differing digest is a "
                    "REPORTABLE RESULT, not a mistake to be fixed before reporting."),
     }
-    (OUT / "EXPECTED.json").write_text(json.dumps(expected, indent=2) + NL,
-                                       encoding="utf-8", newline=NL)
-    shipped.append("EXPECTED.json")
+    # ⛔ THE TARGET DOES NOT SHIP IN THE INPUT PACKAGE. v2 wrote EXPECTED.json here, so
+    # the digest a reproducer is asked to match went out at step 3 -- before the public commitment
+    # at step 4 that the whole ordering exists to obtain. Two reviewers found it from the file
+    # timestamps. v3 publishes a TARGET-FREE package; the reference bundle and EXPECTED.json are a
+    # separate, later, signed artifact.
+    if "--with-target" in sys.argv:
+        (OUT / "EXPECTED.json").write_text(json.dumps(expected, indent=2) + NL,
+                                           encoding="utf-8", newline=NL)
+        shipped.append("EXPECTED.json")
+        print("  " + D + " EXPECTED.json INCLUDED (--with-target). This is the step-5 package,")
+        print("  not the step-2 one. Publishing it before a commitment exists voids v3 §6.")
+    else:
+        (OUT / "NO-TARGET.md").write_text(
+            "# There is deliberately no expected digest in this package" + NL + NL
+            + "The protocol (`PRE-REGISTRATION-v3-CONFIRMATORY.md` §3) publishes the inputs first "
+            + "and the target only after someone has publicly committed to attempting a "
+            + "reproduction." + NL + NL
+            + "A digest published before the commitment is a target reproducers self-select "
+            + "against; a commitment made before the target exists cannot be. An earlier version "
+            + "of this package shipped the digest anyway, which defeated the ordering the protocol "
+            + "was rewritten to establish." + NL + NL
+            + "**Train it, record your `run.json`, and file it.** The reference bundle will be "
+            + "published separately, signed and timestamped, and you will be able to compare then."
+            + NL, encoding="utf-8", newline=NL)
+        shipped.append("NO-TARGET.md")
 
     # SHA256SUMS over everything shipped, written last so it covers the final bytes
     lines = []

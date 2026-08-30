@@ -50,80 +50,85 @@ always attested.
 attestation; the proof over the corpus actually in use does not yet. Run `anchor_status.py` before
 repeating any sentence in this document that uses the word *anchored*.
 
-## 3. Measurement 1 — roughly 10%, not 37%
-
-Twelve **counterbalanced** pairs (half threads-1-first, half threads-16-first, in a seeded order),
-both arms explicitly pinned, the machine re-checked between every pair, and the pairs stored **in
-execution order**:
+## 3. Measurement 1 — and the number has now moved twice
 
 ```
                   median     min      max
-threads=1          5.95 s    5.21 s   6.30 s
-threads=16         5.40 s    4.21 s   5.73 s
+threads=1          6.02 s    5.55 s   6.47 s
+threads=16         4.62 s    3.80 s   4.90 s
 
+order effect       AB median ratio 1.3066 (n=6)   BA 1.3118 (n=6)
 paired differences positive in 12 of 12 pairs
-permutation p          4.88e-04   exact, over all 4,096 sign assignments
-ratio of medians       1.102
-bootstrap 95% CI       [1.072, 1.192]
+sign-test p        4.88e-04   exact two-sided, all 4,096 sign assignments
+ratio of medians   1.303
+bootstrap 95%      [1.268, 1.343]  -- stratified within each order
 ```
 
-⇒ **Pinning to one thread costs roughly 10% here, 95% CI [+7%, +19%].**
+⇒ **Pinning to one thread costs roughly 30% here, 95% CI [+27%, +34%].**
 
-⛔ **The +37% was an artifact of the design, and three faults produced it.** Every pair ran
-pinned-first, so drift inside a pair loaded onto one arm. The comparison arm was *unconstrained* —
-not a condition at all, but whatever the machine chose. And the two timing arrays were **sorted
-separately** before being stored, destroying the pairing that made them comparable.
-
-⭐ **Repairing the design moved the estimate from 37% to 10% and made the evidence far stronger.**
-Complete separation across 12 pairs is an exact p of 4.88 × 10⁻⁴ — where the previous revision had
-worried about a 0.12 s gap and called it "thin", which was the wrong statistic to be nervous about.
-
-⚠️ **It is not "the cost of determinism."** It is the cost of pinning to one thread rather than
-requesting sixteen: two stated constraints. Which minimum constraint actually achieves bit-identity
-is unknown until measurement 4 is done, and an unknown constraint cannot be costed.
-
-## 4. Measurement 5 — divergence appears at step 0, in every array
+⛔ **This estimate has been +37%, then +10%, and is now +30%. Those are not three measurements of
+one quantity; they are one quantity measured by three designs, two of which were faulty.**
 
 ```
-first step at which E, W1, b1, W2, b2 differ (threads 1 vs 16)     0, 0, 0, 0, 0
-first step at which the ROUNDED loss curve differs                 64
++37%   fixed order, an "unconstrained" arm that was not a condition, arrays sorted separately
++10%   counterbalanced but SHUFFLED -- the seeded shuffle put BA BA BA first, so the warm-up sat
+       entirely in one arm's order, and the two orders then disagreed by six points
+       (AB 1.114 against BA 1.177). The design's own control had failed and nothing printed it
++30%   blocked alternation, stratified bootstrap, order effect printed
 ```
 
-⛔ **"Divergence first appears at step 8" was a fact about `loss.json`.** It is written as
-`round(x, 8)`; that rounding floor is 5 × 10⁻⁹, the same order as the median parameter difference,
-so the loss curve could never see what it was being asked about. A reviewer demonstrated it by
-perturbing one reduction at step 0 — the weights differ from step 0, the recorded loss notices
-nothing for dozens of steps.
+⭐ **The evidence that the third design is the sound one is that its order effect nearly
+vanished**: 1.3066 against 1.3118, a gap of 0.5 points where the shuffled design's was six. A
+counterbalanced design that can place half its blocks consecutively is counterbalanced in name,
+and the +10% figure was distorted by exactly the imbalance it was meant to remove.
 
-⇒ `train.py --trace` now records a digest **per array, per step**, and full-precision losses ship
-beside the rounded ones. §3 asked for *"the first layer/step where it appears"*; the answer is that
-there is no first layer. Reduction order enters at the first matmul, so everything diverges at once.
+⚠ **A reader should still treat 30% as a pilot figure.** It is one machine, one pipeline, one
+size, and the history above is a reason for caution rather than a story of convergence. What is
+robust across all three designs is the direction and the fact of a cost, not its magnitude.
 
-**Magnitude, threads=1 against threads=16, over 804,096 parameters:**
+⚠ **And it is not "the cost of determinism."** It is the cost of pinning to one thread rather
+than requesting sixteen -- two stated constraints. Which minimum constraint actually achieves
+bit-identity is unknown until measurement 4 is done, and an unknown constraint cannot be costed.
+
+## 4. Measurement 5 — divergence at step 0, from a trace that now starts earlier
 
 ```
-relative L2            2.008e-05
-max |difference|       1.369e-04
-parameters differing   778,597 of 804,096   (96.8%)
-final loss             3.21813250 vs 3.21812963  -- agree to 5 decimals, NOT identical
+initial state (step -1)                                    IDENTICAL in both runs
+first step at which E, W1, b1, W2, b2 differ                0, 0, 0, 0, 0
+first step at which the ROUNDED loss curve differs          (loss.json is rounded; see below)
 ```
 
-⚠️ **"Numerically indistinguishable" is withdrawn.** No behavioural equivalence was tested and
-capability testing is out of scope by §5. The defensible statement is *close under the reported
-parameter metrics, with final losses agreeing to five decimals* -- a different claim that
-licenses a different inference.
+⛔ **The trace used to begin after the first update**, so it could show the arrays *differ* at step
+0 and could not show they *started* the same. A reviewer drew that line precisely: the evidence
+supported "they differ after update 0" and not "divergence originates at the first matmul". It now
+records the initialisation as step −1, and the two runs are confirmed identical there.
 
-⛔ **An earlier revision of this document said the final losses were IDENTICAL to eight
-decimals. They are not: 3.21813250 against 3.21812963, a difference of 2.9e-06.** Both round-2
-reviewers checked the shipped numbers and found the sentence false. It was the sentence written to
-REPLACE a claim withdrawn in round 1 -- so a correction introduced a new overstatement, which is
-the failure mode this paper exists to measure and the second time in two rounds that a repair has
-needed its own repair.
+⚠️ **Even so, the stronger claim is not made.** That every array differs after the first update is
+*consistent with* reduction order entering at the first matmul; **locating the source** would need
+digests of the step-0 intermediates or gradients, which this trace does not record. The findings
+say consistent-with, and `reproduce_findings.py` prints the same qualification.
 
-⚠️ **A number this study declines to headline.** The maximum *relative* difference over all
-parameters is **17.0**, and it is meaningless — entirely parameters near zero. Above 1% of RMS the
-maximum is 1.03 × 10⁻¹. Reporting 17.0 would be a true number selected to mislead, which is the
-failure mode this pair of papers exists to measure in other people's work.
+⛔ **"Divergence first appears at step 8" was a fact about `loss.json`**, which is written as
+`round(x, 8)` — a floor of 5 × 10⁻⁹, the same order as the median parameter difference. The loss
+curve could never see what it was asked about.
+
+**Magnitude on the v3 pipeline, threads=1 against threads=16, over 804,096 parameters:**
+
+```
+relative L2            2.708e-05
+max |difference|       1.802e-04
+parameters differing   97.6%
+final loss             3.25522614 vs 3.25522804   -- agree to 5 decimals, NOT identical
+```
+
+⛔ **An earlier revision said the final losses were identical to eight decimals. They are not**, and
+both round-2 reviewers checked the shipped numbers and found it false. It was the sentence written
+to *replace* a claim withdrawn in round 1 — a correction that introduced a new overstatement, which
+is the failure mode this paper exists to measure.
+
+⚠️ **"Numerically indistinguishable" stays withdrawn.** No behavioural equivalence was tested and
+capability testing is out of scope. The defensible statement is *close under the reported parameter
+metrics, with final losses agreeing to five decimals*.
 
 ## 5. Measurement 3 — internal repeatability, and not more
 
@@ -137,15 +142,15 @@ bit-identity when someone unconnected to this project reproduces it, and not bef
 
 ## 6. Measurement 7 — divergence is NOT monotone in thread count
 
-Added by the pilot; omitted entirely from the previous revision, which §6 forbids.
-
 ```
 threads     2       4       8       16
-differing   97.3%   97.6%   97.5%   96.8%
+differing   58.0%   56.0%   86.2%   97.6%
 ```
 
-⇒ **Not monotone**, and the last step goes the "wrong" way — *fewer* differing parameters at more
-threads. Whatever governs the magnitude, it is not "more threads, more disagreement".
+⇒ **Not monotone**: the fraction falls between 2 and 4 threads before rising. The overall trend is
+upward on the v3 pipeline where the earlier one showed a flat 97% band with a dip at the end, so
+the shape of this relationship is not stable across pipeline revisions either. Whatever governs the
+magnitude, "more threads, more disagreement" is not it.
 
 ## 7. ⛔ The headline claim, narrowed by a laptop
 

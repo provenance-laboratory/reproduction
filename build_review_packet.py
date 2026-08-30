@@ -159,12 +159,16 @@ def main():
     A("## What is measured, and by what")
     A("")
     A("```")
-    A("m1  cost of pinning     ratio %.3f  95%% CI [%.3f, %.3f]  p=%.1e  %d pairs"
+    A("m1  cost of pinning     ratio %.3f  95%% CI [%.3f, %.3f]  sign-test p=%.1e  %d pairs"
       % (m1["ratio_of_medians"], m1["bootstrap_95_ratio"][0], m1["bootstrap_95_ratio"][1],
-         m1["permutation_p"], m1["reps"]))
+         m1["sign_test_p"], m1["reps"]))
     A("      threads=1  median %.2f s      threads=%s median %.2f s"
       % (m1["median_a"], m1["threads_b"], m1["median_b"]))
-    A("      counterbalanced, paired, stored in execution order; both arms PINNED")
+    A("      BLOCKED alternation, paired, execution order kept; both arms PINNED.")
+    A("      order effect: AB %.4f vs BA %.4f -- the design's own control, printed"
+      % (m1["order_effect"]["AB_median_ratio"], m1["order_effect"]["BA_median_ratio"]))
+    A("      ⚠ the p is a SIGN TEST, not the randomisation distribution of a")
+    A("      balanced design, whose space is C(n, n/2) rather than 2^n")
     A("      -> report as: roughly +%d%%, CI [+%d%%, +%d%%]. NOT as a decimal percentage"
       % (round((m1["ratio_of_medians"] - 1) * 100),
          round((m1["bootstrap_95_ratio"][0] - 1) * 100),

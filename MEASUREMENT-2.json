@@ -1,11 +1,11 @@
 {
   "artifact_bytes": 9530566,
-  "apparatus_bytes": 198669,
-  "apparatus_excluding_arguable_bytes": 165440,
-  "arguable_bytes": 33229,
-  "timestamp_proof_bytes": 4771,
-  "percent_of_artifact": 2.0845,
-  "percent_excluding_arguable": 1.7359,
+  "apparatus_bytes": 200163,
+  "apparatus_excluding_arguable_bytes": 165718,
+  "arguable_bytes": 34445,
+  "timestamp_proof_bytes": 4806,
+  "percent_of_artifact": 2.1002,
+  "percent_excluding_arguable": 1.7388,
   "artifact_files": {
     "corpus/clean/pg11.txt": 151025,
     "corpus/clean/pg1342.txt": 737465,
@@ -20,10 +20,10 @@
     "reference/weights.npz": 3217584
   },
   "apparatus_files": {
-    "corpus/MANIFEST.json": 5544,
-    "corpus/MANIFEST.json.ots": 530,
+    "corpus/MANIFEST.json": 5787,
+    "corpus/MANIFEST.json.ots": 565,
     "corpus/sources.json": 3944,
-    "corpus/build_corpus.py": 11606,
+    "corpus/build_corpus.py": 12822,
     "PRE-REGISTRATION-v2-CONFIRMATORY.md": 8488,
     "PRE-REGISTRATION-v2-CONFIRMATORY.md.ots": 600,
     "ENVIRONMENT-LOCK.json": 1060,

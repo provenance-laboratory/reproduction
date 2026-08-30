@@ -178,6 +178,12 @@ def environment():
     cpu = _cpu_model()
     full_cfg, openblas, kernel = _blas_report()
     eff, eff_why = _effective_threads()
+    runtime_arch = None
+    if eff:
+        for _d in eff:
+            if _d.get("user_api") == "blas" and _d.get("architecture"):
+                runtime_arch = _d["architecture"]
+                break
     runtime = ""
     try:
         import contextlib
@@ -196,8 +202,15 @@ def environment():
         "machine": platform.machine(),
         "python": sys.version.split()[0],
         "numpy": np.__version__,
-        "blas_openblas_line": openblas,
-        "blas_kernel_selected": kernel,
+        # ⛔ THIS FIELD WAS CALLED `blas_kernel_selected` AND IT IS NOT THAT. It is the line
+        # np.show_config() prints under the openblas configuration -- a property of how the
+        # library was BUILT. A reviewer's run recorded `Haswell MAX_THREADS=64` while the same
+        # process, through threadpoolctl, reported the runtime architecture as SkylakeX. So the
+        # section-2a gate was passing on a mislabelled value, and configuration A's "selected
+        # kernel" was never observed at all, because threadpoolctl was absent here.
+        "blas_build_config_line": kernel,
+        # what the library actually selected at run time, where that can be observed
+        "blas_runtime_arch": runtime_arch,
         "blas_config_sha256": hashlib.sha256(full_cfg.encode("utf-8")).hexdigest(),
         "blas_config_full": full_cfg,
         "simd_baseline": simd.get("baseline"),
@@ -211,8 +224,20 @@ def environment():
     }
     # ⛔ THE ADMISSIBILITY GATE, over what section 2a actually names: CPU model, thread count,
     # instruction sets, library versions and kernel selection.
+    # ⛔ THE GATE REFUSED THREE COMMON INSTALLS. A reviewer fed it the show_config() shapes of
+    # conda/MKL numpy, macOS Accelerate, and an OpenBLAS built without DYNAMIC_ARCH: all three
+    # produce no build-config kernel line, so all three were STOPPED before training. The call
+    # promises "any x86-64, python 3 and numpy, nothing else" and section 2b forbids us from
+    # helping -- so those reproducers could file exactly one thing, "I could not get as far as
+    # running it", and section 2c would have scored that as an ecosystem finding. It would have
+    # been a finding about our gate.
+    #
+    # ⚠ Section 5 already settled the principle for the neighbouring field: an unobservable
+    # `threads_effective` is recorded AS AN ABSENCE and the run stays admissible. Kernel selection
+    # is the same situation and now gets the same treatment. What section 2a genuinely requires --
+    # a run that can SAY WHAT IT IS -- is the identity of the machine and the library, not a field
+    # that only one build shape can emit.
     required = {"cpu": cpu, "numpy": np.__version__, "python": sys.version.split()[0],
-                "blas_openblas_line": openblas, "blas_kernel_selected": kernel,
                 "simd_baseline": simd.get("baseline")}
     missing = sorted(k for k, v in required.items() if not v)
     if missing:
@@ -221,6 +246,13 @@ def environment():
             "INADMISSIBLE and it will not be produced." % missing + NL
             + "  Section 2a: 'If a run cannot report those, its result is not admissible.'" + NL
             + "  That is a rule about the RUN, so the run stops rather than the report noting it.")
+    # Recorded, not required: their ABSENCE is data about the environment, and a run without them
+    # is admissible as a reproduction and NOT admissible to kernel/thread causal attribution.
+    env["admissible_for_causal_attribution"] = bool(runtime_arch and eff)
+    env["_attribution_note"] = (
+        "A run is admissible for kernel/thread causal attribution only if it OBSERVED the runtime "
+        "architecture and the effective thread count. The build-config line is not the selected "
+        "kernel and is never treated as it.")
     env["digest"] = hashlib.sha256(
         json.dumps({k: v for k, v in env.items()
                     if k not in ("unconstrained", "threads_env", "threads_requested")},
@@ -274,11 +306,23 @@ def main():
     # ⛔ THE DATA ORDER IS DRAWN ONCE, FROM THE SEED, AND STORED. Sampling a fresh batch inside the
     # loop makes the order depend on how many times the RNG was touched elsewhere -- which changes
     # the moment anyone adds a diagnostic that draws a random number.
-    n = len(data) - CONTEXT - 1
+    # ⛔ OFF BY ONE, AND IT IS A SPECIFICATION DEFECT RATHER THAN A BUG IN THE USUAL SENSE.
+    # numpy's `integers` upper bound is exclusive, so `len(data) - CONTEXT - 1` excluded the last
+    # valid (context, target) pair from the training population. The effect on a 6.3 MB corpus is
+    # negligible and the defect is not: the sampled population is part of the model specification,
+    # so this changes every digest and belongs in a new pre-registration rather than in a patch.
+    n = len(data) - CONTEXT
     order = rng.integers(0, n, size=(STEPS, BATCH), dtype=np.int64)
 
     losses = []
     trace = []                      # per-step, per-array digests when --trace is given
+    if _TRACE:
+        # ⛔ THE TRACE BEGAN AFTER THE FIRST UPDATE, so it could show that the arrays DIFFER at
+        # step 0 and could not show that they STARTED the same. Without an initial state the
+        # evidence supports "they differ after update 0" and not "divergence originates in the
+        # first matmul" -- a reviewer drew exactly that line. Step -1 is the initialisation.
+        trace.append({k: hashlib.sha256(np.ascontiguousarray(v).tobytes()).hexdigest()
+                      for k, v in (("E", E), ("W1", W1), ("b1", b1), ("W2", W2), ("b2", b2))})
     t0 = time.perf_counter()
     for step in range(STEPS):
         idx = order[step]

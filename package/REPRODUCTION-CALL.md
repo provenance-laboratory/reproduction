@@ -114,8 +114,8 @@ and measure nothing:
   sits before `import numpy` in `train.py`: OpenBLAS reads those variables at load time, so setting
   them afterwards does nothing at all.
 - **The models differ in their bits while agreeing closely on the reported metrics.** Between our
-  1-thread and 16-thread runs the relative L2 difference is `2.0e-05`, the final loss is identical
-  to eight decimals, and 96.8% of parameters differ. ⚠️ We do **not** claim they are behaviourally
+  1-thread and 16-thread runs the relative L2 difference is `2.0e-05`, the final losses agree to
+  five decimals (3.21813250 against 3.21812963) and 96.8% of parameters differ. ⚠️ We do **not** claim they are behaviourally
   equivalent — nothing here tested that, and capability testing is out of scope. **If your digest
   differs from ours, the model is probably fine and the artifact is still not reproducible**, and
   both halves of that sentence are the point.

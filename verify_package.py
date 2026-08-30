@@ -89,7 +89,23 @@ def main():
             print((r.stderr or "")[-600:])
             return 1
         got = json.loads((work / "my-run" / "run.json").read_text(encoding="utf-8"))
-        exp = json.loads((work / "EXPECTED.json").read_text(encoding="utf-8"))
+        # ⛔ THE INPUT PACKAGE HAS NO TARGET, BY DESIGN, and this script assumed one --
+        # crashing on the package it exists to verify. v3 publishes the inputs first and the
+        # reference digest only after a public commitment, so "no EXPECTED.json" is the CORRECT
+        # state of a step-2 package and must be reported as such rather than raised.
+        _exp = work / "EXPECTED.json"
+        if not _exp.exists():
+            print("  training run  completed")
+            print("  obtained      %s" % got["weights_sha256"])
+            print("  expected      -- this is the TARGET-FREE input package (see NO-TARGET.md)")
+            print()
+            print("  " + chr(0x26A0) + " Nothing to compare against yet, and that is the protocol")
+            print("  working: the reference digest is published only after someone has publicly")
+            print("  committed to attempting a reproduction. The package is COMPLETE -- it ran to")
+            print("  completion in a directory it had never seen, with no absolute paths.")
+            print("=" * 78)
+            return 0
+        exp = json.loads(_exp.read_text(encoding="utf-8"))
         ok = got["weights_sha256"] == exp["weights_sha256"]
         print("  training run  %s" % ("completed" if r.returncode == 0 else "FAILED"))
         print("  expected      %s" % exp["weights_sha256"])

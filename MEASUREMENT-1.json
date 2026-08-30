@@ -3,10 +3,6 @@
   "threads_a": "1",
   "threads_b": "16",
   "counterbalanced_order": [
-    "BA",
-    "BA",
-    "BA",
-    "AB",
     "AB",
     "BA",
     "AB",
@@ -14,77 +10,86 @@
     "AB",
     "BA",
     "AB",
-    "AB"
+    "BA",
+    "AB",
+    "BA",
+    "AB",
+    "BA"
   ],
   "order_seed": 20260830,
   "quiet_machine_verified_between_every_pair": true,
   "pairs_in_execution_order": [
     [
-      5.4266,
-      4.2137
+      5.5468,
+      3.8044
     ],
     [
-      5.2053,
-      4.3622
+      6.0405,
+      4.4513
     ],
     [
-      5.4536,
-      4.6998
+      6.066,
+      4.7267
     ],
     [
-      6.0018,
-      5.3981
+      5.9859,
+      4.5723
     ],
     [
-      6.039,
-      5.414
+      5.9173,
+      4.7592
     ],
     [
-      5.9305,
-      5.5083
+      6.0174,
+      4.587
     ],
     [
-      5.7888,
-      5.6292
+      5.9897,
+      4.7099
     ],
     [
-      6.0425,
-      4.9437
+      6.0021,
+      4.7747
     ],
     [
-      6.3045,
-      5.2789
+      6.0246,
+      4.5303
     ],
     [
-      5.9601,
-      5.3929
+      6.1037,
+      4.6534
     ],
     [
-      5.8532,
-      5.7304
+      6.0702,
+      4.2946
     ],
     [
-      6.0842,
-      5.4086
+      6.475,
+      4.9035
     ]
   ],
-  "median_a": 5.9453,
-  "median_b": 5.3955,
-  "ratio_of_medians": 1.1018997312575294,
-  "permutation_p": 0.00048828125,
-  "permutation_method": "exact over all 4096 sign assignments",
+  "median_a": 6.021000000000001,
+  "median_b": 4.6202000000000005,
+  "ratio_of_medians": 1.3031903380806027,
+  "sign_test_p": 0.00048828125,
+  "sign_test_method": "exact two-sided SIGN TEST over all 4096 assignments",
+  "_p_caveat": "This is the exact two-sided SIGN TEST on the paired differences. It is NOT the randomisation distribution of the counterbalanced design, whose space is the balanced schedules C(n, n/2) rather than 2^n; under that design the p is larger. Reported as what it is.",
+  "order_effect": {
+    "AB_median_ratio": 1.3065967478977285,
+    "BA_median_ratio": 1.3117511959089079
+  },
   "bootstrap_95_ratio": [
-    1.071788908929438,
-    1.1917895503367923
+    1.2677234372854864,
+    1.3427525087682417
   ],
-  "reported": "pinning to one thread costs roughly 10% on this configuration, 95% CI [+7%, +19%]",
+  "reported": "pinning to one thread costs roughly 30% on this configuration, 95% CI [+27%, +34%]",
   "_estimand": "This is the cost of PINNING TO ONE THREAD versus requesting 16, both stated constraints. It is NOT 'the cost of determinism': what minimum constraint achieves bit-identity is not known until measurement 4 is done, and costing an unknown constraint is not possible.",
   "distinct_digests": {
     "1": [
-      "59d07fa0811667df8a9dd606f9ff7842265fd0cac605812f96981d6b04ded8b5"
+      "a4afb5c86dd88ae5ce7a475d448ee6bab18f6bc4e3c6c59721511f98f1c23d38"
     ],
     "16": [
-      "e2d154eb756fc8e9e45544f243b54a9f5ff0a03bdac9a07464925d153645b606"
+      "d0dcb2066db6a2f6f3a9e54e52869ce9a658a07c87e5bca0e300aed7d87b9afd"
     ]
   }
 }

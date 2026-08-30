@@ -18,8 +18,8 @@
     "machine": "AMD64",
     "python": "3.14.3",
     "numpy": "2.5.1",
-    "blas_openblas_line": "OpenBLAS 0.3.33.112.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY",
-    "blas_kernel_selected": "Haswell MAX_THREADS=24",
+    "blas_build_config_line": "Haswell MAX_THREADS=24",
+    "blas_runtime_arch": null,
     "blas_config_sha256": "fed9f6fc970729b5cdc97f61197497bf5fcf85793600dbd4058d80b86edd5e19",
     "blas_config_full": "Build Dependencies:\n  blas:\n    detection method: pkgconfig\n    found: true\n    include directory: C:/Users/runneradmin/AppData/Local/Temp/cibw-run-5fu_d2xs/cp314-win_amd64/build/venv/Lib/site-packages/scipy_openblas64/include\n    lib directory: C:/Users/runneradmin/AppData/Local/Temp/cibw-run-5fu_d2xs/cp314-win_amd64/build/venv/Lib/site-packages/scipy_openblas64/lib\n    name: scipy-openblas\n    openblas configuration: OpenBLAS 0.3.33.112.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY\n      Haswell MAX_THREADS=24\n    pc file directory: D:/a/numpy-release/numpy-release/.openblas\n    version: 0.3.33.112.0\n  lapack:\n    detection method: pkgconfig\n    found: true\n    include directory: C:/Users/runneradmin/AppData/Local/Temp/cibw-run-5fu_d2xs/cp314-win_amd64/build/venv/Lib/site-packages/scipy_openblas64/include\n    lib directory: C:/Users/runneradmin/AppData/Local/Temp/cibw-run-5fu_d2xs/cp314-win_amd64/build/venv/Lib/site-packages/scipy_openblas64/lib\n    name: scipy-openblas\n    openblas configuration: OpenBLAS 0.3.33.112.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY\n      Haswell MAX_THREADS=24\n    pc file directory: D:/a/numpy-release/numpy-release/.openblas\n    version: 0.3.33.112.0\nCompilers:\n  c:\n    commands: cl\n    linker: link\n    name: msvc\n    version: 19.44.35228\n  c++:\n    commands: cl\n    linker: link\n    name: msvc\n    version: 19.44.35228\n  cython:\n    commands: cython\n    linker: cython\n    name: cython\n    version: 3.2.8\nMachine Information:\n  build:\n    cpu: x86_64\n    endian: little\n    family: x86_64\n    system: windows\n  host:\n    cpu: x86_64\n    endian: little\n    family: x86_64\n    system: windows\nPython Information:\n  path: C:\\Users\\runneradmin\\AppData\\Local\\Temp\\build-env-77jx58qm\\Scripts\\python.exe\n  version: '3.14'\nSIMD Extensions:\n  baseline:\n  - X86_V2\n  found:\n  - X86_V3\n\n",
     "simd_baseline": [
@@ -40,11 +40,13 @@
     "threads_effective_note": "threadpoolctl not installed - effective thread count NOT OBSERVED",
     "show_runtime": "WARNING: `threadpoolctl` not found in system! Install it by `pip install threadpoolctl`. Once installed, try `np.show_runtime` again for more detailed build information\n[{'numpy_version': '2.5.1',\n  'python': '3.14.3 (tags/v3.14.3:323c59a, Feb  3 2026, 16:04:56) [MSC v.1944 '\n            '64 bit (AMD64)]',\n  'uname': uname_result(system='Windows', node='LAPTOP-L9LKIF8J', release='11', version='10.0.26200', machine='AMD64')},\n {'simd_extensions': {'baseline': ['X86_V2'],\n                      'found': ['X86_V3'],\n                      'not_found': []}},\n {'ignore_floating_point_errors_in_matmul': False}]\n",
     "unconstrained": false,
-    "digest": "4e9d28ac2cbf1d00868c239954303213763a17082c27c007ddbfdf36c491054c"
+    "admissible_for_causal_attribution": false,
+    "_attribution_note": "A run is admissible for kernel/thread causal attribution only if it OBSERVED the runtime architecture and the effective thread count. The build-config line is not the selected kernel and is never treated as it.",
+    "digest": "b034c4546497d3e9ac5398aa70b878fd940e1c6a8951d9c4a5d1705c0bd6ae57"
   },
-  "wall_clock_seconds": 6.4878,
-  "final_loss": 3.2181325,
-  "loss_first": 5.5421772,
-  "weights_sha256": "59d07fa0811667df8a9dd606f9ff7842265fd0cac605812f96981d6b04ded8b5",
+  "wall_clock_seconds": 7.1032,
+  "final_loss": 3.25522614,
+  "loss_first": 5.54406166,
+  "weights_sha256": "a4afb5c86dd88ae5ce7a475d448ee6bab18f6bc4e3c6c59721511f98f1c23d38",
   "weights_npz_bytes": 3217584
 }
