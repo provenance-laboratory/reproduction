@@ -97,7 +97,7 @@ bit-identity is unknown until measurement 4 is done, and an unknown constraint c
 ```
 initial state (step -1)                                    IDENTICAL in both runs
 first step at which E, W1, b1, W2, b2 differ                0, 0, 0, 0, 0
-first step at which the ROUNDED loss curve differs          (loss.json is rounded; see below)
+first step at which the ROUNDED loss curve differs          21
 ```
 
 ⛔ **The trace used to begin after the first update**, so it could show the arrays *differ* at step

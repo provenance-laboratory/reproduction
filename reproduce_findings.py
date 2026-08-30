@@ -105,11 +105,18 @@ def main():
     try:
         ta = json.loads((HERE / "runs" / "check-trace-1" / "trace.json").read_text())
         tb = json.loads((HERE / "runs" / "check-trace-16" / "trace.json").read_text())
+        # ⛔ THE INDEX IS NOT THE STEP. trace.json now begins with the INITIALISATION at
+        # step -1, so index 1 is step 0 -- and this printed the index, so the script said "1"
+        # where the findings say "step 0". A reader comparing the two would have found a
+        # discrepancy that is purely an off-by-one in the reporting, which is the least
+        # forgivable kind in a paper about reproducibility.
         firsts = {}
         for i, (x, y) in enumerate(zip(ta, tb)):
             for k in x:
                 if k not in firsts and x[k] != y[k]:
-                    firsts[k] = i
+                    firsts[k] = i - 1
+        print("             initial state (step -1) identical            %s"
+              % ("yes" if ta[0] == tb[0] else chr(0x26D4) + " NO"))
         print("             in the WEIGHTS, per array                    %s"
               % ", ".join("%s=%s" % (k, firsts.get(k, "never")) for k in ("E", "W1", "b1",
                                                                           "W2", "b2")))
