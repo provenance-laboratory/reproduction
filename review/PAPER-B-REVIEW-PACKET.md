@@ -5,11 +5,12 @@
 ## ⇒ SEND THESE TWO
 
 ```
-paper-b-review.zip     22 files, sha256 ddab141d5e07f0d23b3823a2f2eade6d
+paper-b-review.zip     22 files
+  sha256 92a82ee538a20dba735f3a71d1c743f31436487973f792e035b4da8bed5b990c
 this file
 ```
 
-Repository `provenance-laboratory/reproduction`, commit `02567fd`.
+Repository `provenance-laboratory/reproduction`, commit `7e607c5`  ⚠️ TREE DIRTY.
 
 ---
 

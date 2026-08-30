@@ -105,7 +105,10 @@ def main():
     A("## ⇒ SEND THESE TWO")
     A("")
     A("```")
-    A("paper-b-review.zip     %d files, sha256 %s" % (len(SEND) + 1, zsha[:32]))
+    # ⛔ A 32-CHARACTER PREFIX IS NOT A SHA-256, and labelling it as one invites a reader to
+    # verify against a truncation. Reviewer finding; the full digest goes out.
+    A("paper-b-review.zip     %d files" % (len(SEND) + 1))
+    A("  sha256 %s" % zsha)
     A("this file")
     A("```")
     A("")
