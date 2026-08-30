@@ -6,11 +6,11 @@
 
 ```
 paper-b-review.zip     108 files
-  sha256 466cb801d6999125bb91c6b3caae80643f4fe06cc99b1c949182c918a9177bf3
+  sha256 a38bef088caff2820faa36e41d4291f2917a43dac9e32a14da20eccf5d085ab1
 this file
 ```
 
-Repository `provenance-laboratory/reproduction`, commit `a15f6ec`.
+Repository `provenance-laboratory/reproduction`, commit `d2e8e49`  ⚠️ TREE DIRTY.
 
 ---
 
@@ -65,7 +65,7 @@ m3  REPEATABILITY, same hw one digest across 12 runs at threads=1
       ⛔ NOT REPORTED AS BIT-IDENTITY. Section 6 makes that an
       invalidating condition without an independent re-run. The previous revision of
       the findings said measurement 3 -HOLDS-; that was a violation and is withdrawn.
-m4  bit-identity, diff hw  NOT MEASURED -- needs configurations B, C, D
+m4  bit-identity, diff hw  ISOLATING -- AMD Ryzen 9 5900HX with Radeon Gra, bit-identical True
 m5  divergence            step 0 in EVERY array (trace records step -1 as the initial
                            state, and it is identical). relative L2 2.7084e-05, 97.55% of 804096
                            parameters differ between threads 1 and 16
@@ -100,7 +100,7 @@ published as  package/ -- 39 files; OUR WEIGHTS ARE NOT IN IT, only the digest
 
 ## ⚠️ Known-weak, and a reviewer should push here
 
-- **n = 1 machine.** Configuration A only. Measurement 4 is the paper's second half and is not done.
+- **n = 2 machines.** Intel and AMD, matched on OS, Python, numpy and the OpenBLAS build -- and BOTH SELECTED THE SAME OpenBLAS MICROKERNEL (Haswell, X86_V3). So measurement 4 shows two vendors running the SAME REDUCTION SHAPE agree, which is not vendor-independence. A machine selecting a different kernel is a different experiment and has not been run.
 - **Measurement 1 was +37% in the previous revision and is +30% now.** The design was at fault, not the machine: fixed order, an "unconstrained" arm that was not a condition, and arrays sorted separately before storage. Ask whether the repaired design has its own faults.
 - **The model is an MLP, not a transformer.** Defensible — the mechanism under test is BLAS reduction order and capability is explicitly out of scope — but a reviewer may reasonably argue the finding does not transfer to attention kernels or to CUDA, where atomics add a second source of the same phenomenon.
 - **Measurement 6 is reported NOT MEASURABLE.** Everything else is a digest or a timing a stranger can re-run. That page cannot be checked and says so.
@@ -110,5 +110,5 @@ published as  package/ -- 39 files; OUR WEIGHTS ARE NOT IN IT, only the digest
 
 - that a package running on the machine that built it is evidence of anything beyond completeness;
 - that the unconstrained runs agreeing three times means unconstrained training is reproducible — they agreed because nothing was contending;
-- that about +30% is *the* cost of determinism. It is the cost of pinning to one thread rather than requesting 16, on one configuration, at one size -- and which constraint actually buys identity is not known until measurement 4 is done.
+- that about +30% is *the* cost of determinism. It is the cost of pinning to one thread rather than requesting 16, on one configuration, at one size -- and which constraint actually buys identity is a question measurement 4 addresses only for the reduction shape both arms shared; see PHASE-2-FINDINGS section 10.
 

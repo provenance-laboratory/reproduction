@@ -264,7 +264,18 @@ def main():
     A("      " + chr(0x26D4) + " NOT REPORTED AS BIT-IDENTITY. Section 6 makes that an")
     A("      invalidating condition without an independent re-run. The previous revision of")
     A("      the findings said measurement 3 -HOLDS-; that was a violation and is withdrawn.")
-    A("m4  bit-identity, diff hw  NOT MEASURED -- needs configurations B, C, D")
+    # ⛔ THIS SAID "NOT MEASURED" IN A PACKET SHIPPING THE FINDINGS THAT SAY IT WAS.
+    # Three typed statements about measurement 4's status survived the measurement being taken --
+    # the dead-noun defect in the file whose first line promises every figure is measured at build
+    # time. The status is read from MEASUREMENT-4.json now, so it cannot be stale here and current
+    # one file away.
+    _m4p = HERE / "MEASUREMENT-4.json"
+    if _m4p.exists():
+        _m4 = json.loads(_m4p.read_text(encoding="utf-8"))
+        A("m4  bit-identity, diff hw  %s -- %s, bit-identical %s"
+          % (_m4["verdict"], _m4["arms"]["B"]["cpu"][:34], _m4["bit_identical"]))
+    else:
+        A("m4  bit-identity, diff hw  NOT MEASURED -- needs a second machine")
     _md = json.loads((HERE / "MEASUREMENT-5-7.json").read_text(encoding="utf-8"))
     _m5 = _md["m5_threads_1_vs_16"]
     A("m5  divergence            step 0 in EVERY array (trace records step -1 as the initial")
@@ -310,8 +321,11 @@ def main():
     A("")
     A("## ⚠️ Known-weak, and a reviewer should push here")
     A("")
-    A("- **n = 1 machine.** Configuration A only. Measurement 4 is the paper's second half and is "
-      "not done.")
+    A("- **n = 2 machines.** Intel and AMD, matched on OS, Python, numpy and the OpenBLAS "
+      "build -- and BOTH SELECTED THE SAME OpenBLAS MICROKERNEL (Haswell, X86_V3). So "
+      "measurement 4 shows two vendors running the SAME REDUCTION SHAPE agree, which is not "
+      "vendor-independence. A machine selecting a different kernel is a different experiment "
+      "and has not been run.")
     A("- **Measurement 1 was +37%% in the previous revision and is +%d%% now.** The "
       "design was at fault, not the machine: fixed order, an \"unconstrained\" arm "
       "that was not a condition, and arrays sorted separately before storage. Ask "
@@ -337,7 +351,8 @@ def main():
       "reproducible — they agreed because nothing was contending;")
     A("- that about +%d%% is *the* cost of determinism. It is the cost of pinning to one "
       "thread rather than requesting %s, on one configuration, at one size -- and which "
-      "constraint actually buys identity is not known until measurement 4 is done."
+      "constraint actually buys identity is a question measurement 4 addresses only for the "
+      "reduction shape both arms shared; see PHASE-2-FINDINGS section 10."
       % (round((m1["ratio_of_medians"] - 1) * 100), m1["threads_b"]))
     A("")
 
