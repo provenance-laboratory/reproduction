@@ -93,9 +93,25 @@ def main():
     print("  FINDING 4  the loss curves first differ at step %s; final loss %.8f vs %.8f"
           % (first, L1[-1], L16[-1]))
     print()
-    print("  " + chr(0x26A0) + " ALL OF THIS IS ONE MACHINE. It confirms that thread count")
-    print("  partitions the model HERE. Whether bit-identity survives different hardware is")
-    print("  measurement 4, which is not done and which this script cannot answer.")
+    # ⛔ THIS PARAGRAPH USED TO SAY "It confirms that thread count partitions the model
+    # HERE" NO MATTER WHAT THE RUN FOUND. A reviewer's machine produced ONE digest across all five
+    # counts -- the script printed NOT CONFIRMED four lines earlier and then concluded the
+    # opposite. A conclusion that does not read its own data is worse than no conclusion, because
+    # it will be quoted.
+    print("  " + chr(0x26A0) + " ALL OF THIS IS ONE MACHINE, and one numerical stack.")
+    if distinct == len(COUNTS):
+        print("  Here, requesting different thread counts produced different models. On other")
+        print("  machines it has not: a reviewer saw one digest across all five requests, because")
+        print("  the mechanism is the EFFECTIVE reduction shape and the environment variable is")
+        print("  only a REQUEST -- one that a machine with fewer cores may cap or ignore.")
+    else:
+        print("  Here, requesting different thread counts produced %d distinct model(s), not %d."
+              % (distinct, len(COUNTS)))
+        print("  That does not contradict the configuration-A measurement. It shows the partition")
+        print("  depends on the EFFECTIVE reduction shape, which a thread request only influences.")
+        print("  Report this: it is the more informative outcome of the two.")
+    print("  Whether bit-identity survives different hardware is measurement 4, which is not done")
+    print("  and which this script cannot answer.")
     print("=" * 78)
     return 0
 

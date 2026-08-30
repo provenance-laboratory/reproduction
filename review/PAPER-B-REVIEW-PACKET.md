@@ -5,11 +5,11 @@
 ## ⇒ SEND THESE TWO
 
 ```
-paper-b-review.zip     18 files, sha256 93585d9a551f015964bb3da3095b9ee7
+paper-b-review.zip     18 files, sha256 3c34cbce3c07962f41e961347ed4170a
 this file
 ```
 
-Repository `provenance-laboratory/reproduction`, commit `5670277`  ⚠️ TREE DIRTY.
+Repository `provenance-laboratory/reproduction`, commit `c6949a7`.
 
 ---
 
@@ -86,5 +86,5 @@ published as  package/ -- 27 files; OUR WEIGHTS ARE NOT IN IT, only the digest
 
 - that a package running on the machine that built it is evidence of anything beyond completeness;
 - that the unconstrained runs agreeing three times means unconstrained training is reproducible — they agreed because nothing was contending;
-- that +37.1% is *the* cost of determinism rather than the cost on one configuration, on one pipeline, at one size.
+- that about +37% is *the* cost of determinism rather than the cost on one configuration, on one pipeline, at one size.
 

@@ -1,205 +1,178 @@
-# Phase 2 — the pipeline runs, and the model is reproducible under a stated constraint
+# Phase 2 — what one machine can measure, and what it turned out not to show
 
-*30 August 2026. Configuration **A** of the pre-registered matrix: Intel Core i5-1240P, hybrid
-4 P-cores + 8 E-cores, 16 logical, AVX2 without AVX-512. numpy 2.5.1 on
-OpenBLAS 0.3.33 built `DYNAMIC_ARCH`.*
+*Revised 30 August 2026 after two internal reviews. Configuration **A**: Intel Core i5-1240P,
+hybrid 4 P-cores + 8 E-cores, 16 logical, AVX2 without AVX-512; numpy 2.5.1 on OpenBLAS 0.3.33
+`DYNAMIC_ARCH`, kernel `Haswell MAX_THREADS=24`.*
 
----
-
-## 1. What exists now
-
-```
-train.py           one file, numpy only, no network. ~1.85M parameters over a fixed 8-byte
-                   context. 300 steps, batch 256, float32, seed 20260829
-measure_cost.py    measurement 1, interleaved and with a quiet-machine precondition
-corpus/            10 texts, 6,313,332 clean bytes, merkle root 814acd24..., committed and
-                   OpenTimestamped BEFORE any of this ran -- now ANCHORED in a Bitcoin block
-```
-
-⚠️ **An MLP, not a transformer, and that is a choice with a reason.** The pre-registration says
-capability is irrelevant and will not be benchmarked. What must be exercised is the mechanism the
-pilot identified — threaded BLAS reduction order in large matmuls — and an MLP does that with
-backprop a stranger can read and check in an afternoon. A hand-written transformer would add
-hundreds of lines whose only effect on *this* measurement is more places for a bug that is not the
-subject.
-
-⛔ **Two ordering hazards are handled in the code rather than in a README**, because both produce
-correct-looking runs that are not reproducible:
-
-- **The thread pin happens before `import numpy`.** OpenBLAS reads those variables once, at load
-  time. Setting them afterwards changes nothing and looks like it worked.
-- **The corpus is assembled in MANIFEST order, not directory order.** A training set built from
-  `iterdir()` is a different training set on a different filesystem while every file digest still
-  matches — substitution passing an integrity check, one level up from the bytes.
-
-## 2. Measurement 3 — bit-identity on identical hardware: **it holds**
-
-Three runs, threads pinned to 1, same machine:
-
-```
-det-1  det-2  det-3     weights sha256 ccf303f04e8ab1f02723f199137f9eb237bd042bd754bb87e09a0333a19e18cd
-```
-
-One digest across three runs. **Under a stated constraint, bit-identical reproduction of a trained
-model is achievable.** That is the first half of the claim in section 1 of the pre-registration, and
-it is now measured rather than assumed.
-
-## 3. The pilot's finding, reproduced on the real pipeline
-
-The 29 August pilot partitioned a toy `numpy` sum by thread count. The same partition appears in
-the trained model, and it is not subtle:
-
-```
-threads=1     ccf303f04e8ab1f0…      --
-threads=2     639bc3afab0add2a…      39.3% of parameters differ from threads=1
-threads=4     9aef82f7a8400bdd…      37.6%
-threads=8     3d73f3c2c76fc828…      39.7%
-threads=16    479add43eee1ae44…      83.0%
-```
-
-⭐ **Five thread counts, five distinct models.** A claim demonstrated only on the instrument that
-first showed it is half a claim; this is the other half.
-
-⭐ **And "unconstrained" is not a separate condition on this machine.** Three unconstrained runs
-produced `479add43…` — byte-identical to `threads=16`. That is an identification, not an inference,
-and it changes how the contrast should be described: the honest comparison is pinned-versus-16, not
-pinned-versus-chaotic.
-
-⚠️ **The unconstrained runs agreed with each other, and that must not be read as reproducibility.**
-Three runs on an otherwise idle machine chose 16 threads three times. Under contention OpenBLAS may
-choose differently, and nothing in the artifact would record that it had. The pinned runs agree
-*because the pin makes them*; the free runs agreed *because nothing interfered*. Only one of those
-is a property of the artifact.
-
-## 4. Measurement 5 — the divergence, measured
-
-Divergence first appears at **training step 8** in every configuration. Between the threads=1 and
-threads=16 models, over all 804,096 parameters:
-
-```
-relative L2, ||a-b|| / ||a||            8.0e-06
-max |difference|                        6.5e-05      0.16% of the parameter RMS
-mean |difference| among differing        7.1e-08
-median |difference| among differing      9.3e-09
-final loss                              3.27143717  vs  3.27143621
-```
-
-⇒ **The two models are numerically indistinguishable and are not the same artifact.** The loss
-agrees to seven significant figures; 83% of the parameters differ in their bits; no digest matches.
-
-⛔ **This is exactly the reframing section 4 pre-registered, arriving from a direction it did not
-predict.** Section 4 expected bit-identity to fail *across hardware*. It fails **within one
-machine**, on nothing but thread count — so the conclusion holds a fortiori and with a smaller
-apparatus than the argument needed.
-
-⚠️ **A number this record declines to headline.** The maximum *relative* difference is 1.08 — over
-100%, which sounds like a catastrophe and means nothing. It is entirely parameters near zero
-(|value| ≤ 4.0e-04), where relative error is undefined in any useful sense. Among the 797,295
-parameters above 1% of RMS, the maximum relative difference is **2.3e-02**. Reporting the 1.08
-would have been a true number selected to mislead, which is the failure mode this pair of papers
-exists to measure in other people's releases.
-
-## 5. ⛔ A measurement that was inadmissible and looked fine
-
-The first timings of measurement 1 read **7.66 s, 7.59 s and 14.28 s** for three identical pinned
-runs — an 88% spread — because a CPU-bound build was running in another window. Had the pinned and
-free trials landed on quiet and busy moments respectively, the headline cost of determinism would
-have been wrong by a factor of two and **nothing in the output would have said so**.
-
-`measure_cost.py` therefore: refuses to start while our own heavy jobs are running, interleaves
-the two conditions rather than running all of one and then all of the other (machines drift —
-thermal throttling, a scheduler migrating work between P- and E-cores), reports median with min and
-max, and states explicitly whether the two ranges overlap.
-
-⛔ **And then the guarded version failed the same way, which is the part worth recording.** It
-checked the machine, found it quiet, and a build started one second later and ran alongside all
-seven repetitions — producing a 13.25 s pinned run beside a 6.18 s one. **A precondition checked
-once at the start is not a precondition held throughout.** The check now runs *between every
-repetition*, where contention can actually arrive, and its failure **discards the whole run without
-writing anything**: a contaminated measurement left on disk gets cited, and the next reader cannot
-see the window it was taken through.
-
-⭐ **What did work was the overlap test.** That contaminated run reported `determinism costs +38.5%`
-and, immediately beneath it, `THE RANGES OVERLAP, so this figure is not resolved at 7 reps`. The
-headline number was wrong and the tool said so in the same breath — because it was built to report
-whether the two distributions separate rather than to report a ratio. **A ratio between two
-distributions nobody characterised is the same error as a single timing, one level up.**
-
-## 6. Measurement 1 — the cost of determinism: **about +37%**
-
-Eleven interleaved repetitions, the machine verified quiet **between every repetition**:
-
-```
-                        median      min       max
-threads pinned to 1      6.59 s     5.87 s    9.52 s
-threads unconstrained    4.80 s     4.66 s    5.75 s
-
-determinism costs 37.05% of wall-clock on configuration A
-```
-
-**The ranges do not overlap, so the separation is resolved at 11 repetitions** — and only just:
-the slowest unconstrained run (5.75 s) is 0.12 s faster than the fastest pinned one (5.87 s).
-⚠️ **That margin is thin enough to report as thin.** A twelfth repetition landing badly would close
-it, and the honest reading is *the cost is real and is roughly a third*, not *the cost is
-37.05%*.
-
-⛔ **One decimal place of that figure was already inconsistent across two artifacts.** The
-measurement tool printed `+37.1%` from the live computation while the review packet printed
-`+37.0%` from a value the same tool had rounded to two places before storing it. One measurement,
-two numbers, neither wrong. The stored value is now unrounded and both consumers round it once, at
-the point of display — but the deeper point is that **at a 0.12 s margin the first decimal was
-never meaningful**, and printing it invited exactly this.
-
-⇒ **What is being bought for that third is the only thing that makes the artifact checkable at
-all.** The unconstrained runs were faster and produced a model no third party can confirm they
-reproduced. The pinned runs are slower and produce one digest, every time.
-
-## 7. The package, and the one control it can pass
-
-`build_package.py` assembles what a reproducer receives: the pipeline, the corpus and its manifest,
-the pre-registration and both OpenTimestamps proofs, the pilot, the reproduction call and the
-report template — 22 files, 6.37 MB.
-
-⚠️ **Our trained weights are deliberately NOT in it.** Only the digest, in `EXPECTED.json`. A
-reproducer holding our `weights.npz` can compare digests without training anything and, worse,
-cannot be certain they did not compare our file with itself. The artifact under test is the
-procedure.
-
-**The packaging control:** the package was copied to an empty directory and run there as a stranger
-would.
-
-```
-sha256sum -c SHA256SUMS          21 of 21 OK
-python train.py --out my-run     300 steps, 8.61 s
-weights sha256                   ccf303f0…  == EXPECTED.json
-```
-
-⛔ **What that control does and does not establish.** It establishes that the package is COMPLETE —
-nothing needed was left behind in the working tree, which is the confound section 2b makes
-expensive, since a reproducer who fails for want of a missing file would be measuring our
-packaging. It establishes **nothing about reproducibility across machines**: it ran on
-configuration A, the machine that produced the expected digest. Calling this a successful
-reproduction would be the error the whole paper is about.
-
-## 8. What remains
-
-```
-MEASUREMENT 2   DONE: 48,555 bytes of apparatus on 9,530,916 bytes of artifact (0.509%),
-                of which 7,387 bytes are the two OpenTimestamps proofs. The ratio does NOT
-                transfer -- the apparatus is near-constant and this artifact is tiny, so the
-                absolute figure is the one that carries
-MEASUREMENT 4   needs configurations B, C and D. A vs B is the isolating comparison and it needs
-                a second physical machine; nothing here can substitute for it
-MEASUREMENT 6   engineering hours, self-reported, honestly -- to be written at the end and not
-                reconstructed from memory
-PUBLICATION     the package, then the public reproduction call. The window opens when the
-                artifacts are published and its close date is fixed then
-```
-
-⛔ **The independent re-run cannot be produced from this workspace, by construction.** Section 2b
-binds us: the reproducer receives the published package and nothing else, we do not assist, and any
-assistance is logged and reported. That is a human dependency and it is supposed to be one.
+⛔ **Both reviewers rejected the previous revision, and its headline number was wrong by nearly a
+factor of four.** Section 1 is the list.
 
 ---
 
-Related: [`PRE-REGISTRATION.md`](PRE-REGISTRATION.md) · [`PILOT-2026-08-29.md`](PILOT-2026-08-29.md)
+## 1. What the reviews changed
+
+| previously reported | now reported |
+|---|---|
+| determinism costs **+37.05%** | pinning to one thread costs **roughly 10%**, 95% CI [+7%, +19%] |
+| divergence first appears at **step 8** | divergence appears at **step 0**, in **every array** |
+| apparatus is **0.509%** of the artifact | **1.92%**, from a shipped script with a declared boundary |
+| bit-identity **holds** on identical hardware | **internal repeatability only** — §6 forbids the other claim |
+| five thread counts, five distinct models | true *here*; a reviewer got **one** model from five counts |
+| the corpus is licensing-clean | it was not — one text still named Project Gutenberg |
+| measurement 7 | was simply missing, which §6 also forbids |
+
+**Every one was found by someone running the artifact rather than reading about it.**
+
+## 2. ⛔ The corpus was wrong, and fixing it made everything downstream historical
+
+`pg2701.txt` still contained *"one from Project Gutenberg's archives"* in a transcriber's note.
+Project Gutenberg's terms make removing the licence **and all references** the condition for
+redistributing the underlying work freely, so the corpus did not have the property the manifest
+claimed — while the cleaning step's own docstring asserted that removing the boilerplate sufficed.
+
+The fix is a rule over the class rather than a patch for the file that failed: **any paragraph
+mentioning Project Gutenberg is dropped after marker extraction, each removal is recorded per text
+in the manifest, and the build refuses if a reference survives.** One 350-byte editorial paragraph
+was removed.
+
+```
+merkle root   814acd249a2988da…  ->  2006b7327c616f0ca5f9c0b9c3e766b5ebaa2aed99f1433fc66d7560d387452b
+clean bytes   6,313,332          ->  6,312,982
+```
+
+⚠️ **This makes every earlier figure historical, including both reviewers' runs.** Their digests
+were computed against corpus `814acd24…`, which no longer exists — so their protocol findings all
+stand, and their digest observations describe a superseded artifact and are reported as such. The
+old proof is kept as `MANIFEST.json.ots.superseded-814acd24`; it still attests exactly what it
+always attested.
+
+## 3. Measurement 1 — roughly 10%, not 37%
+
+Twelve **counterbalanced** pairs (half threads-1-first, half threads-16-first, in a seeded order),
+both arms explicitly pinned, the machine re-checked between every pair, and the pairs stored **in
+execution order**:
+
+```
+                  median     min      max
+threads=1          5.95 s    5.21 s   6.30 s
+threads=16         5.40 s    4.21 s   5.73 s
+
+paired differences positive in 12 of 12 pairs
+permutation p          4.88e-04   exact, over all 4,096 sign assignments
+ratio of medians       1.102
+bootstrap 95% CI       [1.072, 1.192]
+```
+
+⇒ **Pinning to one thread costs roughly 10% here, 95% CI [+7%, +19%].**
+
+⛔ **The +37% was an artifact of the design, and three faults produced it.** Every pair ran
+pinned-first, so drift inside a pair loaded onto one arm. The comparison arm was *unconstrained* —
+not a condition at all, but whatever the machine chose. And the two timing arrays were **sorted
+separately** before being stored, destroying the pairing that made them comparable.
+
+⭐ **Repairing the design moved the estimate from 37% to 10% and made the evidence far stronger.**
+Complete separation across 12 pairs is an exact p of 4.88 × 10⁻⁴ — where the previous revision had
+worried about a 0.12 s gap and called it "thin", which was the wrong statistic to be nervous about.
+
+⚠️ **It is not "the cost of determinism."** It is the cost of pinning to one thread rather than
+requesting sixteen: two stated constraints. Which minimum constraint actually achieves bit-identity
+is unknown until measurement 4 is done, and an unknown constraint cannot be costed.
+
+## 4. Measurement 5 — divergence appears at step 0, in every array
+
+```
+first step at which E, W1, b1, W2, b2 differ (threads 1 vs 16)     0, 0, 0, 0, 0
+first step at which the ROUNDED loss curve differs                 64
+```
+
+⛔ **"Divergence first appears at step 8" was a fact about `loss.json`.** It is written as
+`round(x, 8)`; that rounding floor is 5 × 10⁻⁹, the same order as the median parameter difference,
+so the loss curve could never see what it was being asked about. A reviewer demonstrated it by
+perturbing one reduction at step 0 — the weights differ from step 0, the recorded loss notices
+nothing for dozens of steps.
+
+⇒ `train.py --trace` now records a digest **per array, per step**, and full-precision losses ship
+beside the rounded ones. §3 asked for *"the first layer/step where it appears"*; the answer is that
+there is no first layer. Reduction order enters at the first matmul, so everything diverges at once.
+
+**Magnitude, threads=1 against threads=16, over 804,096 parameters:**
+
+```
+relative L2            2.008e-05
+max |difference|       1.369e-04
+parameters differing   778,597 of 804,096   (96.8%)
+final loss             identical to 8 decimals
+```
+
+⚠️ **"Numerically indistinguishable" is withdrawn.** No behavioural equivalence was tested and
+capability testing is out of scope by §5. The defensible statement is *close under the reported
+parameter metrics, with identical final loss to eight decimals* — a different claim that licenses
+a different inference.
+
+⚠️ **A number this study declines to headline.** The maximum *relative* difference over all
+parameters is **17.0**, and it is meaningless — entirely parameters near zero. Above 1% of RMS the
+maximum is 1.03 × 10⁻¹. Reporting 17.0 would be a true number selected to mislead, which is the
+failure mode this pair of papers exists to measure in other people's work.
+
+## 5. Measurement 3 — internal repeatability, and not more
+
+Three runs at threads=1 produced one digest, `59d07fa0…`.
+
+⛔ **Not reported as bit-identity.** §6 makes *"reporting bit-identity without an independent
+party's re-run"* an invalidating condition, and the previous revision said measurement 3 "holds"
+and was "now measured". That was a violation of the pre-registration by this document, and it is
+withdrawn. Three of our own runs agreeing is **internal repeatability**. It becomes evidence about
+bit-identity when someone unconnected to this project reproduces it, and not before.
+
+## 6. Measurement 7 — divergence is NOT monotone in thread count
+
+Added by the pilot; omitted entirely from the previous revision, which §6 forbids.
+
+```
+threads     2       4       8       16
+differing   97.3%   97.6%   97.5%   96.8%
+```
+
+⇒ **Not monotone**, and the last step goes the "wrong" way — *fewer* differing parameters at more
+threads. Whatever governs the magnitude, it is not "more threads, more disagreement".
+
+## 7. ⛔ The headline claim, narrowed by a laptop
+
+The previous revision said *five thread counts, five distinct models*. On configuration A that
+still holds. **On a reviewer's machine, five thread counts produced one model** — the request for
+16 was granted as 9, and the mechanism is the **effective reduction shape**, which an environment
+variable only requests.
+
+⇒ The defensible claim is narrower and more useful:
+
+> **Reduction shape is provenance-critical, and thread count is one dial that changes it — but
+> whether turning that dial changes the artifact is itself implementation-dependent.**
+
+That is a better finding than the universal it replaces, because it says where to look instead of
+asserting something a single laptop can refute.
+
+## 8. Measurement 6 — not measurable under this design
+
+⛔ **Reported as not measurable rather than estimated.** The estimand never existed: no ordinary
+pipeline was later made deterministic, so there is no delta; and no contemporaneous time log was
+kept, so a retrospective figure would be inadmissible. The "afternoon" and "two days" of the
+earlier revision are withdrawn as quantitative evidence and remain in
+[`MEASUREMENT-6.md`](MEASUREMENT-6.md) as process history, labelled as such.
+
+## 9. What one machine still cannot say
+
+```
+MEASUREMENT 4   bit-identity across hardware. NOT DONE. The two reviewer runs are early and
+                confounded -- CPU, OS, Python, numpy and OpenBLAS all differ at once -- and they
+                predate the corpus correction, so they cannot be compared to current digests
+§2b            the independent re-run does not exist, and by §2b we may not produce one
+```
+
+⚠️ **A vs B is not an isolating comparison unless OS, Python, numpy and the BLAS build are held
+constant too.** Otherwise vendor, operating system, library version and selected microkernel move
+together, and the matrix's one clean contrast is lost. That condition has to be added to §2a before
+measurement 4 is run, or the comparison it was designed to make cannot be made.
+
+---
+
+*Related: [`PRE-REGISTRATION.md`](PRE-REGISTRATION.md) · [`AMENDMENT-2026-08-30.md`](AMENDMENT-2026-08-30.md) · [`PILOT-2026-08-29.md`](PILOT-2026-08-29.md) · [`MEASUREMENT-6.md`](MEASUREMENT-6.md)*

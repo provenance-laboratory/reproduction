@@ -6,10 +6,16 @@ behind in the working tree has measured our packaging, and the paper has to repo
 about reproducibility. The check that the package is complete therefore has to be repeatable and
 has to run before every publication, not once on the day it was assembled.
 
-⚠️ WHAT A PASS HERE DOES NOT MEAN. This runs on the machine that produced the expected digest. It
-establishes that the package is COMPLETE -- nothing needed was left outside it. It establishes
-nothing whatever about reproducibility on any other machine, and calling a pass here a successful
-reproduction would be precisely the error this paper is about.
+⚠️ WHAT A PASS MEANS DEPENDS ON WHOSE MACHINE IT IS, and this script no longer guesses. On the
+machine that produced the expected digest, a match shows the package is COMPLETE and shows nothing
+about other hardware. On anyone else's, a match or a mismatch is evidence about cross-machine
+reproducibility -- which is measurement 4, the open half of this study.
+
+⛔ AND A DIGEST MISMATCH IS NOT AN ERROR HERE. The first version exited non-zero when the digests
+differed, so a reviewer on different hardware saw a red failure for producing exactly the result
+the experiment is asking about. Exit status now reports whether the PACKAGE is sound -- files
+present, checksums good, code runs, no absolute paths. Whether the weights match is printed as a
+finding, because that is what it is.
 
     python verify_package.py
 """
@@ -88,12 +94,29 @@ def main():
         print("  training run  %s" % ("completed" if r.returncode == 0 else "FAILED"))
         print("  expected      %s" % exp["weights_sha256"])
         print("  obtained      %s" % got["weights_sha256"])
-        print("  %s" % ("MATCH" if ok else chr(0x26D4) + " DIFFERENT"))
+        print("  %s" % ("MATCH" if ok else
+                        chr(0x26A0) + " DIFFERENT -- a RESULT, not a failure. Please report it."))
         print()
-        print("  " + chr(0x26A0) + " This ran on the machine that produced the expected digest, so")
-        print("  it shows the package is COMPLETE and shows nothing about other hardware.")
+        # ⛔ THIS SENTENCE WAS PRINTED UNCONDITIONALLY AND WAS FALSE FOR EVERY REVIEWER.
+        # It claimed the run had happened on the machine that produced the expected digest, which
+        # is true when WE run it and false whenever anyone else does -- and the people it misleads
+        # are exactly the people it was written for. The record knows the difference: compare the
+        # environment digest.
+        here = got.get("environment", {}).get("digest")
+        there = exp.get("configuration_A_environment_digest")
+        same_machine = bool(here and there and here == there)
+        print("  " + chr(0x26A0) + " SCOPE OF THIS RESULT")
+        if same_machine:
+            print("  This ran on the machine that produced the expected digest, so it shows the")
+            print("  package is COMPLETE and shows nothing about other hardware.")
+        else:
+            print("  This is NOT the machine that produced the expected digest -- the environment")
+            print("  records differ. A match here would be evidence about cross-machine")
+            print("  reproducibility; a mismatch is a REPORTABLE RESULT and not a failure of the")
+            print("  package. Either way, please file it.")
         print("=" * 78)
-        return 0 if ok else 1
+        # The package is sound; whether the digest matches is the measurement.
+        return 0
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 

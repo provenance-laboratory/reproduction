@@ -1,8 +1,26 @@
-# Measurement 6 — engineering hours to make an ordinary pipeline deterministic
+# Measurement 6 — NOT MEASURABLE under the implemented design
 
-*Written 30 August 2026, at the end of Phase 2 and not reconstructed later. The pre-registration
-calls this measurement **honest, self-reported**, which is a warning label: it is the one number in
-the paper that nobody can check, and it should be read accordingly.*
+*Written 30 August 2026, revised the same day after two internal reviews. §6 requires every
+measurement to be reported, so this is reported — as unmeasurable, which is a result and not an
+omission.*
+
+---
+
+## ⛔ The finding
+
+> **Measurement 6 was not measurable under the implemented design. The pipeline was deterministic
+> from inception, so no ordinary baseline existed to be made deterministic and there is no delta to
+> measure. No contemporaneous engineering-time record was collected. Retrospective estimates are
+> inadmissible.**
+
+⚠️ **The "afternoon", the "two days" and the three failed timing attempts below are PROCESS
+HISTORY, not quantitative evidence, and the earlier revision of this page presented them as though
+they were the measurement.** Both reviewers said the disclosure was not enough to make it one. It
+is not: an estimand that never existed cannot be estimated honestly afterwards, and a number
+recalled at the end of the work is a memory wearing a unit.
+
+Everything below is kept because it is true and useful to a reader deciding what this kind of work
+costs. None of it is admissible as measurement 6.
 
 ---
 

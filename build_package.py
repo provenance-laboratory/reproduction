@@ -100,9 +100,15 @@ def main():
         "final_loss": run["final_loss"],
         "corpus_merkle_root": run["corpus_merkle_root"],
         "spec": run["spec"],
+        # ⛔ THE ENVIRONMENT DIGEST, so a reproducer's tooling can TELL whether it is on
+        # configuration A rather than being told it is by a hard-coded sentence.
+        "configuration_A_environment_digest": run["environment"]["digest"],
         "configuration_A": {k: run["environment"][k] for k in
-                            ("cpu", "logical_processors", "platform", "python", "numpy",
-                             "blas", "threads_env")},
+                            ("cpu", "logical_processors", "platform", "machine", "python",
+                             "numpy", "blas_openblas_line", "blas_kernel_selected",
+                             "blas_config_sha256", "simd_baseline", "simd_found",
+                             "threads_requested", "threads_effective",
+                             "threads_effective_note")},
         "_known": ("Thread count alone changes the result: on configuration A, threads "
                    "1/2/4/8/16 produced five distinct models. If your digest differs, check "
                    "your thread environment first -- and note that a differing digest is a "
@@ -118,6 +124,46 @@ def main():
         h = hashlib.sha256((OUT / rel).read_bytes()).hexdigest()
         lines.append("%s  %s" % (h, rel))
     (OUT / "SHA256SUMS").write_text(NL.join(lines) + NL, encoding="utf-8", newline=NL)
+
+    # ⛔ WITHOUT THE REFERENCE ARRAYS, MEASUREMENT 5 IS IMPOSSIBLE FOR A REPRODUCER.
+    # After a digest mismatch they can see THAT their model differs and can compute nothing about
+    # HOW -- no parameter distance, no differing fraction, no per-layer divergence. Both reviewers
+    # raised it. The weights still do not go in the package a reproducer trains from, because a
+    # file present is a file that can be compared against itself; they go in a SEPARATE bundle,
+    # to be opened after their own run exists.
+    REF = HERE / "reference"
+    if REF.exists():
+        shutil.rmtree(REF)
+    REF.mkdir(parents=True)
+    src = HERE / "runs" / "det-1" if (HERE / "runs" / "det-1").exists() else HERE / "runs" / "thr-1"
+    for name in ("weights.npz", "run.json", "loss.json", "loss-full.json", "trace.json"):
+        f = src / name
+        if f.exists():
+            shutil.copy2(f, REF / name)
+    for n in (2, 4, 8, 16):
+        d = HERE / "runs" / ("thr-%d" % n)
+        if (d / "run.json").exists():
+            (REF / ("thr-%d" % n)).mkdir(exist_ok=True)
+            for name in ("weights.npz", "run.json", "loss.json"):
+                if (d / name).exists():
+                    shutil.copy2(d / name, REF / ("thr-%d" % n) / name)
+    ref_files = sorted(f for f in REF.rglob("*") if f.is_file())
+    (REF / "SHA256SUMS").write_text(
+        NL.join("%s  %s" % (hashlib.sha256(f.read_bytes()).hexdigest(),
+                            str(f.relative_to(REF)).replace(chr(92), "/"))
+                for f in ref_files) + NL, encoding="utf-8", newline=NL)
+    (REF / "README.md").write_text(
+        "# Reference outputs from configuration A" + NL + NL
+        + "⚠️ **Open this after your own run, not before.** These are the arrays and raw records "
+        + "configuration A produced. They are published so that a reproducer whose digest differs "
+        + "can measure HOW it differs -- parameter distances, differing fraction, and with "
+        + "`trace.json` the first step and array at which divergence appears." + NL + NL
+        + "⛔ **A comparison you make before training your own model measures nothing.** The "
+        + "package deliberately excludes these files for that reason; they are a separate "
+        + "download so the choice to open them is yours and is made at the right moment." + NL,
+        encoding="utf-8", newline=NL)
+    print("  reference/  %d file(s) -- the configuration-A arrays, shipped SEPARATELY"
+          % (len(ref_files) + 1))
 
     total = sum((OUT / rel).stat().st_size for rel in shipped)
     print("  package/  %d file(s), %.2f MB" % (len(shipped) + 1, total / 1e6))

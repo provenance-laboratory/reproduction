@@ -14,25 +14,49 @@ of lines whose only effect on this measurement is more places for a bug that is 
 
     python train.py --out runs/det-1                 deterministic, threads pinned to 1
     python train.py --out runs/free-1 --unconstrained  threads free, no pinning
+    python train.py --out runs/t --trace              also record per-step, per-array digests
 """
 import os
 import sys
 
 # ── the pin, before anything can load a BLAS ──────────────────────────────────────────────────
 _UNCONSTRAINED = "--unconstrained" in sys.argv
+# ⛔ MEASUREMENT 5 ASKS FOR "the first layer/step where it appears" AND THE
+# PIPELINE COULD NOT ANSWER IT. What was reported as "divergence first appears at
+# step 8" was the first entry at which loss.json -- written as round(x, 8) --
+# differed. A reviewer perturbed one reduction at step 0 and showed the WEIGHTS
+# differ from step 0 while that file notices nothing for dozens of steps. The
+# rounding floor is 5e-09 and the median parameter difference is 9.3e-09, so the
+# loss curve was never going to see the divergence it was being asked about.
+#
+# ⚠ OFF BY DEFAULT, because hashing every array every step is real work and
+# measurement 1 times this loop. A tracing run and a timing run must not be the
+# same run.
+_TRACE = "--trace" in sys.argv
 # --threads N pins to N rather than to 1. It exists so the pilot's finding can be reproduced on
 # the REAL pipeline instead of on a toy sum: the claim is that thread count alone partitions the
 # results, and a claim demonstrated only on the instrument that first showed it is half a claim.
 _THREADS = "1"
 if "--threads" in sys.argv:
     _THREADS = sys.argv[sys.argv.index("--threads") + 1]
-if not _UNCONSTRAINED:
-    for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
-               "NUMEXPR_NUM_THREADS", "VECLIB_MAXIMUM_THREADS"):
+_THREAD_VARS = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
+                "NUMEXPR_NUM_THREADS", "VECLIB_MAXIMUM_THREADS")
+if _UNCONSTRAINED:
+    # ⛔ `--unconstrained` USED TO INHERIT WHATEVER THE CALLER HAD SET and then print
+    # "threads FREE". Both reviewers found it. If the shell exported OPENBLAS_NUM_THREADS=1, the
+    # "unconstrained" arm was the pinned arm wearing a different label -- and measurement 1 is a
+    # comparison between those two arms.
+    for _v in _THREAD_VARS:
+        os.environ.pop(_v, None)
+else:
+    for _v in _THREAD_VARS:
         os.environ[_v] = _THREADS
-    # Python's own hash randomisation does not touch these arrays, but it does touch any dict
-    # iteration order that reaches a filename or a manifest, so it is pinned too.
-    os.environ.setdefault("PYTHONHASHSEED", "0")
+# ⛔ PYTHONHASHSEED WAS SET HERE AND DID NOTHING. The interpreter reads it at start-up;
+# assigning it from inside the running process cannot affect that process's hashing. The comment
+# beside it claimed a determinism property the line could not deliver -- and it sat thirty lines
+# under a header warning that OpenBLAS reads ITS variables at load time, which is the same
+# mistake. Removed rather than moved: nothing here depends on dict iteration order, and a
+# re-exec to set it would be a large mechanism for a property this pipeline does not use.
 
 import hashlib                                                              # noqa: E402
 import io                                                                   # noqa: E402
@@ -57,52 +81,149 @@ LR = 0.05
 DTYPE = np.float32         # float32 on purpose: this is where reduction order shows
 
 
-def environment():
-    """Everything a reproducer must match, and the digest of it.
+def _cpu_model():
+    """The CPU model as the OS reports it, or None. ⛔ None must STOP the run.
 
-    ⚠️ A run that cannot report these is not admissible -- the pre-registration says so, so this
-    refuses rather than filling in blanks.
+    The first version fell back to `platform.processor()`, which returns "x86_64" on Linux. A
+    reviewer's run.json therefore reported its CPU as `x86_64` -- and section 2a says a run that
+    cannot report its CPU model is not admissible. The guard did not fire because the fallback
+    produced a NON-EMPTY STRING, so the check saw a value and asked no further. A placeholder
+    that satisfies a presence test is worse than a missing field, because it silences the alarm.
     """
     import subprocess
-    cpu = platform.processor() or "unknown"
+    plat = sys.platform
     try:
-        r = subprocess.run(["powershell", "-NoProfile", "-Command",
-                            "(Get-CimInstance Win32_Processor).Name"],
-                           capture_output=True, text=True, timeout=30)
-        if r.returncode == 0 and r.stdout.strip():
-            cpu = r.stdout.strip().splitlines()[0].strip()
+        if plat.startswith("win"):
+            r = subprocess.run(["powershell", "-NoProfile", "-Command",
+                                "(Get-CimInstance Win32_Processor).Name"],
+                               capture_output=True, text=True, timeout=30)
+            v = [x.strip() for x in (r.stdout or "").splitlines() if x.strip()]
+            return v[0] if v else None
+        if plat.startswith("linux"):
+            for line in pathlib.Path("/proc/cpuinfo").read_text(errors="replace").splitlines():
+                if line.lower().startswith("model name"):
+                    return line.split(":", 1)[1].strip()
+            return None
+        if plat == "darwin":
+            r = subprocess.run(["sysctl", "-n", "machdep.cpu.brand_string"],
+                               capture_output=True, text=True, timeout=30)
+            return (r.stdout or "").strip() or None
     except Exception:                                                       # noqa: BLE001
-        pass
-    cfg = io.StringIO()
+        return None
+    return None
+
+
+def _blas_report():
+    """The FULL build config, the openblas line, and the kernel line beneath it.
+
+    ⛔ THE KERNEL LINE WAS BEING DROPPED. The old filter kept lines containing "openblas
+    configuration" or "version:", and the DYNAMIC_ARCH kernel actually selected -- here
+    `Haswell MAX_THREADS=24` -- sits on the INDENTED line underneath, so it never survived.
+    Section 4 names kernel selection as one of the three reasons this experiment exists, and the
+    published environment could not report it.
+
+    ⚠ The whole text is kept and hashed rather than a selection of lines. Any selection is a
+    guess about what will matter later, made by the person least able to know.
+    """
+    import contextlib
+    buf = io.StringIO()
     try:
-        import contextlib
-        with contextlib.redirect_stdout(cfg):
+        with contextlib.redirect_stdout(buf):
             np.show_config()
     except Exception:                                                       # noqa: BLE001
         pass
-    blas = [ln.strip() for ln in cfg.getvalue().splitlines()
-            if "openblas configuration" in ln.lower() or "version:" in ln.lower()]
+    full = buf.getvalue()
+    lines = full.splitlines()
+    ob, kernel = None, None
+    for i, ln in enumerate(lines):
+        if "openblas configuration" in ln.lower():
+            ob = ln.split(":", 1)[-1].strip()
+            indent = len(ln) - len(ln.lstrip())
+            if i + 1 < len(lines):
+                nxt = lines[i + 1]
+                if nxt.strip() and (len(nxt) - len(nxt.lstrip())) > indent:
+                    kernel = nxt.strip()
+            break
+    return full, ob, kernel
+
+
+def _effective_threads():
+    """What the BLAS is ACTUALLY using, where that can be observed.
+
+    ⚠ A REQUEST IS NOT A SETTING. A reviewer asked for 16 threads on a machine that gave 9, and
+    every digest matched anyway -- so a run reporting `threads pinned to 16` had never used 16,
+    and the label was describing an intention. `threadpoolctl` reads the true count, but
+    requiring it would break the property that makes this reproducible for strangers: numpy and
+    nothing else. So it is used IF PRESENT, and its absence is recorded AS an absence.
+    """
+    try:
+        import threadpoolctl
+    except Exception:                                                       # noqa: BLE001
+        return None, "threadpoolctl not installed - effective thread count NOT OBSERVED"
+    try:
+        return ([{k: v for k, v in d.items()
+                  if k in ("user_api", "internal_api", "num_threads", "architecture",
+                           "version", "prefix")} for d in threadpoolctl.threadpool_info()], None)
+    except Exception as e:                                                  # noqa: BLE001
+        return None, "threadpoolctl present but failed: %s" % e
+
+
+def environment():
+    """Everything a reproducer must match, and the digest of it.
+
+    ⛔ SECTION 2A IS AN ADMISSIBILITY RULE, so this REFUSES rather than filling blanks. The
+    earlier version required three fields and defaulted the rest, which is how a run reporting
+    its CPU as "x86_64" with no BLAS kernel at all passed a check named for section 2a.
+    """
+    cpu = _cpu_model()
+    full_cfg, openblas, kernel = _blas_report()
+    eff, eff_why = _effective_threads()
+    runtime = ""
+    try:
+        import contextlib
+        rb = io.StringIO()
+        with contextlib.redirect_stdout(rb):
+            np.show_runtime()
+        runtime = rb.getvalue()
+    except Exception:                                                       # noqa: BLE001
+        pass
+    simd = getattr(np.__config__, "CONFIG", {}).get("SIMD Extensions", {})
+
     env = {
         "cpu": cpu,
         "logical_processors": os.cpu_count(),
         "platform": platform.platform(),
+        "machine": platform.machine(),
         "python": sys.version.split()[0],
         "numpy": np.__version__,
-        "blas": sorted(set(blas))[:6],
-        "simd_baseline": getattr(np.__config__, "CONFIG", {}).get(
-            "SIMD Extensions", {}).get("baseline", []),
-        "simd_found": getattr(np.__config__, "CONFIG", {}).get(
-            "SIMD Extensions", {}).get("found", []),
-        "threads_env": {k: os.environ.get(k) for k in
-                        ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")},
+        "blas_openblas_line": openblas,
+        "blas_kernel_selected": kernel,
+        "blas_config_sha256": hashlib.sha256(full_cfg.encode("utf-8")).hexdigest(),
+        "blas_config_full": full_cfg,
+        "simd_baseline": simd.get("baseline"),
+        "simd_found": simd.get("found"),
+        "threads_requested": ("unset (unconstrained)" if _UNCONSTRAINED else _THREADS),
+        "threads_env": {k: os.environ.get(k) for k in _THREAD_VARS},
+        "threads_effective": eff,
+        "threads_effective_note": eff_why,
+        "show_runtime": runtime,
         "unconstrained": _UNCONSTRAINED,
     }
-    missing = [k for k in ("cpu", "numpy", "python") if not env.get(k)]
+    # ⛔ THE ADMISSIBILITY GATE, over what section 2a actually names: CPU model, thread count,
+    # instruction sets, library versions and kernel selection.
+    required = {"cpu": cpu, "numpy": np.__version__, "python": sys.version.split()[0],
+                "blas_openblas_line": openblas, "blas_kernel_selected": kernel,
+                "simd_baseline": simd.get("baseline")}
+    missing = sorted(k for k, v in required.items() if not v)
     if missing:
-        raise SystemExit(chr(0x26D4) + " the run cannot report %s, so its result is not "
-                         "admissible under section 2a" % missing)
+        raise SystemExit(
+            chr(0x26D4) + " this run cannot report %s, so section 2a makes its result "
+            "INADMISSIBLE and it will not be produced." % missing + NL
+            + "  Section 2a: 'If a run cannot report those, its result is not admissible.'" + NL
+            + "  That is a rule about the RUN, so the run stops rather than the report noting it.")
     env["digest"] = hashlib.sha256(
-        json.dumps({k: v for k, v in env.items() if k != "unconstrained"},
+        json.dumps({k: v for k, v in env.items()
+                    if k not in ("unconstrained", "threads_env", "threads_requested")},
                    sort_keys=True).encode("utf-8")).hexdigest()
     return env
 
@@ -157,6 +278,7 @@ def main():
     order = rng.integers(0, n, size=(STEPS, BATCH), dtype=np.int64)
 
     losses = []
+    trace = []                      # per-step, per-array digests when --trace is given
     t0 = time.perf_counter()
     for step in range(STEPS):
         idx = order[step]
@@ -190,6 +312,13 @@ def main():
         for prm, grad in ((W1, dW1), (b1, db1), (W2, dW2), (b2, db2), (E, dE)):
             prm -= LR * grad.astype(DTYPE)
 
+        if _TRACE:
+            # per ARRAY, not just per step: measurement 5 asks which LAYER first differs, and a
+            # single whole-model digest per step cannot answer that.
+            trace.append({k: hashlib.sha256(np.ascontiguousarray(v).tobytes()).hexdigest()
+                          for k, v in (("E", E), ("W1", W1), ("b1", b1),
+                                       ("W2", W2), ("b2", b2))})
+
     secs = time.perf_counter() - t0
 
     weights = {"E": E, "W1": W1, "b1": b1, "W2": W2, "b2": b2}
@@ -215,8 +344,15 @@ def main():
            "weights_sha256": wdigest,
            "weights_npz_bytes": npz.stat().st_size}
     (out / "run.json").write_text(json.dumps(rec, indent=2) + NL, encoding="utf-8", newline=NL)
+    # ⚠ loss.json stays ROUNDED because it is a curve for reading, not evidence of
+    # divergence. The full-precision values go beside it, so nothing has to be recomputed from a
+    # rounded file, and the rounding can never again be mistaken for a measurement.
     (out / "loss.json").write_text(json.dumps([round(x, 8) for x in losses]) + NL,
                                    encoding="utf-8", newline=NL)
+    (out / "loss-full.json").write_text(json.dumps([repr(x) for x in losses]) + NL,
+                                        encoding="utf-8", newline=NL)
+    if _TRACE:
+        (out / "trace.json").write_text(json.dumps(trace) + NL, encoding="utf-8", newline=NL)
 
     print("  steps      %d in %.2f s   loss %.5f -> %.5f" % (STEPS, secs, losses[0], losses[-1]))
     print("  weights    sha256 %s" % wdigest)

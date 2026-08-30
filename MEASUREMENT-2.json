@@ -1,23 +1,39 @@
 {
-  "artifact_bytes": {
-    "corpus": 6313332,
-    "weights": 3217584,
-    "total": 9530916
+  "artifact_bytes": 9530566,
+  "apparatus_bytes": 182542,
+  "apparatus_excluding_arguable_bytes": 152726,
+  "arguable_bytes": 29816,
+  "timestamp_proof_bytes": 4171,
+  "percent_of_artifact": 1.9153,
+  "percent_excluding_arguable": 1.6025,
+  "artifact_files": {
+    "corpus/clean/pg11.txt": 151025,
+    "corpus/clean/pg1342.txt": 737465,
+    "corpus/clean/pg1400.txt": 1017755,
+    "corpus/clean/pg1661.txt": 575729,
+    "corpus/clean/pg2542.txt": 144040,
+    "corpus/clean/pg2701.txt": 1233942,
+    "corpus/clean/pg345.txt": 854860,
+    "corpus/clean/pg74.txt": 405473,
+    "corpus/clean/pg84.txt": 421388,
+    "corpus/clean/pg98.txt": 771305,
+    "reference/weights.npz": 3217584
   },
-  "apparatus_bytes": {
-    "corpus/MANIFEST.json": 4431,
-    "corpus/MANIFEST.json.ots": 3746,
+  "apparatus_files": {
+    "corpus/MANIFEST.json": 5544,
+    "corpus/MANIFEST.json.ots": 530,
     "corpus/sources.json": 3944,
+    "corpus/build_corpus.py": 11606,
     "PRE-REGISTRATION.md": 8831,
     "PRE-REGISTRATION.md.ots": 3641,
-    "runs/det-1/run.json": 1225,
-    "runs/det-1/loss.json": 3575,
-    "train.py": 10762,
-    "corpus/build_corpus.py": 8400
+    "AMENDMENT-2026-08-30.md": 3598,
+    "train.py": 18210,
+    "reference/run.json": 4047,
+    "reference/loss.json": 3565,
+    "reference/loss-full.json": 6347,
+    "reference/trace.json": 111301,
+    "reference/SHA256SUMS": 1378
   },
-  "apparatus_total": 48555,
-  "timestamp_proof_bytes": 7387,
-  "overhead_percent_of_artifact": 0.5094,
-  "overhead_percent_excluding_code": 0.3084,
-  "_caveat": "The apparatus is NEAR-CONSTANT in size -- a manifest, two OpenTimestamps proofs and a run record do not grow with the model -- while this artifact is deliberately tiny. On a release 1000x larger the same apparatus is ~0.0005%. So the percentage does not transfer and the ABSOLUTE figure is the one that carries: 48,555 bytes of provenance, 7,387 of it timestamp proofs."
+  "_boundary": "train.py and build_corpus.py are counted as apparatus because they exist in this form to make the artifact checkable; a reviewer may draw that line differently, so both totals are reported.",
+  "_caveat": "The apparatus is near-constant in size and this artifact is deliberately tiny, so the percentage does not transfer to a real release. The absolute figure is the one that carries."
 }

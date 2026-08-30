@@ -1,47 +1,90 @@
 {
-  "reps": 11,
-  "quiet_machine_verified_between_every_rep": true,
-  "loop_seconds": {
-    "pinned": [
-      5.8712,
-      6.0163,
-      6.1809,
-      6.399,
-      6.4139,
-      6.5852,
-      7.029,
-      7.0512,
-      7.4362,
-      9.4755,
-      9.5164
+  "reps": 12,
+  "threads_a": "1",
+  "threads_b": "16",
+  "counterbalanced_order": [
+    "BA",
+    "BA",
+    "BA",
+    "AB",
+    "AB",
+    "BA",
+    "AB",
+    "BA",
+    "AB",
+    "BA",
+    "AB",
+    "AB"
+  ],
+  "order_seed": 20260830,
+  "quiet_machine_verified_between_every_pair": true,
+  "pairs_in_execution_order": [
+    [
+      5.4266,
+      4.2137
     ],
-    "free": [
-      4.6553,
-      4.6807,
-      4.6925,
-      4.7739,
-      4.8036,
-      4.8049,
-      4.9794,
-      5.456,
-      5.4896,
-      5.4997,
-      5.7544
+    [
+      5.2053,
+      4.3622
+    ],
+    [
+      5.4536,
+      4.6998
+    ],
+    [
+      6.0018,
+      5.3981
+    ],
+    [
+      6.039,
+      5.414
+    ],
+    [
+      5.9305,
+      5.5083
+    ],
+    [
+      5.7888,
+      5.6292
+    ],
+    [
+      6.0425,
+      4.9437
+    ],
+    [
+      6.3045,
+      5.2789
+    ],
+    [
+      5.9601,
+      5.3929
+    ],
+    [
+      5.8532,
+      5.7304
+    ],
+    [
+      6.0842,
+      5.4086
     ]
-  },
-  "median": {
-    "pinned": 6.5852,
-    "free": 4.8049
-  },
-  "determinism_overhead_percent": 37.05184,
-  "ranges_overlap": false,
+  ],
+  "median_a": 5.9453,
+  "median_b": 5.3955,
+  "ratio_of_medians": 1.1018997312575294,
+  "permutation_p": 0.00048828125,
+  "permutation_method": "exact over all 4096 sign assignments",
+  "bootstrap_95_ratio": [
+    1.071788908929438,
+    1.1917895503367923
+  ],
+  "reported": "pinning to one thread costs roughly 10% on this configuration, 95% CI [+7%, +19%]",
+  "_estimand": "This is the cost of PINNING TO ONE THREAD versus requesting 16, both stated constraints. It is NOT 'the cost of determinism': what minimum constraint achieves bit-identity is not known until measurement 4 is done, and costing an unknown constraint is not possible.",
   "distinct_digests": {
-    "pinned": [
-      "ccf303f04e8ab1f02723f199137f9eb237bd042bd754bb87e09a0333a19e18cd"
+    "1": [
+      "59d07fa0811667df8a9dd606f9ff7842265fd0cac605812f96981d6b04ded8b5"
     ],
-    "free": [
-      "479add43eee1ae443fe2f4038ac322cf8e7bcad09356de8cc8dd426559a46928"
+    "16": [
+      "e2d154eb756fc8e9e45544f243b54a9f5ff0a03bdac9a07464925d153645b606"
     ]
-  },
-  "determinism_overhead_reported": "roughly a third; the ranges separate by only 0.12 s, so one decimal place is false precision"
+  }
 }

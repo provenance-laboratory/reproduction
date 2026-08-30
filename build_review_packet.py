@@ -73,9 +73,21 @@ def main():
     with zipfile.ZipFile(zp, "w", zipfile.ZIP_DEFLATED) as z:
         for rel, _why in SEND:
             z.write(HERE / rel, rel)
+        # ⛔ THE CORPUS TEXTS WERE MISSING FROM THIS ZIP. The packet told reviewers to run
+        # `python reproduce_findings.py`, which calls train.py, which reads corpus/clean/*.txt --
+        # and the zip shipped corpus/MANIFEST.json without the files it describes. The instruction
+        # could not be followed. A reviewer had to copy them out of the embedded package by hand
+        # before the advertised workflow would start.
+        for f in sorted((HERE / "corpus" / "clean").glob("*.txt")):
+            z.write(f, "corpus/clean/" + f.name)
         for p in sorted((HERE / "package").rglob("*")):
             if p.is_file():
                 z.write(p, str(p.relative_to(HERE)).replace(chr(92), "/"))
+        # the reference bundle, so a reviewer can audit the configuration-A numbers rather than
+        # only re-derive their own
+        for f in sorted((HERE / "reference").rglob("*")):
+            if f.is_file():
+                z.write(f, str(f.relative_to(HERE)).replace(chr(92), "/"))
     zsha = hashlib.sha256(zp.read_bytes()).hexdigest()
 
     L = []

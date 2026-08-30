@@ -10,14 +10,24 @@ WHAT "CLEANED" MEANS, EXACTLY, because a reproducer must be able to redo it:
   1. decode as UTF-8, dropping a byte-order mark if present
   2. normalise CRLF and CR to LF
   3. take only the text strictly between the Project Gutenberg START and END markers
+  3b. drop any paragraph that still mentions Project Gutenberg (editorial notes)
   4. strip trailing whitespace from every line
   5. collapse three or more consecutive blank lines to two
   6. ensure exactly one trailing newline
-  7. re-encode as UTF-8
+  7. re-encode as UTF-8, and REFUSE if any reference survived
 
 Every step is deterministic and order-dependent, so it is written here rather than described.
-Project Gutenberg's licence attaches to its trademark and boilerplate; step 1 removes both, which
-is what leaves the underlying public-domain work.
+Project Gutenberg's terms make removing the licence AND ALL REFERENCES the condition for using the
+underlying work freely, so steps 3 and 3b together are what leave the public-domain text -- and
+step 7 ASSERTS it, because the first version of this file claimed the boilerplate removal was
+sufficient and one clean text still said "Project Gutenberg's archives" in a transcriber's note.
+An external reviewer found that, which is the correct outcome and an expensive one: the fix
+changes the corpus bytes, so the Merkle root, its timestamp and every measurement downstream are
+regenerated.
+
+⚠️ SCOPE. Removing the licence and all references leaves the work unrestricted under US law by
+Project Gutenberg's own terms. It does not adjudicate the underlying edition, translation or
+typography in every jurisdiction, and this corpus does not claim it does.
 
 ⚠️ UPSTREAM DRIFT IS A FINDING. Project Gutenberg revises its files. If a raw digest recorded on
 first fetch no longer matches, this refuses rather than absorbing the change, because the corpus
@@ -78,12 +88,39 @@ def decoded(raw_bytes):
     """Decode and normalise line endings BEFORE anything looks for a marker.
 
     The first version searched for the START/END markers in the raw text, which still carries
-    CRLF, so `\*\*\*$` never matched and all ten sources were refused as "not a Project
+    CRLF, so the marker pattern never matched and all ten sources were refused as "not a Project
     Gutenberg text file". The files were fine; the check was wrong. Normalising first makes the
     marker search and the cleaning agree about what a line is.
     """
     s = raw_bytes.decode("utf-8-sig", "strict")
     return s.replace(chr(13) + NL, NL).replace(chr(13), NL)
+
+
+# ⛔ A REFERENCE CAN SURVIVE THE MARKERS. Project Gutenberg's terms make removal of the
+# licence AND OF ALL REFERENCES the condition for redistributing the underlying work freely. The
+# marker extraction removes the boilerplate; it does not remove a mention that sits INSIDE the
+# extracted span. `pg2701.txt` carried one, in a transcriber's note describing where the etext
+# came from -- so the corpus did not satisfy the condition the docstring claimed it satisfied,
+# and an external reviewer found it, not us.
+#
+# ⚠️ The fix is a rule over the CLASS, not a patch for the one file that failed. A special case
+# for pg2701 would leave the next text's note to be discovered by whoever redistributes it.
+PG_REFERENCE = re.compile(r"project\s+gutenberg", re.I)
+
+
+def _drop_referring_paragraphs(t):
+    """Remove any blank-line-delimited paragraph that mentions Project Gutenberg.
+
+    ⚠️ WHY PARAGRAPHS AND NOT LINES. A line-level deletion leaves the surrounding sentence
+    fragmentary, which corrupts the work in a way that is harder to notice than a missing
+    paragraph. These references occur in editorial notes -- transcriber's notes, production
+    credits -- which are additions to the public-domain work rather than part of it, and a
+    paragraph is the unit those come in.
+    """
+    kept, dropped = [], []
+    for para in t.split(NL + NL):
+        (dropped if PG_REFERENCE.search(para) else kept).append(para)
+    return (NL + NL).join(kept), dropped
 
 
 def clean(raw_bytes):
@@ -92,9 +129,16 @@ def clean(raw_bytes):
     if not (m1 and m2 and m1.end() < m2.start()):
         raise ValueError("markers missing or out of order")
     t = t[m1.end():m2.start()]
+    t, dropped = _drop_referring_paragraphs(t)
     t = NL.join(line.rstrip() for line in t.split(NL))
     t = re.sub(NL + "{3,}", NL * 2, t)
-    return (t.strip() + NL).encode("utf-8")
+    out = (t.strip() + NL).encode("utf-8")
+    # ⛔ AND THE ASSERTION, because a cleaning rule nobody checks is a comment. If a
+    # reference survives this, the file is not redistributable on the terms the manifest claims
+    # and the build stops rather than writing a manifest that says otherwise.
+    if PG_REFERENCE.search(out.decode("utf-8")):
+        raise ValueError("a Project Gutenberg reference survived cleaning")
+    return out, dropped
 
 
 def merkle(leaves):
@@ -150,13 +194,18 @@ def main():
                             % (pid, t["raw_sha256"][:16], rs[:16]))
             continue
 
-        cb = clean(body)
+        cb, dropped = clean(body)
         cp = CLEAN / ("pg%d.txt" % pid)
         if not verify:
             cp.write_bytes(cb)
         entries.append({"id": pid, "title": t["title"], "author": t["author"],
                         "year": t["year"], "file": "clean/pg%d.txt" % pid,
-                        "raw_sha256": rs, "clean_sha256": sha(cb), "clean_bytes": len(cb)})
+                        "raw_sha256": rs, "clean_sha256": sha(cb), "clean_bytes": len(cb),
+                        # What step 3b removed, recorded so the deletion is auditable rather
+                        # than silent. A cleaning rule that removes text without saying what it
+                        # removed is indistinguishable from a corpus that never had it.
+                        "paragraphs_dropped_for_pg_reference": len(dropped),
+                        "dropped_text": [d.strip()[:400] for d in dropped]})
         print("  pg%-5d %-38s raw %s  clean %s  %8d B"
               % (pid, t["title"][:38], rs[:8], sha(cb)[:8], len(cb)))
 
