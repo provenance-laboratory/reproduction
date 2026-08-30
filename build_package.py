@@ -35,6 +35,9 @@ CONTENTS = (
     ("PRE-REGISTRATION-v3-CONFIRMATORY.md",
      "THE PROTOCOL THIS STUDY RUNS UNDER"),
     ("PRE-REGISTRATION-v3-CONFIRMATORY.md.ots", "its proof"),
+    ("PRE-REGISTRATION-v4-CONFIRMATORY.md",
+     "AND MEASUREMENT 4'S ADMISSIBILITY -- v3 governs everything else"),
+    ("PRE-REGISTRATION-v4-CONFIRMATORY.md.ots", "its proof"),
     ("PRE-REGISTRATION-v2-CONFIRMATORY.md", "version 2, superseded, retained as record"),
     ("PRE-REGISTRATION-v2-CONFIRMATORY.md.ots", "its proof"),
     ("ENVIRONMENT-LOCK.json",
@@ -81,7 +84,17 @@ def main():
     #
     # A list of files to ship cannot notice the one file that makes the rest interpretable. So the
     # governing version is named ONCE, here, and its absence stops the build.
+    # ⛔ v3 WAS WRITTEN, STAMPED, ANNOUNCED AS GOVERNING -- AND NEVER ADDED HERE, so the
+    # package shipped v1 and a v2 whose own text says it is superseded. v4 is added to CONTENTS in
+    # the same commit that creates it, and both are named below, because "the governing document"
+    # is now two files and a refusal that checks only one of them is the same defect again.
     GOVERNING = "PRE-REGISTRATION-v3-CONFIRMATORY.md"
+    GOVERNING_M4 = "PRE-REGISTRATION-v4-CONFIRMATORY.md"
+    if not (HERE / GOVERNING_M4).exists():
+        raise SystemExit(D + " %s is missing. It carries measurement 4's admissibility "
+                         "conditions, committed before any second-machine run exists. A package "
+                         "without it invites a comparison the protocol has not defined."
+                         % GOVERNING_M4)
     if not (HERE / GOVERNING).exists():
         raise SystemExit(D + " the governing protocol %s does not exist. A package without it is "
                          "a package whose rules cannot be read." % GOVERNING)
