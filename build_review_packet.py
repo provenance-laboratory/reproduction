@@ -184,7 +184,11 @@ def main():
     A("## ⇒ SEND THESE TWO")
     A("")
     A("```")
-    A("paper-b-review.zip     %d files" % (len(SEND) + 1))
+    # ⛔ THIS PRINTED len(SEND) + 1 -- 41 -- WHILE THE ZIP HELD 108 MEMBERS. The zip also
+    # carries corpus/clean/, package/ and reference/ by projection, so a count taken from the
+    # NAMED list was never the count of the artifact. A reader checking the packet against the
+    # file it describes would have found it wrong on the first line of the first block.
+    A("paper-b-review.zip     %d files" % len(zipfile.ZipFile(zp).namelist()))
     A("  sha256 %s" % zsha)
     A("this file")
     A("```")
