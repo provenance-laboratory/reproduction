@@ -25,6 +25,7 @@ import sys
 import numpy as np
 
 NL = chr(10)
+D = chr(0x26D4)
 HERE = pathlib.Path(__file__).resolve().parent
 COUNTS = (1, 2, 4, 8, 16)
 
@@ -112,8 +113,22 @@ def main():
         print("             in the WEIGHTS, per array                    %s"
               % ", ".join("%s=%s" % (k, firsts.get(k, "never")) for k in ("E", "W1", "b1",
                                                                           "W2", "b2")))
-        print("             -> there is no first LAYER: reduction order enters at the first")
-        print("                matmul, so every array diverges at the same step")
+        # ⛔ THIS CONCLUDED "every array diverges at the same step" WHETHER OR NOT ANY
+        # ARRAY DIVERGED. On a reviewer's machine it printed E=never, W1=never ... and then the
+        # conclusion anyway -- the same executable prose/data contradiction that was fixed in
+        # FINDING 1 four lines up and not here. Fixing one branch of a defect is not fixing it.
+        if not firsts:
+            print("             -> NO ARRAY DIVERGED HERE. On this stack the thread requests did")
+            print("                not change the model, so there is nothing to locate. Report it:")
+            print("                it is the implementation-dependence, observed.")
+        elif len(set(firsts.values())) == 1 and len(firsts) == 5:
+            print("             -> every array diverges at the SAME step, which is consistent with")
+            print("                reduction order entering at the first matmul. ⚠️ Consistent")
+            print("                with, not proof of: locating the SOURCE needs digests of the")
+            print("                step-0 intermediates, which this trace does not record.")
+        else:
+            print("             -> the arrays diverge at DIFFERENT steps: %s" % firsts)
+            print("                That is a stronger and more surprising result than uniformity.")
     except Exception as e:                                                  # noqa: BLE001
         print("             " + D + " could not read the traces: %s" % e)
     print("             final loss %.8f vs %.8f" % (L1[-1], L16[-1]))

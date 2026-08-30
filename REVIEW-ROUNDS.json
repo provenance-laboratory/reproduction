@@ -1,0 +1,43 @@
+{
+  "_readme": [
+    "The review history for Paper B, as a record the packet builder reads.",
+    "",
+    "⛔ WHY THIS FILE EXISTS. The round-1 packet was circulated with a covering note claiming",
+    "'+37%', 'divergence at step 8', '83% of parameters' and 'numerically indistinguishable' --",
+    "all four withdrawn in the findings document the packet claimed to summarise. The note was a",
+    "hardcoded string; a patch meant to update it matched nothing, printed success, and the stale",
+    "text shipped. Both round-2 reviewers read the contradiction and told us not to circulate it.",
+    "",
+    "A packet that says 'every figure here is measured' while carrying retyped prose is the",
+    "dead-noun-beside-a-live-number defect in the artifact whose job is to prevent it."
+  ],
+  "rounds": [
+    {
+      "round": 1,
+      "summary": "Both reviewers refused the freeze, and both were right.",
+      "changed": [
+        "The corpus was not licensing-clean: one text still named Project Gutenberg. Fixed as a rule over the class; new Merkle root; every measurement retaken.",
+        "Measurement 1 was +37% and is roughly 10%: the design was at fault -- fixed order, an 'unconstrained' arm that was not a condition, and arrays sorted separately before storage.",
+        "'Divergence at step 8' was a fact about loss.json's rounding. The weights differ at step 0, in every array.",
+        "'Five thread counts, five models' held here and not on a reviewer's machine. Narrowed to reduction shape, of which thread count is one dial.",
+        "Measurement 3 withdrawn to internal repeatability; 6 reported NOT MEASURABLE; 7 was missing entirely and is not monotone.",
+        "Version 1 of the protocol retired as the PILOT; v2 puts a public commitment before the reference run."
+      ],
+      "deadline": "The artifact freezes at publication. Findings about the pipeline or the protocol cannot wait; wording can."
+    },
+    {
+      "round": 2,
+      "summary": "Both reviewers required a v3 pre-registration, and both were right again. Round 2's repairs each needed their own repair.",
+      "changed": [
+        "`blas_kernel_selected` was NOT the selected kernel -- it is the build-configuration line, and a reviewer's run recorded `Haswell MAX_THREADS=64` while the same process reported a SkylakeX runtime architecture. Renamed to `blas_build_config_line`, with `blas_runtime_arch` recorded where observable.",
+        "That field was also REQUIRED by the §2a gate, which refused conda/MKL, macOS Accelerate and non-DYNAMIC_ARCH OpenBLAS outright -- three honest installs that could file nothing but 'I could not run it', which §2c would have scored as an ecosystem finding about our own gate. Now recorded as an absence, exactly as §5 already settled for the effective thread count.",
+        "An off-by-one in the sampling range excluded the last valid (context, target) pair. Negligible in effect, and part of the model specification, so it changes every digest.",
+        "The trace began after the first update, so it could show the arrays DIFFER at step 0 but not that they STARTED identical. It now records the initialisation as step -1.",
+        "'Final loss identical to eight decimals' was false: 3.21813250 against 3.21812963. It was the sentence written to replace a claim withdrawn in round 1.",
+        "Nothing is anchored: both active OpenTimestamps proofs carry calendar attestations only, while three documents said 'anchored'. The retired pilot's proof is the stronger one. `anchor_status.py` now decides this by reading the proof bytes.",
+        "The v2 ordering was defeated by the package: the reference run predates the document that orders it, and EXPECTED.json shipped the target inside the package handed out before the commitment step."
+      ],
+      "deadline": "v3 is required. The corpus, model and pipeline are NOT frozen until v3 is anchored and its proofs carry a Bitcoin attestation -- so a finding in any of them is still cheap to act on, and is wanted now rather than after publication."
+    }
+  ]
+}

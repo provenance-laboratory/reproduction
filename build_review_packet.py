@@ -37,9 +37,12 @@ SEND = (
     ("REPRODUCTION-CALL.md", "the open request, written to section 2b"),
     ("PUBLICATION-CHECKLIST.md", "the decisions that must be made in the act of publishing"),
     ("train.py", "the pipeline"),
-    ("measure_cost.py", "measurement 1's instrument"),
     ("build_package.py", "what a reproducer receives"),
     ("verify_package.py", "the package run as a stranger would"),
+    ("build_review_packet.py", "this packet's own builder -- a reviewer asked for it"),
+    ("REVIEW-ROUNDS.json", "the round record the covering note is generated from"),
+    ("anchor_status.py", "what each OpenTimestamps proof actually attests"),
+    ("measure_cost.py", "measurement 1's instrument"),
     ("reproduce_findings.py",
      "re-derives the headline findings from scratch -- five runs, no timing, so a"
      " reviewer checks the RESULTS rather than the prose"),
@@ -97,16 +100,26 @@ def main():
 
     L = []
     A = L.append
-    A("# Paper B (`reproduction`) — internal review packet, round 1")
+    # ⛔ EVERY CLAIM IN THIS PACKET IS NOW LIFTED FROM PHASE-2-FINDINGS.md, NOT RETYPED.
+    # The round-1 packet was circulated carrying "+37%", "step 8", "83%" and "numerically
+    # indistinguishable" -- all four withdrawn in the findings document it claimed to summarise --
+    # because the covering note was a hardcoded string and a patch that was supposed to update it
+    # silently matched nothing and reported success. Both reviewers read the contradiction.
+    #
+    # So the note is EXTRACTED, and a cross-check below refuses to write a packet whose numbers do
+    # not appear in the findings.
+    _find = (HERE / "PHASE-2-FINDINGS.md").read_text(encoding="utf-8")
+    _round = json.loads((HERE / "REVIEW-ROUNDS.json").read_text(encoding="utf-8"))
+    _last = max(_round["rounds"], key=lambda r: r["round"])
+    A("# Paper B (`reproduction`) — internal review packet, round %d" % (_last["round"] + 1))
     A("")
-    A("*Every figure below is read from the measurement files by `build_review_packet.py`. "
-      "It refuses to write if one is missing.*")
+    A("*Every figure below is read from the measurement files, and every claim is lifted from "
+      "`PHASE-2-FINDINGS.md` rather than retyped. `build_review_packet.py` refuses to write if a "
+      "figure it prints is absent from that document.*")
     A("")
     A("## ⇒ SEND THESE TWO")
     A("")
     A("```")
-    # ⛔ A 32-CHARACTER PREFIX IS NOT A SHA-256, and labelling it as one invites a reader to
-    # verify against a truncation. Reviewer finding; the full digest goes out.
     A("paper-b-review.zip     %d files" % (len(SEND) + 1))
     A("  sha256 %s" % zsha)
     A("this file")
@@ -119,28 +132,12 @@ def main():
     A("")
     A("## ★ THE COVERING NOTE — paste this verbatim")
     A("")
-    A("> **This paper has no manuscript yet, and that is what the review is for.** Phase 1 fixed "
-      "the corpus and pre-registered the protocol; phase 2 built the pipeline and took every "
-      "measurement that one machine can take. Reviewing it now, before a word of the paper is "
-      "written, is deliberate: the expensive mistake would be to write the argument first and "
-      "discover the measurements do not carry it.")
+    A("> **This is round %d.** %s" % (_last["round"] + 1, _last["summary"]))
     A(">")
-    A("> ⭐ **The headline arrived from a direction the pre-registration did not predict.** "
-      "Section 4 expected bit-identity to fail ACROSS hardware, for principled reasons. It fails "
-      "**within one machine, on thread count alone** — five thread counts, five distinct models, "
-      "with 83% of parameters differing between 1 and 16. The conclusion the paper was written to "
-      "be publishable under therefore holds *a fortiori*, and with a far smaller apparatus than "
-      "the argument needed.")
+    for _line in _last["changed"]:
+        A("> - %s" % _line)
     A(">")
-    A("> ⚠️ **And the two models are numerically indistinguishable.** Relative L2 8e-06, final "
-      "loss agreeing to seven significant figures. Any tolerance-based provenance claim passes; "
-      "the bit-identity claim fails on 83% of the parameters. **That gap is the paper.**")
-    A(">")
-    A("> ⛔ **Measurement 1 took three attempts and the first two are reported, not replaced.** "
-      "The first was contaminated by a build running in another window. The guard written to "
-      "prevent that failed the same way — it checked once, found the machine quiet, and a build "
-      "started a second later. A precondition checked once at the start is not a precondition held "
-      "throughout.")
+    A("> ⚠️ **%s**" % _last["deadline"])
     A("")
     A("## ⭐ CHECK THE FINDINGS, NOT ONLY THE PACKAGING")
     A("")
@@ -252,6 +249,19 @@ def main():
       % (round((m1["ratio_of_medians"] - 1) * 100), m1["threads_b"]))
     A("")
 
+    # ⛔ THE CROSS-CHECK. Every figure this packet prints must appear in the findings
+    # document it claims to summarise. The round-1 packet printed four numbers that had been
+    # withdrawn there, and nothing compared the two files -- so the packet could contradict the
+    # study and still be produced by a script advertising that it reads the measurement files.
+    import re as _re
+    _txt = NL.join(L)
+    _nums = set(_re.findall(r"\d+\.\d+e-\d+|\d{1,3}\.\d\s?%|step \d+", _txt))
+    _absent = sorted(n for n in _nums if n not in _find and n.replace(" ", "") not in
+                     _find.replace(" ", ""))
+    if _absent:
+        raise SystemExit(D + " this packet prints figure(s) that do not appear in "
+                         "PHASE-2-FINDINGS.md: %s. A packet that can contradict the study is "
+                         "how the round-1 packet shipped withdrawn claims." % _absent)
     (OUT / "PAPER-B-REVIEW-PACKET.md").write_text(NL.join(L) + NL, encoding="utf-8", newline=NL)
     print("  wrote review/PAPER-B-REVIEW-PACKET.md")
     print("  wrote review/paper-b-review.zip  (%.2f MB, sha256 %s)"

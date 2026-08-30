@@ -46,6 +46,10 @@ stand, and their digest observations describe a superseded artifact and are repo
 old proof is kept as `MANIFEST.json.ots.superseded-814acd24`; it still attests exactly what it
 always attested.
 
+⛔ **And it is currently the STRONGER proof.** The superseded corpus proof carries a Bitcoin
+attestation; the proof over the corpus actually in use does not yet. Run `anchor_status.py` before
+repeating any sentence in this document that uses the word *anchored*.
+
 ## 3. Measurement 1 — roughly 10%, not 37%
 
 Twelve **counterbalanced** pairs (half threads-1-first, half threads-16-first, in a seeded order),
@@ -101,13 +105,20 @@ there is no first layer. Reduction order enters at the first matmul, so everythi
 relative L2            2.008e-05
 max |difference|       1.369e-04
 parameters differing   778,597 of 804,096   (96.8%)
-final loss             identical to 8 decimals
+final loss             3.21813250 vs 3.21812963  -- agree to 5 decimals, NOT identical
 ```
 
 ⚠️ **"Numerically indistinguishable" is withdrawn.** No behavioural equivalence was tested and
 capability testing is out of scope by §5. The defensible statement is *close under the reported
-parameter metrics, with identical final loss to eight decimals* — a different claim that licenses
-a different inference.
+parameter metrics, with final losses agreeing to five decimals* -- a different claim that
+licenses a different inference.
+
+⛔ **An earlier revision of this document said the final losses were IDENTICAL to eight
+decimals. They are not: 3.21813250 against 3.21812963, a difference of 2.9e-06.** Both round-2
+reviewers checked the shipped numbers and found the sentence false. It was the sentence written to
+REPLACE a claim withdrawn in round 1 -- so a correction introduced a new overstatement, which is
+the failure mode this paper exists to measure and the second time in two rounds that a repair has
+needed its own repair.
 
 ⚠️ **A number this study declines to headline.** The maximum *relative* difference over all
 parameters is **17.0**, and it is meaningless — entirely parameters near zero. Above 1% of RMS the

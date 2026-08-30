@@ -38,6 +38,7 @@ the model trained on must be the corpus the manifest describes.
 """
 import hashlib
 import io
+import datetime as _dt
 import json
 import pathlib
 import re
@@ -223,11 +224,26 @@ def main():
         "_readme": "The corpus this experiment trains on. merkle_root is over the sorted "
                    "clean_sha256 leaves, promoting an odd node rather than duplicating it. "
                    "The root is OpenTimestamped BEFORE the first training step.",
-        "built": src["fixed_at"], "selection_rule": src["selection_rule"],
+        # ⛔ "built" WAS THE SELECTION DATE AND WAS READ AS THE BUILD DATE. A reviewer
+        # spotted that the manifest said 2026-08-29 for a corpus rebuilt on the 30th. They are
+        # two facts and they were sharing a field: the date the SELECTION was fixed is a
+        # pre-registration property, and the date the bytes were produced is a build property.
+        # Conflating them lets a corpus change while its manifest still points at the older,
+        # more reassuring date.
+        "selection_fixed_at": src["fixed_at"],
+        "corpus_built_at": _dt.date.today().isoformat(),
+        "selection_rule": src["selection_rule"],
+        # ⛔ AND THIS LIST OMITTED STEP 3b -- the paragraph removal added when a Project
+        # Gutenberg reference was found surviving the markers. The build script did it, the
+        # per-text records recorded it, and the summary a reader sees did not mention it. A
+        # cleaning rule absent from the description of the cleaning is a silent transformation.
         "cleaning": ["decode utf-8, drop BOM", "CRLF and CR -> LF",
                      "take only the text strictly between the PG START and END markers",
+                     "drop any paragraph still mentioning Project Gutenberg (editorial notes), "
+                     "recorded per text in paragraphs_dropped_for_pg_reference",
                      "strip trailing whitespace per line",
-                     "collapse 3+ blank lines to 2", "single trailing newline", "encode utf-8"],
+                     "collapse 3+ blank lines to 2", "single trailing newline", "encode utf-8",
+                     "REFUSE if any Project Gutenberg reference survived"],
         "texts": entries, "text_count": len(entries), "total_clean_bytes": total,
         "merkle_root": root,
     }

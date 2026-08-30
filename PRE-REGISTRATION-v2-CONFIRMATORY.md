@@ -34,7 +34,8 @@ wrong has succeeded when it does.
 
 ```
 1  this document is frozen and OpenTimestamped                          <- before anything else
-2  the corpus manifest is frozen and anchored                              already done: 2006b732…
+2  the corpus manifest is frozen and TIMESTAMPED                           done: 2006b732...
+   ⛔ Bitcoin anchoring PENDING. Do not proceed to step 3 until it is not.
 3  the package and the reproduction call are PUBLISHED
 4  at least one reproducer COMMITS PUBLICLY, through the open call, before any reference run
 5  the reference run is performed and its digest published
@@ -138,7 +139,13 @@ And §2c's null outcome, now sharpened to apply at step 4 as well as step 6.
 
 ---
 
-⚠️ **Status at signing: the pilot is complete, the corpus is frozen and anchored, and nothing has
-been published.** No reproducer has been approached. No confirmatory reference run exists.
+⚠️ **Status at signing: the pilot is complete, the corpus is frozen and TIMESTAMPED, and nothing
+has been published.**
+
+⛔ **NOT ANCHORED. Both active proofs -- this document's and the corpus manifest's -- carry
+calendar attestations only.** The sole Bitcoin attestations in this study belong to the SUPERSEDED
+corpus proof and the RETIRED v1 pre-registration, so the pilot currently has a stronger guarantee
+than the protocol replacing it. Both round-2 reviewers found this while three documents said
+'anchored'. `anchor_status.py` decides the question by reading the proof bytes; the prose follows it. No reproducer has been approached. No confirmatory reference run exists.
 
 **NOT a product, and not a recommendation.**

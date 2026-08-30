@@ -9,6 +9,14 @@ nor its rule could be inspected.
 
     ARTIFACT     what a consumer wants: the corpus they would train on, and the weights that
                  result. If you removed the provenance apparatus entirely, this is what is left
+
+⚠️ AND WHICH QUANTITY IS THIS? A reviewer asked, correctly, whether measurement 2 reports the
+provenance overhead of ONE MODEL RELEASE or the size of an entire experimental apparatus. It is
+the first: the files below are what a publisher would have to ship alongside a release so a
+stranger could check it. The measurement instruments themselves -- measure_cost.py,
+reproduce_findings.py, verify_package.py, the findings document -- are NOT counted, because they
+are this study's apparatus and not a release's. That boundary is a choice and it is stated here
+rather than left to be inferred from a total.
     APPARATUS    what exists ONLY so a third party can check the artifact: manifests, digests,
                  timestamp proofs, the pre-registration, the run records, and the code that
                  produces or verifies them
@@ -27,6 +35,9 @@ import pathlib
 import sys
 
 NL = chr(10)
+# used in the missing-file refusal below; it was referenced and never defined, so
+# that control would have raised NameError instead of reporting. It had never run.
+D = chr(0x26D4)
 HERE = pathlib.Path(__file__).resolve().parent
 
 # ── the two populations, by RULE ──────────────────────────────────────────────────────
@@ -39,7 +50,10 @@ APPARATUS = [
     ("corpus/MANIFEST.json.ots", "the proof the corpus preceded training"),
     ("corpus/sources.json", "where each text came from"),
     ("corpus/build_corpus.py", "the cleaning rule, which is part of the specification"),
-    ("PRE-REGISTRATION.md", "what was committed to in advance"),
+    ("PRE-REGISTRATION-v2-CONFIRMATORY.md", "the protocol the study runs under"),
+    ("PRE-REGISTRATION-v2-CONFIRMATORY.md.ots", "its proof"),
+    ("ENVIRONMENT-LOCK.json", "the interpreter and library record"),
+    ("PRE-REGISTRATION.md", "version 1, retained as the pilot protocol"),
     ("PRE-REGISTRATION.md.ots", "its proof"),
     ("AMENDMENT-2026-08-30.md", "the recorded deviation"),
     ("train.py", "the pipeline, written to be re-run byte-identically"),
@@ -53,7 +67,7 @@ APPARATUS = [
 ARGUABLE = {"train.py", "corpus/build_corpus.py"}
 
 
-def total(patterns):
+def total(patterns, missing):
     out = {}
     for pat, why in patterns:
         if "*" in pat:
@@ -63,13 +77,24 @@ def total(patterns):
             f = HERE / pat
             if f.exists():
                 out[pat] = (f.stat().st_size, why)
+            else:
+                missing.append(pat)
     return out
 
 
 def main():
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-    art = total(ARTIFACT)
-    app = total(APPARATUS)
+    # ⛔ A DECLARED FILE THAT IS ABSENT WAS SILENTLY SKIPPED, so this measured whatever
+    # happened to be on disk and called it the apparatus. A reviewer ran the shipped script and
+    # got 169,558 bytes where the stored record said 182,542 -- the script and its own output
+    # disagreed, and neither was wrong about what it saw. A measurement whose population depends
+    # on what is lying around is not a measurement.
+    missing = []
+    art = total(ARTIFACT, missing)
+    app = total(APPARATUS, missing)
+    if missing:
+        raise SystemExit(D + " %d declared file(s) are absent, so the populations are not the "
+                         "ones this measurement is defined over: %s" % (len(missing), missing))
     a = sum(v[0] for v in art.values())
     p = sum(v[0] for v in app.values())
     arguable = sum(v[0] for k, v in app.items() if k in ARGUABLE)

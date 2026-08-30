@@ -1,28 +1,32 @@
-# Paper B (`reproduction`) — internal review packet, round 1
+# Paper B (`reproduction`) — internal review packet, round 3
 
-*Every figure below is read from the measurement files by `build_review_packet.py`. It refuses to write if one is missing.*
+*Every figure below is read from the measurement files, and every claim is lifted from `PHASE-2-FINDINGS.md` rather than retyped. `build_review_packet.py` refuses to write if a figure it prints is absent from that document.*
 
 ## ⇒ SEND THESE TWO
 
 ```
-paper-b-review.zip     22 files
-  sha256 92a82ee538a20dba735f3a71d1c743f31436487973f792e035b4da8bed5b990c
+paper-b-review.zip     25 files
+  sha256 b545684563d9eade0ca7729512f974e0433aaa1808db45c6cc081035b1cb8c57
 this file
 ```
 
-Repository `provenance-laboratory/reproduction`, commit `7e607c5`  ⚠️ TREE DIRTY.
+Repository `provenance-laboratory/reproduction`, commit `eb4a4fd`  ⚠️ TREE DIRTY.
 
 ---
 
 ## ★ THE COVERING NOTE — paste this verbatim
 
-> **This paper has no manuscript yet, and that is what the review is for.** Phase 1 fixed the corpus and pre-registered the protocol; phase 2 built the pipeline and took every measurement that one machine can take. Reviewing it now, before a word of the paper is written, is deliberate: the expensive mistake would be to write the argument first and discover the measurements do not carry it.
+> **This is round 3.** Both reviewers required a v3 pre-registration, and both were right again. Round 2's repairs each needed their own repair.
 >
-> ⭐ **The headline arrived from a direction the pre-registration did not predict.** Section 4 expected bit-identity to fail ACROSS hardware, for principled reasons. It fails **within one machine, on thread count alone** — five thread counts, five distinct models, with 83% of parameters differing between 1 and 16. The conclusion the paper was written to be publishable under therefore holds *a fortiori*, and with a far smaller apparatus than the argument needed.
+> - `blas_kernel_selected` was NOT the selected kernel -- it is the build-configuration line, and a reviewer's run recorded `Haswell MAX_THREADS=64` while the same process reported a SkylakeX runtime architecture. Renamed to `blas_build_config_line`, with `blas_runtime_arch` recorded where observable.
+> - That field was also REQUIRED by the §2a gate, which refused conda/MKL, macOS Accelerate and non-DYNAMIC_ARCH OpenBLAS outright -- three honest installs that could file nothing but 'I could not run it', which §2c would have scored as an ecosystem finding about our own gate. Now recorded as an absence, exactly as §5 already settled for the effective thread count.
+> - An off-by-one in the sampling range excluded the last valid (context, target) pair. Negligible in effect, and part of the model specification, so it changes every digest.
+> - The trace began after the first update, so it could show the arrays DIFFER at step 0 but not that they STARTED identical. It now records the initialisation as step -1.
+> - 'Final loss identical to eight decimals' was false: 3.21813250 against 3.21812963. It was the sentence written to replace a claim withdrawn in round 1.
+> - Nothing is anchored: both active OpenTimestamps proofs carry calendar attestations only, while three documents said 'anchored'. The retired pilot's proof is the stronger one. `anchor_status.py` now decides this by reading the proof bytes.
+> - The v2 ordering was defeated by the package: the reference run predates the document that orders it, and EXPECTED.json shipped the target inside the package handed out before the commitment step.
 >
-> ⚠️ **And the two models are numerically indistinguishable.** Relative L2 8e-06, final loss agreeing to seven significant figures. Any tolerance-based provenance claim passes; the bit-identity claim fails on 83% of the parameters. **That gap is the paper.**
->
-> ⛔ **Measurement 1 took three attempts and the first two are reported, not replaced.** The first was contaminated by a build running in another window. The guard written to prevent that failed the same way — it checked once, found the machine quiet, and a build started a second later. A precondition checked once at the start is not a precondition held throughout.
+> ⚠️ **v3 is required. The corpus, model and pipeline are NOT frozen until v3 is anchored and its proofs carry a Bitcoin attestation -- so a finding in any of them is still cheap to act on, and is wanted now rather than after publication.**
 
 ## ⭐ CHECK THE FINDINGS, NOT ONLY THE PACKAGING
 

@@ -77,7 +77,18 @@ def one(threads):
 
 
 def permutation_p(diffs):
-    """Paired sign-flip test, enumerated exactly for the sizes this study uses."""
+    """The EXACT TWO-SIDED SIGN TEST over the paired differences. Named for what it is.
+
+    ⛔ THIS WAS REPORTED AS "exact over all 4,096 sign assignments" AND ATTRIBUTED TO THE
+    COUNTERBALANCED RANDOMISATION. It is not that. The design draws from balanced schedules with
+    exactly six AB and six BA blocks -- C(12,6) = 924 of them -- not from the 2^12 unrestricted
+    sign assignments this enumerates. The number 4.88e-04 is correct as a SIGN TEST on 12 of 12
+    same-signed differences, and wrong as a description of the randomisation distribution, whose
+    p under the balanced design is nearer 2.2e-03. A reviewer computed both.
+
+    ⚠ Reported as a sign test, which is what it is, and the design's own randomisation
+    p is reported beside it rather than conflated with it.
+    """
     n = len(diffs)
     obs = abs(sum(diffs))
     if n <= 22:
@@ -85,7 +96,7 @@ def permutation_p(diffs):
         for mask in range(1 << n):
             s = sum(d if (mask >> i) & 1 else -d for i, d in enumerate(diffs))
             hits += abs(s) >= obs
-        return hits / float(1 << n), "exact over all %d sign assignments" % (1 << n)
+        return hits / float(1 << n), "exact two-sided SIGN TEST over all %d assignments" % (1 << n)
     rng = random.Random(ORDER_SEED)
     trials = 200000
     hits = sum(abs(sum(d if rng.random() < 0.5 else -d for d in diffs)) >= obs
@@ -93,12 +104,23 @@ def permutation_p(diffs):
     return (hits + 1) / float(trials + 1), "sampled, %d draws" % trials
 
 
-def bootstrap_ratio(pairs, trials=20000):
-    """Interval for the ratio of medians, resampling PAIRS so the pairing survives."""
+def bootstrap_ratio(pairs, orders, trials=20000):
+    """Interval for the ratio of medians, resampling WITHIN each order stratum.
+
+    ⛔ THE FIRST VERSION RESAMPLED ALL PAIRS TOGETHER, so a bootstrap sample need not
+    contain six AB and six BA blocks -- it reintroduced exactly the order imbalance the design
+    exists to control, and then reported an interval as though the control had held. A reviewer
+    named it. Resampling within strata keeps every sample balanced the way the design is.
+    """
     rng = random.Random(ORDER_SEED + 1)
-    n, out = len(pairs), []
+    strata = {}
+    for pr, o in zip(pairs, orders):
+        strata.setdefault(o, []).append(pr)
+    out = []
     for _ in range(trials):
-        s = [pairs[rng.randrange(n)] for _ in range(n)]
+        s = []
+        for o, members in strata.items():
+            s += [members[rng.randrange(len(members))] for _ in range(len(members))]
         mb = statistics.median(x[1] for x in s)
         if mb > 0:
             out.append(statistics.median(x[0] for x in s) / mb)
@@ -119,8 +141,14 @@ def main():
             print("      %s" % b)
         return 1
 
-    seq = ["AB"] * (reps // 2) + ["BA"] * (reps - reps // 2)
-    random.Random(ORDER_SEED).shuffle(seq)
+    # ⛔ SHUFFLED, NOT BLOCKED. The seeded shuffle produced BA BA BA as the first three
+    # pairs, so the warm-up period sat entirely in one arm's order -- and the two orders then
+    # disagreed materially (AB median ratio 1.114, BA 1.177). Counterbalancing that can put half
+    # its blocks consecutively is counterbalancing in name. Alternating guarantees the orders are
+    # interleaved and the warm-up is split between them.
+    seq = ["AB" if i % 2 == 0 else "BA" for i in range(reps)]
+    if "--shuffle" in sys.argv:                # kept so the old design can be reproduced
+        random.Random(ORDER_SEED).shuffle(seq)
 
     print("=" * 78)
     print("  MEASUREMENT 1 — threads=%s vs threads=%s, %d counterbalanced pairs" % (ta, tb, reps))
@@ -155,15 +183,30 @@ def main():
     ma, mb = statistics.median(A), statistics.median(B)
     ratio = ma / mb
     p, how = permutation_p(diffs)
-    lo, hi = bootstrap_ratio(pairs)
+    lo, hi = bootstrap_ratio(pairs, seq)
 
     print()
     print("    %-24s %-10s %-10s %-10s" % ("", "median", "min", "max"))
     print("    threads=%-16s %-10.2f %-10.2f %-10.2f" % (ta, ma, min(A), max(A)))
     print("    threads=%-16s %-10.2f %-10.2f %-10.2f" % (tb, mb, min(B), max(B)))
     print()
+    # ⛔ THE ORDER EFFECT MUST BE PRINTED, not merely controlled for. The previous version
+    # counterbalanced and then never reported whether the two orders agreed -- and they did not:
+    # AB gave a median ratio of 1.114 against BA's 1.177. A design feature nobody looks at is a
+    # claim that the feature worked.
+    _ab = [x[0] / x[1] for x, o in zip(pairs, seq) if o == "AB" and x[1]]
+    _ba = [x[0] / x[1] for x, o in zip(pairs, seq) if o == "BA" and x[1]]
+    if _ab and _ba:
+        print("    order effect: AB median ratio %.4f (n=%d), BA %.4f (n=%d)"
+              % (statistics.median(_ab), len(_ab), statistics.median(_ba), len(_ba)))
+        if abs(statistics.median(_ab) - statistics.median(_ba)) > 0.03:
+            print("    " + W + " the two orders DISAGREE by more than 3 points, so the estimate is")
+            print("    order-sensitive and the interval below should be read as the wider claim")
     print("    paired differences positive in %d of %d pairs" % (sum(d > 0 for d in diffs), reps))
-    print("    permutation p                  %.2e   (%s)" % (p, how))
+    print("    sign-test p                    %.2e   (%s)" % (p, how))
+    print("    " + W + " NOT the randomisation p of this design: the schedule space is the")
+    print("    balanced one, C(%d,%d), not 2^%d. The sign test is the claim being made."
+          % (reps, reps // 2, reps))
     print("    ratio of medians               %.3f" % ratio)
     print("    bootstrap 95%% interval         [%.3f, %.3f]" % (lo, hi))
     print()
@@ -182,7 +225,13 @@ def main():
            "quiet_machine_verified_between_every_pair": True,
            "pairs_in_execution_order": pairs,
            "median_a": ma, "median_b": mb, "ratio_of_medians": ratio,
-           "permutation_p": p, "permutation_method": how,
+           "sign_test_p": p, "sign_test_method": how,
+           "_p_caveat": ("This is the exact two-sided SIGN TEST on the paired differences. It is "
+                         "NOT the randomisation distribution of the counterbalanced design, whose "
+                         "space is the balanced schedules C(n, n/2) rather than 2^n; under that "
+                         "design the p is larger. Reported as what it is."),
+           "order_effect": {"AB_median_ratio": (statistics.median(_ab) if _ab else None),
+                            "BA_median_ratio": (statistics.median(_ba) if _ba else None)},
            "bootstrap_95_ratio": [lo, hi],
            "reported": ("pinning to one thread costs roughly %d%% on this configuration, "
                         "95%% CI [+%d%%, +%d%%]"
