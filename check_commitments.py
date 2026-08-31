@@ -45,34 +45,94 @@ def commitments(text):
     return [(m.group(1), m.group(2)) for m in DIGEST_LINE.finditer(text)]
 
 
-def governing(here):
-    """The HIGHEST protocol version that carries a digest table, and its commitments.
+BITCOIN_TAG = bytes([0x05, 0x88, 0x96, 0x0d, 0x73, 0xd7, 0x19, 0x01])
 
-    {D} AN EARLIER VERSION OF THIS FILE NAMED v3 IN A CONSTANT. That is the enumeration defect
-    the whole project keeps re-committing: v5 replaces v3 §2, and a constant naming v3 would have
-    gone on verifying a superseded table while reporting success. The version is DERIVED from
-    what is on disk, and if two versions both carry a table the newer one wins -- which is what
-    "replaces §2" means.
+
+def anchored(doc):
+    """Does this document's OWN proof bind its current bytes and claim a Bitcoin attestation?
+
+    ⛔ THIS CHECK DID NOT EXIST, AND WITHOUT IT THE WHOLE FILE WAS THEATRE. Two round-4 reviewers
+    broke it independently, by different routes:
+
+        append a line to train.py, then sed its digest inside v5 section 3   -> exit 0
+        drop in an UNANCHORED synthetic v6 carrying the mutated digests      -> exit 0
+
+    Both work because the table was read out of a MUTABLE FILE IN THE SAME DIRECTORY. Reading the
+    protocol rather than restating it removed one hazard and introduced a worse one: whoever can
+    change train.py can also change the document that says what train.py should be.
+
+    ⇒ A digest table is authority only if the document carrying it is ANCHORED: the proof exists,
+    binds these exact bytes, and carries a Bitcoin attestation. The same three conditions
+    anchor_status.py applies -- applied here to the document this file takes its orders from.
     """
-    found = []
+    proof = doc.parent / (doc.name + ".ots")
+    if not proof.exists():
+        return False, "no proof beside it"
+    blob = proof.read_bytes()
+    if len(blob) < 32:
+        return False, "proof too short to be one"
+    if hashlib.sha256(doc.read_bytes()).digest() not in blob:
+        return False, "its proof does not bind these bytes -- edited after stamping"
+    if BITCOIN_TAG not in blob:
+        return False, "pending: calendar receipt only, no Bitcoin attestation"
+    return True, "anchored"
+
+
+def governing(here):
+    """Every ANCHORED protocol version carrying a digest table, and every rejected candidate.
+
+    ⛔ AN EARLIER VERSION NAMED v3 IN A CONSTANT -- the enumeration defect. Deriving the version
+    from disk fixed that and opened the hole above: "highest version present" is not an authority
+    rule, because anyone who can write a file can mint a higher version.
+
+    ⚠ A REJECTED CANDIDATE IS REPORTED, NEVER SKIPPED. An unanchored document carrying a digest
+    table means someone is mid-round or someone is substituting, and silently consulting an older
+    table would hide both. The previous version also made its own fail-closed branch DEAD: it
+    filtered to tables with at least MIN_EXPECTED entries before main could ever see an empty
+    parse, so a broken table silently downgraded enforcement to a retired one. A reviewer read
+    that from the source.
+    """
+    found, rejected = [], []
     for f in sorted(here.glob("PRE-REGISTRATION*.md")):
         m = re.search(r"-v(\d+)-", f.name)
         version = int(m.group(1)) if m else 1
         pinned = commitments(f.read_text(encoding="utf-8"))
-        if len(pinned) >= MIN_EXPECTED:
-            found.append((version, f.name, pinned))
-    if not found:
-        return None, None, []
-    found.sort()
-    return found[-1][0], found[-1][1], found[-1][2]
+        if not pinned:
+            continue
+        if len(pinned) < MIN_EXPECTED:
+            rejected.append((version, f.name,
+                             "parses only %d commitment(s); the table's format has changed and "
+                             "this parser no longer reads it" % len(pinned)))
+            continue
+        ok, why = anchored(f)
+        if not ok:
+            rejected.append((version, f.name, why))
+            continue
+        found.append((version, f.name, pinned))
+    return found, rejected
 
 
 def main():
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-    version, PROTOCOL, pinned = governing(HERE)
-    if PROTOCOL is None:
-        raise SystemExit(D + " no protocol document on disk carries a digest table, so nothing "
-                         "here is committed to anything.")
+    found, rejected = governing(HERE)
+    for _v, _name, _why in sorted(rejected, reverse=True):
+        print("  " + W + " %-46s NOT AUTHORITY: %s" % (_name, _why))
+    if rejected:
+        print()
+    if not found:
+        raise SystemExit(D + " no ANCHORED protocol document carries a digest table, so nothing "
+                         "here is committed to anything. An unanchored document is a draft.")
+    _present = [int(re.search(r"-v(\d+)-", f.name).group(1))
+                if re.search(r"-v(\d+)-", f.name) else 1
+                for f in HERE.glob("PRE-REGISTRATION*.md")]
+    found.sort()
+    version, PROTOCOL, pinned = found[-1]
+    if _present and version < max(_present):
+        raise SystemExit(
+            D + " the highest ANCHORED protocol is v%d, but a v%d document is present and is not "
+            "authority. Either it is unanchored work in progress -- do not build or publish "
+            "against it -- or something is being substituted. This is the exact route a round-4 "
+            "reviewer used to make a changed train.py pass." % (version, max(_present)))
     print("=" * 78)
     print("  COMMITMENTS — the files %s pins by digest" % PROTOCOL)
     print("=" * 78)
@@ -119,9 +179,10 @@ def main():
 
     print("  all %d committed file(s) hash to the digests the anchored protocol pins" % len(pinned))
     print()
-    print("  " + W + " This says the FILES are unchanged. It does not say the protocol is")
-    print("  anchored -- that is anchor_status.py -- and it does not say a run obeyed the")
-    print("  protocol, which is what the measurement tools are for.")
+    print("  " + W + " This says the FILES are unchanged AND that the document pinning them is")
+    print("  anchored -- its proof binds its current bytes and carries a Bitcoin attestation.")
+    print("  It does NOT say a run obeyed the protocol: nothing here records which pipeline")
+    print("  produced any existing run, or when. That is round 4's open finding.")
     print("=" * 78)
     return 0
 

@@ -72,6 +72,31 @@ SEND = (
     ("MEASUREMENT-5-7.json", "measurements 5 and 7, computed rather than typed"),
     ("measure_divergence.py", "their instrument, including the seed-sensitivity arm"),
     ("seed_sensitivity.py", "the seed arm's driver"),
+    # ⛔ THE ROUND'S ONE NEW RESULT SHIPPED WITH NONE OF ITS EVIDENCE. The packet printed
+    # "m4 ... MATCHED-STACK ... bit-identical True" from MEASUREMENT-4.json while that file was
+    # EXCLUDED with the reason "absent until measurement 4 is retaken" -- false, it was on disk and
+    # the packet could only print from it by opening it. Neither arm's run.json shipped either,
+    # because unclassified() globbed *.py/*.md/*.json beside the builder and never looked in
+    # runs/. A reviewer found all of it and called it round 4's own headline defect inside round
+    # 4's own fix. They were right.
+    ("MEASUREMENT-4.json", "THE RESULT, with both arms' environments and every condition"),
+    ("runs/tpc-thr-1/run.json", "arm A's run record -- rehash it"),
+    ("runs/amd-thr-1/run.json", "arm B's run record -- rehash it"),
+    ("runs/tpc-thr-1/weights.npz", "arm A's artifact, so bit-identity can be recomputed"),
+    ("runs/amd-thr-1/weights.npz", "arm B's artifact, so bit-identity can be recomputed"),
+    ("runs/amd-thr-1-no-pyyaml/run.json",
+     "the first pair's arm B, retained: bit-identical AND inadmissible"),
+    # the divergence runs MEASUREMENT-5-7.json is computed from -- found by the same coverage
+    # check, one layer down: a measurement that names a run and does not ship it is the same
+    # defect as m4's, and there were five more of them.
+    ("runs/thr-1/run.json", "measurement 5/7 reference arm, 1 thread"),
+    ("runs/thr-2/run.json", "measurement 5/7, 2 threads"),
+    ("runs/thr-4/run.json", "measurement 5/7, 4 threads"),
+    ("runs/thr-8/run.json", "measurement 5/7, 8 threads"),
+    ("runs/thr-16/run.json", "measurement 5/7, 16 threads"),
+    ("test_controls.py",
+     "every attack round 4 used, as a suite -- the positive controls were prose and both "
+     "reviewers broke the tools they described"),
 )
 
 # {D} SEND WAS A HAND-KEPT LIST AND IT HAD ALREADY DRIFTED TWICE OVER: `anchor_status.py` appeared
@@ -84,19 +109,53 @@ SEND = (
 # PROJECTED is the coverage check: every candidate file must be named in SEND or excused by name.
 EXCLUDED = {
     "REVIEW-ROUNDS.json": "listed above; kept here so the excuse list is exhaustive",
-    "MEASUREMENT-4.json": ("written by the pending re-run; absent until measurement 4 is retaken "
-                           "with the recording gap closed"),
 }
+
+# ⛔ AN EXCUSE THAT CLAIMS ABSENCE MUST BE TRUE. MEASUREMENT-4.json was excused as "absent until
+# measurement 4 is retaken" while sitting on disk and being READ by this very script eighty lines
+# later. The coverage check verified that every file was NAMED and never that the naming was
+# accurate -- a control satisfied by the DESCRIPTION of the thing it checks, which is the exact
+# generalisation a round-4 reviewer drew from the round's other defects.
+_ABSENCE_WORDS = ("absent", "does not exist", "not yet", "pending", "until ")
+
+
+def false_excuses(here):
+    """Excuses that claim a file is absent while it sits on disk."""
+    bad = []
+    for rel, why in EXCLUDED.items():
+        if (here / rel).exists() and any(w in why.lower() for w in _ABSENCE_WORDS):
+            bad.append("%s is excused as %r and EXISTS" % (rel, why[:60]))
+    return bad
 
 
 def unclassified(here):
-    """Files a reviewer could reasonably expect, that SEND neither ships nor excuses."""
+    """Files a reviewer could reasonably expect, that SEND neither ships nor excuses.
+
+    ⚠ THIS GLOBBED BESIDE THE BUILDER AND NEVER LOOKED IN runs/, so the measurement records the
+    packet quotes were invisible to the coverage check that exists to notice missing work.
+    """
     named = {rel for rel, _why in SEND} | set(EXCLUDED)
     seen = []
     for pat in ("*.py", "*.md", "*.json", "*.ots"):
         seen += [p.relative_to(here).as_posix() for p in here.glob(pat)]
         seen += [p.relative_to(here).as_posix() for p in (here / "corpus").glob(pat)]
+    # every run record referenced by a shipped measurement must itself be shipped or excused
+    for run_json in sorted((here / "runs").glob("*/run.json")):
+        rel = run_json.relative_to(here).as_posix()
+        if rel not in named and _cited_by_a_measurement(here, run_json.parent.name):
+            seen.append(rel)
     return sorted(set(seen) - named)
+
+
+def _cited_by_a_measurement(here, run_name):
+    """Does any shipped MEASUREMENT record name this run directory?"""
+    for m in here.glob("MEASUREMENT-*.json"):
+        try:
+            if run_name in m.read_text(encoding="utf-8"):
+                return True
+        except OSError:
+            continue
+    return False
 
 
 def main():
@@ -135,6 +194,12 @@ def main():
     if _missing:
         raise SystemExit(D + " SEND names %d file(s) that do not exist: %s" % (len(_missing),
                                                                               _missing))
+    _fe = false_excuses(HERE)
+    if _fe:
+        raise SystemExit(D + " an excuse claims a file is absent and the file is on disk:" + NL
+                         + NL.join("      " + x for x in _fe) + NL
+                         + "  A coverage check that verifies a file is NAMED and not that the "
+                         + "naming is TRUE is satisfied by a description of the thing it checks.")
     _un = unclassified(HERE)
     if _un:
         raise SystemExit(D + " file(s) in neither SEND nor EXCLUDED: " + NL

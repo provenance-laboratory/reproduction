@@ -43,6 +43,8 @@ CONTENTS = (
     ("PRE-REGISTRATION-v5-CONFIRMATORY.md.ots", "its proof"),
     ("check_commitments.py",
      "the control that enforces them -- v3 §2 was prose and was broken the next day"),
+    ("test_controls.py",
+     "every attack round 4 used against these controls, as a suite -- run it"),
     ("corpus/verify_shipped.py",
      "check the shipped corpus against the manifest, using only what the package contains"),
     ("PRE-REGISTRATION-v2-CONFIRMATORY.md", "version 2, superseded, retained as record"),
@@ -95,14 +97,32 @@ def main():
     # package shipped v1 and a v2 whose own text says it is superseded. v4 is added to CONTENTS in
     # the same commit that creates it, and both are named below, because "the governing document"
     # is now two files and a refusal that checks only one of them is the same defect again.
-    GOVERNING = "PRE-REGISTRATION-v3-CONFIRMATORY.md"
+    # ⛔ AND IT WAS STILL HARDCODED TO v3, NEVER NAMING v5 -- in the file whose comment three
+    # lines up calls that "the same defect again". A round-4 reviewer found it. The governing set
+    # is DERIVED from the anchored documents, by the same function check_commitments uses, so the
+    # package and the commitment check cannot disagree about which protocol governs.
+    import check_commitments as _CC
+    _anchored, _rejected = _CC.governing(HERE)
+    if not _anchored:
+        raise SystemExit(D + " no ANCHORED protocol document carries a digest table. A package "
+                         "built against an unanchored draft has no protocol.")
+    GOVERNING = sorted(_anchored)[-1][1]
     GOVERNING_M4 = "PRE-REGISTRATION-v4-CONFIRMATORY.md"
+    for _v, _n, _why in _rejected:
+        print("  " + chr(0x26A0) + " %s is present and is NOT authority: %s" % (_n, _why))
     # ⛔ v3 §2 SAID A CHANGED DIGEST VOIDS THE PRE-REGISTRATION, AND NOTHING CHECKED IT. train.py
     # was edited the next day and every tool here reported success for a day, SHA256SUMS included
     # -- a checksum regenerated from the bytes it polices cannot notice a substitution. The
     # commitment is verified before a package is built, not described in a document.
     _cc = subprocess.run([sys.executable, "-X", "utf8", "check_commitments.py"], cwd=str(HERE),
                          capture_output=True, text=True, encoding="utf-8", errors="replace")
+    _tc = subprocess.run([sys.executable, "-X", "utf8", "test_controls.py"], cwd=str(HERE),
+                         capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if _tc.returncode != 0:
+        print((_tc.stdout or "") + (_tc.stderr or ""))
+        raise SystemExit(D + " a control this package depends on accepts an input it must refuse. "
+                         "Round 4's reviewers broke both new controls because their positive "
+                         "controls were PROSE; the suite runs in the gate now.")
     if _cc.returncode != 0:
         print((_cc.stdout or "") + (_cc.stderr or ""))
         raise SystemExit(D + " a file the protocol commits by digest has changed. The "

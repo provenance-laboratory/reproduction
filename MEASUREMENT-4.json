@@ -1,8 +1,14 @@
 {
   "_what": "Measurement 4 under PRE-REGISTRATION-v4-CONFIRMATORY.md. The verdict labels the COMPARISON, not the result: a confounded pair is reported, never dropped.",
-  "verdict": "ISOLATING",
+  "verdict": "MATCHED-STACK CROSS-MACHINE",
   "bit_identical": true,
   "conditions": [
+    {
+      "n": 0,
+      "condition": "the two arms are DIFFERENT machines",
+      "met": true,
+      "observed": "12th Gen Intel(R) Core(TM) i5-1240 vs AMD Ryzen 9 5900HX with Radeon Gra"
+    },
     {
       "n": 1,
       "condition": "operating system recorded and matching",
@@ -23,15 +29,27 @@
     },
     {
       "n": 4,
-      "condition": "OpenBLAS build configuration matching",
+      "condition": "BLAS identity matching (library, version, build)",
       "met": true,
-      "observed": "Haswell MAX_THREADS=24 vs Haswell MAX_THREADS=24"
+      "observed": "Haswell MAX_THREADS=24 / 0.3.33.112.0 vs Haswell MAX_THREADS=24 / 0.3.33.112.0"
     },
     {
       "n": 5,
-      "condition": "runtime architecture and effective threads OBSERVED in both",
+      "condition": "runtime microkernel OBSERVED and IDENTICAL in both",
       "met": true,
-      "observed": "A observed / B observed"
+      "observed": "Haswell vs Haswell"
+    },
+    {
+      "n": 6,
+      "condition": "effective BLAS thread count OBSERVED and EQUAL",
+      "met": true,
+      "observed": "1 vs 1"
+    },
+    {
+      "n": 7,
+      "condition": "both arms run the CONFIRMATORY specification",
+      "met": true,
+      "observed": "True vs True"
     }
   ],
   "conditions_failed": [],

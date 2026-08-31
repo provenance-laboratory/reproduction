@@ -88,10 +88,49 @@ def os_family(plat):
     return "-".join(bits[:2]) if len(bits) > 1 else bits[0]
 
 
+def _threads(env):
+    """The EFFECTIVE thread count, as a number, not as the presence of a record."""
+    te = env.get("threads_effective")
+    if not te:
+        return None
+    if isinstance(te, list):
+        ns = [x.get("num_threads") for x in te if isinstance(x, dict)]
+        ns = [n for n in ns if n is not None]
+        return max(ns) if ns else None
+    return te if isinstance(te, int) else None
+
+
+def _blas_identity(env):
+    """Library, version and build together -- an identical build LINE is not an identical BLAS."""
+    te = env.get("threads_effective")
+    lib = ver = None
+    if isinstance(te, list) and te and isinstance(te[0], dict):
+        lib, ver = te[0].get("prefix"), te[0].get("version")
+    return (lib, ver, env.get("blas_build_config_line"))
+
+
 def conditions(a, b):
-    """v4 §2 conditions 1-5. Returns [(n, name, ok, detail)]."""
+    """v4 section 2's conditions, plus the ones round 4 showed were missing entirely.
+
+    ⛔ SIX PAIRS THAT SHOULD NOT HAVE ONE WERE GRANTED `ISOLATING`, and two reviewers found them
+    independently. THE SAME RECORD passed as both arms. Haswell against SkylakeX passed, because
+    condition 5 checked that the runtime architecture was RECORDED and never that the two MATCHED
+    -- which defeats the exact caveat section 10's claim rests on. One effective thread against
+    eight passed, for the same reason. Two absent build lines passed. Two NON-CONFIRMATORY runs
+    passed. Identical CPUs passed.
+
+    ⇒ The pattern is one thing, and it is the pattern the reviewers asked us to generalise: every
+    one of these conditions was satisfied by the PRESENCE or the ABSENCE of a field rather than by
+    its VALUE. Presence is not equality, and absence is not agreement.
+    """
     ea, eb = a["environment"], b["environment"]
     out = []
+
+    # ⛔ NEW, AND FIRST, BECAUSE IT IS THE COMPARISON'S PREMISE. The tool compared two files
+    # without ever asking whether they were two MACHINES.
+    same_cpu = str(ea.get("cpu", "")).strip() == str(eb.get("cpu", "")).strip()
+    out.append((0, "the two arms are DIFFERENT machines", not same_cpu and bool(ea.get("cpu")),
+                "%s vs %s" % (str(ea.get("cpu"))[:34], str(eb.get("cpu"))[:34])))
 
     fa, fb = os_family(ea.get("platform")), os_family(eb.get("platform"))
     out.append((1, "operating system recorded and matching", bool(fa and fb) and fa == fb,
@@ -106,31 +145,40 @@ def conditions(a, b):
                 bool(ea.get("numpy")) and ea.get("numpy") == eb.get("numpy"),
                 "%s vs %s" % (ea.get("numpy"), eb.get("numpy"))))
 
+    # ⛔ AN IDENTICAL BUILD LINE IS NOT AN IDENTICAL BLAS, and two ABSENT lines are not agreement.
+    ia, ib = _blas_identity(ea), _blas_identity(eb)
     ka, kb = ea.get("blas_build_config_line"), eb.get("blas_build_config_line")
-    # ⛔ A RECORDING GAP AND A REAL DIFFERENCE FAIL THE SAME CONDITION AND HAVE NOTHING ELSE IN
-    # COMMON. On the first real pair, arm B recorded no build line at all -- not because its BLAS
-    # differed but because `pyyaml` was absent, so numpy's config output took a format the parser
-    # does not read. Arm A had pyyaml and nobody had noticed it mattered. Reporting that as
-    # "Haswell MAX_THREADS=24 vs ABSENT" is true and sends the reader hunting for a BLAS problem
-    # that does not exist, so the two cases are named apart and the remedy is printed.
-    if ka is not None and kb is not None:
-        detail4 = "%s vs %s" % (ka, kb)
-    elif ka is None and kb is None:
-        detail4 = "ABSENT in both, which is admissible only if both state the same reason"
-    else:
+    if ka is None and kb is None:
+        detail4 = ("ABSENT in BOTH arms. Two absences are not a match -- neither arm has stated "
+                   "what its BLAS is, so nothing has been held constant")
+        ok4 = False
+    elif ka is None or kb is None:
         which = "B" if kb is None else "A"
-        detail4 = ("NOT RECORDED on arm %s (recorded on the other as %r). This is usually a "
-                   "MISSING `pyyaml`, not a different BLAS: without it numpy's config output "
-                   "takes a format the parser cannot read. `pip install pyyaml` on arm %s and "
-                   "re-run that arm." % (which, ka or kb, which))
-    out.append((4, "OpenBLAS build configuration matching",
-                (ka == kb) and (ka is not None or kb is None), detail4))
+        detail4 = ("NOT RECORDED on arm %s (the other says %r). This is usually a MISSING "
+                   "`pyyaml`, not a different BLAS: without it numpy's config output takes a "
+                   "format the parser cannot read. It is a RECORDING failure, and the verdict "
+                   "below says so rather than calling the science confounded." % (which, ka or kb))
+        ok4 = False
+    else:
+        ok4 = ia == ib
+        detail4 = "%s / %s vs %s / %s" % (ka, ia[1] or "version?", kb, ib[1] or "version?")
+    out.append((4, "BLAS identity matching (library, version, build)", ok4, detail4))
 
-    obs_a = ea.get("blas_runtime_arch") is not None and ea.get("threads_effective") is not None
-    obs_b = eb.get("blas_runtime_arch") is not None and eb.get("threads_effective") is not None
-    out.append((5, "runtime architecture and effective threads OBSERVED in both", obs_a and obs_b,
-                "A %s / B %s" % ("observed" if obs_a else "NOT OBSERVED",
-                                 "observed" if obs_b else "NOT OBSERVED")))
+    # ⛔ PRESENCE WAS NOT EQUALITY. This is the condition the section-10 caveat depends on.
+    ra, rb = ea.get("blas_runtime_arch"), eb.get("blas_runtime_arch")
+    out.append((5, "runtime microkernel OBSERVED and IDENTICAL in both",
+                bool(ra) and ra == rb, "%s vs %s" % (ra or "NOT OBSERVED", rb or "NOT OBSERVED")))
+
+    ta, tb = _threads(ea), _threads(eb)
+    out.append((6, "effective BLAS thread count OBSERVED and EQUAL", ta is not None and ta == tb,
+                "%s vs %s" % (ta if ta is not None else "NOT OBSERVED",
+                              tb if tb is not None else "NOT OBSERVED")))
+
+    # ⛔ A NON-CONFIRMATORY RUN CANNOT SUPPORT A CONFIRMATORY MEASUREMENT. Both arms passed with
+    # seed 1 and is_confirmatory_spec false.
+    ca, cb = a.get("is_confirmatory_spec"), b.get("is_confirmatory_spec")
+    out.append((7, "both arms run the CONFIRMATORY specification", ca is True and cb is True,
+                "%s vs %s" % (ca, cb)))
     return out
 
 
@@ -177,21 +225,74 @@ def main():
     failed = [n for n, _name, ok, _d in conds if not ok]
     isolating = same_input and not failed
 
-    identical = a.get("weights_sha256") == b.get("weights_sha256")
+    # ⛔ BIT-IDENTITY WAS TWO SELF-REPORTED STRINGS. A reviewer deleted weights.npz from one arm
+    # and the tool still printed BIT-IDENTICAL: YES, because it compared the digests each run.json
+    # claimed for itself and never opened either artifact. A measurement about BYTES that never
+    # reads the bytes is the proxy defect at its purest.
+    import hashlib as _hl
+    recomputed, file_digests, missing = {}, {}, []
+    for tag, path in (("A", pa), ("B", pb)):
+        wf = pathlib.Path(path).parent / "weights.npz"
+        if not wf.exists():
+            missing.append((tag, str(wf)))
+            continue
+        # ⛔ AND IT MUST RECOMPUTE THE DIGEST THE PIPELINE ACTUALLY CLAIMS. The first version
+        # hashed the .npz FILE and reported both arms as drifted -- a false alarm, because
+        # `weights_sha256` is a digest over the ARRAYS: sorted key name, then the C-contiguous
+        # bytes of each. Recomputing the wrong thing is not a check, it is a second claim.
+        import numpy as _np
+        _z = _np.load(wf)
+        _h = _hl.sha256()
+        for _k in sorted(_z.files):
+            _h.update(_k.encode())
+            _h.update(_np.ascontiguousarray(_z[_k]).tobytes())
+        recomputed[tag] = _h.hexdigest()
+        file_digests[tag] = _hl.sha256(wf.read_bytes()).hexdigest()
+    claimed = {"A": a.get("weights_sha256"), "B": b.get("weights_sha256")}
+    drifted = [k for k, v in recomputed.items() if claimed.get(k) != v]
+
     print()
-    print("  A weights  %s" % a.get("weights_sha256"))
-    print("  B weights  %s" % b.get("weights_sha256"))
-    print("  BIT-IDENTICAL: %s" % ("YES" if identical else "NO"))
+    for tag in ("A", "B"):
+        print("  %s weights  claimed %s" % (tag, claimed.get(tag)))
+        print("             on disk %s" % recomputed.get(tag, "ARTIFACT ABSENT"))
+    if missing:
+        identical = False
+        print("  " + D + " %d weights artifact(s) absent: %s. Bit-identity is a claim about BYTES;"
+              % (len(missing), [m[0] for m in missing]))
+        print("  without them there is nothing to compare and the answer is not 'yes'.")
+    elif drifted:
+        identical = False
+        print("  " + D + " arm %s's artifact does not hash to the digest its own run.json claims."
+              % ", ".join(drifted))
+        print("  The record and the bytes disagree; nothing downstream of this is usable.")
+    else:
+        identical = recomputed["A"] == recomputed["B"]
+        print("  BIT-IDENTICAL: %s  (array digest recomputed from both artifacts)"
+              % ("YES" if identical else "NO"))
+        if file_digests.get("A") == file_digests.get("B"):
+            print("  and the .npz CONTAINER files are byte-identical too: %s"
+                  % file_digests["A"][:32])
     print()
 
-    if not same_input:
+    if missing or drifted:
+        verdict = "NOT COMPARABLE"
+        print("  " + D + " NOT COMPARABLE. The artifacts this comparison is ABOUT are absent or")
+        print("  disagree with their own records, so no condition below can rescue it.")
+    elif not same_input:
         verdict = "NOT COMPARABLE"
         print("  " + D + " NOT COMPARABLE. The arms do not share an input specification, so the")
         print("  byte comparison above is not a measurement of anything.")
     elif failed:
-        verdict = "CONFOUNDED"
+        # ⛔ `CONFOUNDED` WAS THE WRONG WORD FOR A PARSER FAILURE, and a reviewer was right that
+        # conflating them hides which thing broke. Arm B's record DID contain the BLAS library,
+        # version and build; only the convenience field the extractor reads was empty. The science
+        # was not confounded -- the instrument failed to read evidence that was present.
+        _recording_only = (failed == [4] and (
+            a["environment"].get("blas_build_config_line") is None)
+            != (b["environment"].get("blas_build_config_line") is None))
+        verdict = "RECORDING-SCHEMA INADMISSIBLE" if _recording_only else "CONFOUNDED"
         moved = ", ".join(str(n) for n in failed)
-        print("  " + D + " CONFOUNDED. Condition(s) %s failed, so more than the CPU differs" % moved)
+        print("  " + D + " %s. Condition(s) %s not met." % (verdict, moved))
         if 4 in failed and (a["environment"].get("blas_build_config_line") is None) != (
                 b["environment"].get("blas_build_config_line") is None):
             print("  " + W + " Condition 4 failed on a RECORDING GAP, not an observed difference:")
@@ -202,10 +303,20 @@ def main():
         print("  NOT be cited for a claim about CPU vendor. Nothing here is discarded; it is")
         print("  labelled.")
     else:
-        verdict = "ISOLATING"
-        print("  ok  ISOLATING, within the stated limits. Both arms meet conditions 1-5 and share")
-        print("  an input specification, so among the variables this protocol observes, the CPU")
-        print("  is what differs.")
+        verdict = "MATCHED-STACK CROSS-MACHINE"
+        # ⛔ THIS SAID `ISOLATING`, AND BOTH ROUND-4 REVIEWERS SAID IT CLAIMED TOO MUCH. It does
+        # not isolate anything: firmware, microcode and kernel scheduling are neither held constant
+        # nor observed, and the two machines necessarily differ in them. What the design supports
+        # is narrower and is now what the label says.
+        print("  ok  MATCHED-STACK CROSS-MACHINE. Two DIFFERENT machines, matched on operating")
+        print("  system, Python, numpy, BLAS library-version-build, runtime microkernel and")
+        print("  effective thread count, both running the confirmatory specification, produced")
+        print("  artifacts whose digests were RECOMPUTED here and compared.")
+        print()
+        print("  " + W + " THIS IS NOT CAUSAL ISOLATION AND THE LABEL NO LONGER SAYS IT IS.")
+        print("  Microcode, BIOS and firmware settings, and kernel scheduling differ between any")
+        print("  two machines and are not observed here. The honest reading is: on the one")
+        print("  reduction shape both machines chose, vendor did not change the bytes.")
         print()
         print("  " + W + " Microcode, BIOS settings, kernel scheduling and CPU features beyond the")
         print("  recorded SIMD baseline are NOT held constant and NOT observed. This answers")

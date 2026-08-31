@@ -5,12 +5,12 @@
 ## ⇒ SEND THESE TWO
 
 ```
-paper-b-review.zip     108 files
-  sha256 a38bef088caff2820faa36e41d4291f2917a43dac9e32a14da20eccf5d085ab1
+paper-b-review.zip     120 files
+  sha256 d98b62c82bf822b9e8b3fac850229a1f9ca7d70f33c4d0296cfcd54c47272fbf
 this file
 ```
 
-Repository `provenance-laboratory/reproduction`, commit `41fe38f`.
+Repository `provenance-laboratory/reproduction`, commit `ca9d47b`  ⚠️ TREE DIRTY.
 
 ---
 
@@ -65,7 +65,7 @@ m3  REPEATABILITY, same hw one digest across 12 runs at threads=1
       ⛔ NOT REPORTED AS BIT-IDENTITY. Section 6 makes that an
       invalidating condition without an independent re-run. The previous revision of
       the findings said measurement 3 -HOLDS-; that was a violation and is withdrawn.
-m4  bit-identity, diff hw  ISOLATING -- AMD Ryzen 9 5900HX with Radeon Gra, bit-identical True
+m4  bit-identity, diff hw  MATCHED-STACK CROSS-MACHINE -- AMD Ryzen 9 5900HX with Radeon Gra, bit-identical True
 m5  divergence            step 0 in EVERY array (trace records step -1 as the initial
                            state, and it is identical). relative L2 2.7084e-05, 97.55% of 804096
                            parameters differ between threads 1 and 16

@@ -137,7 +137,9 @@ selected to mislead.
 
 ## 5. Measurement 3 — internal repeatability, and not more
 
-Three runs at threads=1 produced one digest, `59d07fa0…`.
+Three runs at threads=1 produce one digest, `a4afb5c8…`, re-measured on 2026-08-31.
+
+⛔ **This section carried `59d07fa0…` until round 4, and that digest was two pipeline corrections old** — it predated both the corpus fix and the sampling off-by-one, so it could not be compared with the reference digest every other section cites. A reviewer spotted the mismatch by reading two sections against each other. It was cheaper to re-run the measurement than to annotate the stale number, and the three runs agree with each other and with the reference arm.
 
 ⛔ **Not reported as bit-identity.** §6 makes *"reporting bit-identity without an independent
 party's re-run"* an invalidating condition, and the previous revision said measurement 3 "holds"
@@ -241,55 +243,71 @@ derives the governing version from what is on disk rather than naming one in a c
 closed on an empty parse, and is fatal inside `build_package.py`. Four positive controls, including
 one that deletes v5 to confirm v3 does not silently resume governing.
 
-## 10. Measurement 4 — ISOLATING, and bit-identical
+## 10. Measurement 4 — a matched-stack cross-machine pair, bit-identical
 
-⛔ **As v3 specified it, this comparison could not isolate anything.** CPU vendor, operating
-system, Python, numpy and the OpenBLAS build all moved at once, so a byte difference was
-attributable to any of five things and the measurement was designed to attribute it to one. An
-earlier revision of this section said the condition *"has to be added to §2a before measurement 4 is
-run"*. It never was. `PRE-REGISTRATION-v4-CONFIRMATORY.md` adds it, and was written and anchored
-while measurement 4 had **no data at all** — which is the difference between a condition and an
-excuse.
-
-The pair, under v4's conditions and with every protocol version carrying a Bitcoin attestation:
+⛔ **As v3 specified it, this comparison could not isolate anything**, and v4 added the conditions
+before any second-machine data existed. Round 4 then showed that the conditions were checked
+badly enough that the label was worthless, and that the label claimed more than the design can
+support even when they hold.
 
 ```
-arm A   Intel Core i5-1240P      Windows-11  Python 3.14.3  numpy 2.5.1  OpenBLAS Haswell MAX_THREADS=24
-arm B   AMD Ryzen 9 5900HX       Windows-11  Python 3.14.7  numpy 2.5.1  OpenBLAS Haswell MAX_THREADS=24
+arm A   Intel Core i5-1240P      Windows-11  Python 3.14.3  numpy 2.5.1
+arm B   AMD Ryzen 9 5900HX       Windows-11  Python 3.14.7  numpy 2.5.1
+both    OpenBLAS libscipy_openblas 0.3.33.112.0, build line Haswell MAX_THREADS=24,
+        runtime microkernel Haswell, 1 effective thread, confirmatory seed 20260829
 
-conditions 1-5          all met
-weights, both arms      a4afb5c86dd88ae5ce7a475d448ee6bab18f6bc4e3c6c59721511f98f1c23d38
-BIT-IDENTICAL           yes
-VERDICT                 ISOLATING
+array digest, recomputed from both artifacts   a4afb5c86dd88ae5ce7a475d448ee6bab18f6bc4e3c6c59721511f98f1c23d38
+.npz container files                           byte-identical, d0895e8578218af5…
+VERDICT                                        MATCHED-STACK CROSS-MACHINE
 ```
 
-⇒ **Two machines of different CPU vendors, matched on operating system, Python, numpy and the
-OpenBLAS build, produced the same bytes.** Within the variables this protocol observes, the CPU is
-what differed, and it did not change the artifact.
+⇒ **Two different machines, matched on operating system, Python, numpy, BLAS
+library-version-build, runtime microkernel and effective thread count, both running the
+confirmatory specification, produced identical bytes.** The container files are identical too,
+which is stronger than the array digest alone.
 
-⚠️ **What that does NOT establish, stated because the sentence is easy to over-read.** It isolates
-the CPU *only among the variables v4 §2 lists*. Microcode revision, BIOS and firmware settings,
-kernel scheduling and CPU feature availability beyond the recorded SIMD baseline are neither held
-constant nor observed. And both arms selected the **same OpenBLAS microkernel** — `Haswell` — so
-what is shown is that two vendors running the same reduction shape agree, not that vendor is
-irrelevant to bit-identity in general. A machine selecting a different kernel is a different
-experiment, and §7's finding says that is where divergence lives.
+⛔ **THE VERDICT USED TO READ `ISOLATING`, AND BOTH ROUND-4 REVIEWERS SAID THAT CLAIMED TOO MUCH.**
+It isolates nothing: microcode, BIOS and firmware settings and kernel scheduling differ between any
+two machines and are not observed. One reviewer proposed the replacement and it is adopted. The
+honest sentence is *on the one reduction shape both machines chose, vendor did not change the
+bytes* — which, as the other reviewer noted, is close to a control condition behaving as §7
+predicts rather than a discovery.
 
-⛔ **The first attempt at this pair was CONFOUNDED, and it is retained rather than deleted.** Arm B
-recorded no OpenBLAS build line — `pyyaml` was absent, so numpy's configuration output took a
-format the parser cannot read. A **recording gap**, not a different BLAS: the pair was
-bit-identical *and* confounded, which is why the verdict labels the comparison rather than the
-result. It survives as `runs/amd-thr-1-no-pyyaml` with its own record, because keeping only the
-clean answer would leave no trace of how it was reached. The dependency list that omitted `pyyaml`
-was hand-written from what seemed relevant rather than derived from what arm A depends on, and was
-wrong the first time it was used.
+⚠️ **A different selected microkernel is not a different subject; it is the next stratum of this
+question.** Calling it "a different experiment" risks defining away the environment in which
+reproducibility would actually fail, and that phrasing has been withdrawn.
 
-⚠️ **A limit these artifacts cannot close.** `run.json` records wall-clock *duration* but not
-*when* a run happened, so nothing in the package establishes whether an arm ran before or after a
-given anchor, in either direction. For the first pair it demonstrably ran early; for this one the
-protocol was anchored first, and the artifacts cannot show it. Closing that means recording a
-timestamp in `run.json` — and `train.py` is pinned by digest in `PRE-REGISTRATION-v5-CONFIRMATORY.md`
-§3, so it is a v6 and not an edit.
+⛔ **AND THE TOOL GRANTED THAT VERDICT TO SIX PAIRS THAT SHOULD NOT HAVE HAD ONE.** Between them
+the reviewers passed the SAME run record as both arms, two arms with identical CPUs, Haswell
+against SkylakeX, one effective thread against eight, two absent BLAS build lines, two
+non-confirmatory runs, and an arm whose `weights.npz` had been deleted — and every one returned
+`ISOLATING`, the last of them also reporting `BIT-IDENTICAL: YES` with no artifact to compare.
+
+⇒ **The pattern is one thing, and it is the finding of the round: every condition was satisfied by
+the PRESENCE or the ABSENCE of a field rather than by its VALUE.** Presence is not equality;
+absence is not agreement. Conditions 4, 5 and 6 now compare values, a new condition 0 requires the
+two arms to be different machines, a new condition 7 requires both to be confirmatory, and
+bit-identity is recomputed from the artifacts instead of read from what each run claimed about
+itself. `test_controls.py` runs all eleven attacks and is executed by the publication gate, because
+round 3's positive controls were prose and that is exactly why they broke.
+
+⛔ **The first attempt is retained, and its label was wrong too.** It was called `CONFOUNDED`, and
+a reviewer pointed out that arm B's record *did* contain the BLAS library, version and build — only
+the convenience field the extractor reads was empty, because `pyyaml` was absent. The science was
+not confounded; **the instrument failed to read evidence that was present.** That case now reports
+`RECORDING-SCHEMA INADMISSIBLE`, and the distinction matters: conflating an extractor failure with
+a genuine confound hides which of the two broke. It is retained as `runs/amd-thr-1-no-pyyaml`,
+bit-identical and inadmissible, which is a demonstration a clean pair cannot make.
+
+⚠️ **v5 §5 forbids reporting a measurement taken under a pipeline whose digest was not committed
+at the time, and a reviewer asked which arm that sentence is about. Exactly this: the FIRST
+attempt, discarded.** The pair reported above was run after v4 and v5 were anchored and after
+`check_commitments.py` passed against the current tree. **The artifacts cannot demonstrate that
+ordering** — `run.json` records wall-clock duration and not when a run happened, and it binds
+itself to no package, protocol or pipeline digest. So the ordering rests on operator testimony,
+which is exactly the kind of claim this project refuses elsewhere. Closing it means recording the
+protocol digest and a timestamp inside each run, and `train.py` is pinned by digest, so it is a v6
+and not an edit.
 
 ## 11. What one machine still cannot say
 
