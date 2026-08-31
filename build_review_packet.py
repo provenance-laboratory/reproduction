@@ -433,20 +433,44 @@ def main():
       "second source of the same phenomenon.")
     A("- **Measurement 4 is DESCRIPTIVE, not confirmatory.** Its admissibility conditions were "
       "strengthened AFTER its result was known, and it bound itself to no protocol digest. "
-      "Neither is repairable retroactively. A confirmatory pair needs a fresh run under v6 on "
-      "both machines, and has not happened.")
-    A("- **v6 pins the instruments, and authority is still not EXTERNAL.** The manifest lives in "
-      "the same directory as the thing it governs; what stops last round's attack is the anchor, "
-      "not the location. A reviewer asked for CI or signed release metadata to select it. Push "
-      "on whether anchoring alone is enough.")
-    A("- **The transitional allowance is a new escape hatch and it already swallowed one attack.** "
-      "A file matching a stamped-but-pending version is reported as a transition rather than a "
-      "violation, so that a freshly stamped version does not block every build. It let a deleted "
-      "proof through until the control suite caught it. Attack it again — that is where a "
-      "convenience rule of exactly this shape belongs under suspicion.")
-    A("- **`--publishing` still does not require a public-commitment record, an address, or a "
-      "close date.** v6 §7 names all three as invalidating conditions and none is enforced in "
-      "code. That is a commitment written down, not a control.")
+      "Neither is repairable retroactively. A confirmatory pair needs a fresh run on both "
+      "machines under the ANCHORED successor, and has not happened -- and train.py's digest "
+      "moved this round (22cbfeb7 -> f44a74f0) for two recording defects, so the existing pair "
+      "was produced by a pipeline the current protocol does not pin. The trained weights are "
+      "identical under both, verified by running both, so no result changes; the RECORD does.")
+    A("- **Authority is still not EXTERNAL.** The manifest lives in the same directory as the "
+      "thing it governs; what stops the substitution attack is the anchor and now the signature, "
+      "not the location. A reviewer asked for CI or signed release metadata to select it. Push on "
+      "whether an anchor plus a signature by a key WE distribute is enough.")
+    A("- **⛔ THE `PENDING` BRANCH IS THIS ROUND'S NEW ESCAPE HATCH, and it exists because the "
+      "obvious strict rule was unusable.** Destroying a higher version's proof is refused now, "
+      "because falling back to an older document would enforce a SMALLER table. But a document "
+      "that PARSES, commits to its own bytes and carries only a calendar attestation is allowed "
+      "to sit above the authority unrefused — otherwise every build would fail for the hours "
+      "between stamping a successor and its anchor, which is the state v8 is in as this goes out. "
+      "**That is a convenience rule of exactly the shape the transitional allowance had, and the "
+      "transitional allowance swallowed an attack last round.** Attack this one.")
+    A("- **v8 was re-stamped several times while being drafted, and the rule licensing that is "
+      "stated rather than derived.** §11 says authority attaches at ANCHORING, not at stamping, "
+      "so a document that has never governed anything may be revised. Every superseded proof is "
+      "retained under a `.superseded-` name and ships in this packet. Decide whether that is a "
+      "principled line or a two-hour window in which anything can be quietly rewritten.")
+    A("- **A signature says a KEY asserted these bytes, and the fingerprint you will check it "
+      "against comes from us.** `check_signature.py --require` refuses a valid signature by any "
+      "other key, and prints the fingerprint precisely because this tool cannot establish whose "
+      "it is. Key distribution is outside the artifact, and the packet does not solve it.")
+    A("- **`--publishing` now enforces v6 §7's last two conditions, and its first version "
+      "accepted its own template's placeholder.** `report_to` reading `FILL IN: the URL a "
+      "reproducer files at...` passed, because the check refused only \"\", None, TBD and ?; "
+      "only the close date was caught, and only because a date must PARSE. Look for the same "
+      "shape elsewhere: a gate that tests the SHAPE of a value rather than the claim it makes.")
+    A("- **§2c's distribution subset is a new rule with a branch no live input has taken.** It "
+      "declares which pinned files a reproducer package contains, and the test is an EQUALITY — "
+      "absent must equal the complement — because a skip would make deletion the way to avoid a "
+      "digest check. It cannot take effect until v8 anchors, so in THIS package "
+      "`check_commitments.py` still refuses. The five rule cases in `test_controls.py` are "
+      "exercised against the declaration rather than the authority, which is honest but is not "
+      "the same as having run in anger.")
     A("- **Measurement 6 is reported NOT MEASURABLE.** Everything else is a digest or a "
       "timing a stranger can "
       "re-run. That page cannot be checked and says so.")
