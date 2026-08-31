@@ -403,6 +403,22 @@ def main():
       "reduction order and capability is explicitly out of scope — but a reviewer may reasonably "
       "argue the finding does not transfer to attention kernels or to CUDA, where atomics add a "
       "second source of the same phenomenon.")
+    A("- **Measurement 4 is DESCRIPTIVE, not confirmatory.** Its admissibility conditions were "
+      "strengthened AFTER its result was known, and it bound itself to no protocol digest. "
+      "Neither is repairable retroactively. A confirmatory pair needs a fresh run under v6 on "
+      "both machines, and has not happened.")
+    A("- **v6 pins the instruments, and authority is still not EXTERNAL.** The manifest lives in "
+      "the same directory as the thing it governs; what stops last round's attack is the anchor, "
+      "not the location. A reviewer asked for CI or signed release metadata to select it. Push "
+      "on whether anchoring alone is enough.")
+    A("- **The transitional allowance is a new escape hatch and it already swallowed one attack.** "
+      "A file matching a stamped-but-pending version is reported as a transition rather than a "
+      "violation, so that a freshly stamped version does not block every build. It let a deleted "
+      "proof through until the control suite caught it. Attack it again — that is where a "
+      "convenience rule of exactly this shape belongs under suspicion.")
+    A("- **`--publishing` still does not require a public-commitment record, an address, or a "
+      "close date.** v6 §7 names all three as invalidating conditions and none is enforced in "
+      "code. That is a commitment written down, not a control.")
     A("- **Measurement 6 is reported NOT MEASURABLE.** Everything else is a digest or a "
       "timing a stranger can "
       "re-run. That page cannot be checked and says so.")

@@ -6,11 +6,11 @@
 
 ```
 paper-b-review.zip     122 files
-  sha256 45782ce2ef6b3d415fd64c8bf3346fb80f87f25874b7bb20d46ccb3700ef9383
+  sha256 3061a54e82c3b2d585f7223cb29699d24dc460c47cda7975492f489022402d00
 this file
 ```
 
-Repository `provenance-laboratory/reproduction`, commit `b13f829`.
+Repository `provenance-laboratory/reproduction`, commit `36c9db8`  ⚠️ TREE DIRTY.
 
 ---
 
@@ -103,6 +103,10 @@ published as  package/ -- 39 files; OUR WEIGHTS ARE NOT IN IT, only the digest
 - **n = 2 machines.** Intel and AMD, matched on OS, Python, numpy and the OpenBLAS build -- and BOTH SELECTED THE SAME OpenBLAS MICROKERNEL (Haswell, X86_V3). So measurement 4 shows two vendors running the SAME REDUCTION SHAPE agree, which is not vendor-independence. A machine selecting a different kernel is a different experiment and has not been run.
 - **Measurement 1 was +37% in the previous revision and is +30% now.** The design was at fault, not the machine: fixed order, an "unconstrained" arm that was not a condition, and arrays sorted separately before storage. Ask whether the repaired design has its own faults.
 - **The model is an MLP, not a transformer.** Defensible — the mechanism under test is BLAS reduction order and capability is explicitly out of scope — but a reviewer may reasonably argue the finding does not transfer to attention kernels or to CUDA, where atomics add a second source of the same phenomenon.
+- **Measurement 4 is DESCRIPTIVE, not confirmatory.** Its admissibility conditions were strengthened AFTER its result was known, and it bound itself to no protocol digest. Neither is repairable retroactively. A confirmatory pair needs a fresh run under v6 on both machines, and has not happened.
+- **v6 pins the instruments, and authority is still not EXTERNAL.** The manifest lives in the same directory as the thing it governs; what stops last round's attack is the anchor, not the location. A reviewer asked for CI or signed release metadata to select it. Push on whether anchoring alone is enough.
+- **The transitional allowance is a new escape hatch and it already swallowed one attack.** A file matching a stamped-but-pending version is reported as a transition rather than a violation, so that a freshly stamped version does not block every build. It let a deleted proof through until the control suite caught it. Attack it again — that is where a convenience rule of exactly this shape belongs under suspicion.
+- **`--publishing` still does not require a public-commitment record, an address, or a close date.** v6 §7 names all three as invalidating conditions and none is enforced in code. That is a commitment written down, not a control.
 - **Measurement 6 is reported NOT MEASURABLE.** Everything else is a digest or a timing a stranger can re-run. That page cannot be checked and says so.
 - **The independent reproduction does not exist**, and by section 2b we may not produce one. If nobody answers the call, section 2c pre-registered that silence as a result — a reviewer should decide whether that is a finding or a rationalisation, because it was written before the window opened precisely so that question could be asked.
 
