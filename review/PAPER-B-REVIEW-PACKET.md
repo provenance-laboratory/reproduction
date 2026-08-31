@@ -1,34 +1,35 @@
-# Paper B (`reproduction`) — internal review packet, round 5
+# Paper B (`reproduction`) — internal review packet, round 6
 
 *Every figure below is read from the measurement files, and every claim is lifted from `PHASE-2-FINDINGS.md` rather than retyped. `build_review_packet.py` refuses to write if a figure it prints is absent from that document.*
 
 ## ⇒ SEND THESE TWO
 
 ```
-paper-b-review.zip     129 files
-  sha256 c62fc93ec9f7db3400987f8c19e8dbdfa67d2a69b3f8144bfe679fabb49e0729
+paper-b-review.zip     172 files
+  sha256 00807006bb2343982eb0c02f9018b17f7b47db5ed1b6f7574b0e9043db18d322
 this file
 ```
 
-Repository `provenance-laboratory/reproduction`, commit `bb4daa3`.
+Repository `provenance-laboratory/reproduction`, commit `f38dca7`  ⚠️ TREE DIRTY.
 
 ---
 
 ## ★ THE COVERING NOTE — paste this verbatim
 
-> **This is round 5.** Both reviewers refused the freeze and both broke BOTH new controls, nine ways between them. One gave the generalisation: every break is a control that can be satisfied by the ABSENCE, the NAME, or the DESCRIPTION of the thing it checks.
+> **This is round 6.** Both reviewers independently built the SAME forty-byte file -- SHA256(document) followed by the eight-byte Bitcoin attestation tag -- and it was accepted as an OpenTimestamps proof. It moved authority in check_commitments.py and let a substituted train.py through with exit 0, while `ots info` on the same file says it is not a timestamp file at all. ROUND 4 HAD FOUND THIS ATTACK AND THE REPAIR DID NOT FIX IT: a round-4 reviewer passed 35 bytes of junk containing the tag, the repair added BINDING (require the document's digest to appear) and never added PARSING, so the next reviewer supplied 40 bytes containing both strings and was believed. Two rounds, one defect, because the repair addressed the instance rather than the class. AND ANCHORING ANSWERS WHEN, NEVER WHO: stamping is free, public and unilateral, so anyone with write access can compose a successor, stamp it and wait two hours -- timestamping was the whole of these documents' authenticity story. FIVE MORE ABSENCE ATTACKS PASSED in the tool already repaired twice for absences: deleting BOTH arms' spec, corpus_merkle_root, threads_requested or python each returned MATCHED-STACK CROSS-MACHINE, the strongest verdict the tool can issue, because `a.get(k) != b.get(k)` is FALSE when neither arm states k. `started_utc` WAS AN END TIME: measured at shell-before 09:12:38, recorded 'started' 09:12:42, shell-after 09:12:42, wall clock 3.8s -- the only field saying WHEN was wrong by the duration of the run. `--publishing` enforced NONE of v6 section 7's conditions, and build_package.py did not even forward the flag to check_commitments.py. (This round was reviewed before v6 was anchored, so some of it was read against a pre-registration still pending.)
 >
-> - AUTHORITY WAS DISCOVERED FROM A MUTABLE FILE IN THE SAME DIRECTORY. Reading the digest table out of the protocol instead of restating it removed one hazard and introduced a worse one: whoever can change train.py can change the document saying what train.py should be. Editing both passed; minting an unanchored v6 silently moved authority. A table is authority only if its document's own proof binds its bytes and carries a Bitcoin attestation.
-> - measure_hardware granted ISOLATING to SIX pairs that should not have one -- the same record as both arms, identical CPUs, Haswell vs SkylakeX, 1 thread vs 8, two absent build lines, two non-confirmatory runs -- and reported BIT-IDENTICAL: YES for an arm whose weights.npz was deleted. Every condition was satisfied by the PRESENCE or ABSENCE of a field rather than its VALUE. Conditions 0 and 4-8 added; bit-identity recomputed from the artifacts.
-> - THE VERDICT IS NO LONGER ISOLATING. Both reviewers said it claimed too much; MATCHED-STACK CROSS-MACHINE is adopted. And CONFOUNDED was wrong for the first pair: arm B's record CONTAINED the BLAS library, version and build, and only the field the extractor reads was empty. That case reports RECORDING-SCHEMA INADMISSIBLE.
-> - THE ROUND'S HEADLINE DEFECT WAS INSIDE THE ROUND'S OWN FIX: MEASUREMENT-4.json was excused from the packet as 'absent until measurement 4 is retaken' while on disk and being read by the packet builder. The one new result reached both reviewers with none of its evidence. An excuse claiming absence must now be true, and the packet ships the result, both run records, both artifacts and five divergence runs the same check found missing.
-> - v6 commits THE INSTRUMENTS AND GATES, not only the inputs -- twelve scripts by digest. A change to any of them now requires a new anchored version, and the cost of that rule is stated in v6 rather than discovered later.
-> - Every run now binds itself to what produced it: pipeline digest, every protocol document's digest and anchor state, the package's SHA256SUMS digest, and a self-reported time labelled as the weak half.
-> - test_controls.py runs all eleven attacks plus the positive case, ships in package and packet, and is fatal in the publication gate. Round 3's positive controls were prose; that is why they broke.
-> - The measurement-4 pair is RECLASSIFIED AS DESCRIPTIVE. Its conditions were strengthened after its result was known and it bound itself to no protocol. A confirmatory pair requires a fresh run under v6 on both machines.
-> - Measurement 3's digest was two pipeline corrections old and incomparable with every other figure. Re-measured rather than annotated.
+> - PROOFS ARE PARSED NOW. ots_verify.py walks the OpenTimestamps serialisation and EVALUATES the operation tree, so the attestation's merkle root is computed from the document's own bytes and reported. An earlier draft parsed the structure without evaluating it, and a byte flipped inside an append argument still passed -- the same substring-instead-of-parse defect one level in, caught by testing the module rather than reading it. It refuses the 40-byte forgery, 35 bytes of junk, a digest alone, a REAL Bitcoin-anchored proof over a DIFFERENT document, truncation, and trailing bytes.
+> - AND THE REPAIR EXPOSED A WORSE DEFECT, which is this round's real result. Once forgeries were refused, forging v6's proof did not promote anything: v6 simply dropped out of the candidate set and authority FELL BACK TO v5, WHICH PINS FOUR FILES WHERE v6 PINS SIXTEEN, and all four still matched. Exit 0. The attack never beat the proof check -- it beat the SELECTION RULE by deleting the strongest candidate, and a smaller table is not a smaller authority but a different one. Three variants (forge, truncate, append) passed this way and only the deletion variant was caught, by an unrelated path.
+> - The fix cannot refuse every unanchored document above the authority, or the project stops: for the hours between stamping a successor and its anchor, a legitimately pending document sits above the version in force -- which is the state v8 is in as this goes out. So anchored() returns a STATE, and PENDING is a value rather than a phrase matched in the reason text; TAMPERED and MISSING above the authority are refused.
+> - SIGNATURES ANSWER WHO. Anchoring is free, public and unilateral: anyone with write access can compose a successor, stamp it and wait two hours. check_signature.py verifies a detached signature over every protocol document found by GLOB, parsing gpg's machine-readable status rather than its prose -- 'Good signature' is printed for untrusted keys and exit 0 covers an expired one. It gates publication, not review. A signature alone would be weaker than the pair: signing is as backdatable as stamping, and it is the anchor that fixes it in time.
+> - THE PACKAGE SHIPPED CONTROLS THAT COULD NOT PASS INSIDE IT. check_commitments.py imported a module the package did not contain, and test_controls.py died with a FileNotFoundError -- the two files the reproduction call tells a stranger to run -- because every gate ran the checker against the SOURCE tree and nothing ever ran it where a reproducer runs it. The build now derives shipped dependencies from imports, ships the signatures, and RUNS the shipped controls instead of importing them, because importing is not running.
+> - v8 section 2c declares the distribution subset and the rule is an EQUALITY -- the absent set must be exactly the pinned set minus the subset -- because 'ignore files that are not there' would make deleting a file the way to avoid its digest being checked.
+> - ABSENCE IS NOT AGREEMENT, AT THE PREMISE THIS TIME. Round 4's absences were repaired one at a time inside conditions(); round 5's four were read by the same-input gate ABOVE it, where a.get(k) != b.get(k) is FALSE when neither arm states k. Deleting the field that says the two runs asked the same question made the pair look MORE comparable. Every comparison now routes through one _agree(), and condition 0 is renamed to what it can observe: 'the arms report DIFFERENT CPU identities'.
+> - train.py captures provenance BEFORE training -- started_utc was an end time -- and refuses a package binding whose manifest does not list the running pipeline. Weights are unchanged at a4afb5c8 under both pipelines, verified by running both.
+> - --publishing enforces v6 section 7 at last: an anchored protocol must govern before EXPECTED.json ships, and a reporting address and an OPEN close date must be recorded. The first version of that gate accepted its own template's 'FILL IN:' placeholder, catching only the date and only because a date must parse. A declared gap is still a gap.
+> - THREE MORE HAND-KEPT LISTS OF PROTOCOL DOCUMENTS were removed, in anchor_status.py, build_package.py and this packet builder. v7 had recorded editing one of them as a COST of v6's rule rather than as the enumeration defect it was: fixing instance N by enumerating is how instance N+1 gets made. Attacks 11 -> 30, all refused.
 >
-> ⚠️ **v6 is stamped and PENDING. Nothing may be published until it anchors, and --publishing refuses while any version is pending. A finding in train.py, the corpus, or the admissibility conditions still forces v7.**
+> ⚠️ **v7 anchored at Bitcoin block 964856. v8 is STAMPED AND PENDING -- it governs nothing until a calendar anchors it, which is why check_commitments.py and test_controls.py exit non-zero INSIDE the package and the build says so instead of hiding it. v8 is also NOT YET SIGNED, so check_signature.py exits 2, which is a publication-gate failure and deliberately not a review-build failure. v8 was re-stamped several times while being drafted; every superseded proof is retained beside it under a .superseded- name and travels in this packet, and section 11 states the rule it relies on: AUTHORITY ATTACHES AT ANCHORING, NOT AT STAMPING. Nothing may be published until v8 anchors, is signed, and a confirmatory measurement-4 pair is run on both machines under it.**
 
 ## ⭐ CHECK THE FINDINGS, NOT ONLY THE PACKAGING
 
@@ -95,7 +96,7 @@ threads=16   d0dcb2066db6a2f6f3a9e54e52869ce9a658a07c87e5bca0
 corpus        6312982 clean bytes, 10 texts, merkle 2006b7327c616f0ca5f9c0b9c3e766b5
 model         8-byte context, d_emb 64, d_hid 1024, 300 steps, batch 256, float32
 weights       sha256 a4afb5c86dd88ae5ce7a475d448ee6bab18f6bc4e3c6c59721511f98f1c23d38
-published as  package/ -- 44 files; OUR WEIGHTS ARE NOT IN IT, only the digest
+published as  package/ -- 63 files; OUR WEIGHTS ARE NOT IN IT, only the digest
 ```
 
 ## ⚠️ Known-weak, and a reviewer should push here

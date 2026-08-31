@@ -22,17 +22,54 @@ W = chr(0x26A0)
 HERE = pathlib.Path(__file__).resolve().parent
 OUT = HERE / "review"
 
-SEND = (
-    ("PRE-REGISTRATION-v3-CONFIRMATORY.md", "THE CONFIRMATORY PROTOCOL -- READ THIS FIRST"),
-    ("PRE-REGISTRATION-v3-CONFIRMATORY.md.ots", "its proof"),
-    ("PRE-REGISTRATION-v2-CONFIRMATORY.md", "version 2, superseded, retained as record"),
-    ("PRE-REGISTRATION-v2-CONFIRMATORY.md.ots", "its proof"),
+def _protocol_send():
+    """Every protocol document present, with its proof, its signature, and its retired proofs.
+
+    ⛔ THIS WAS A LIST OF VERSION NAMES, like the two removed from `anchor_status.py` and
+    `build_package.py` in the same round. It refused to build when v8 appeared, which is the
+    fail-closed half working exactly as intended -- but the fix for a list that goes stale is not
+    a longer list. What saved this file is that it stops on anything it has not been told about;
+    what is fixed here is that it no longer needs telling.
+
+    ⚠ SIGNATURES AND RETIRED PROOFS TRAVEL WITH THE DOCUMENT. An anchor answers WHEN and a
+    signature answers WHO, so a packet carrying every proof and no signature ships half the
+    question. And a `.superseded-` proof is evidence: it binds an earlier draft and no longer
+    binds the file beside it, which is the fact it exists to record.
+    """
+    out = []
+    for doc in sorted(HERE.glob("PRE-REGISTRATION*.md")):
+        why = ("THE CONFIRMATORY PROTOCOL -- READ THIS FIRST"
+               if doc.name == "PRE-REGISTRATION-v3-CONFIRMATORY.md"
+               else "a protocol document, retained as part of the record")
+        out.append((doc.name, why))
+        for extra, note in ((doc.name + ".ots", "its proof"),
+                            (doc.name + ".asc", "its detached signature -- the anchor says WHEN, "
+                                                "this says WHO")):
+            if (HERE / extra).exists():
+                out.append((extra, note))
+        for sup in sorted(HERE.glob(doc.name + ".ots.superseded-*")):
+            out.append((sup.name, "a RETIRED proof: it binds an earlier draft and no longer binds "
+                                  "this file, which is the fact it records"))
+    return tuple(out)
+
+
+SEND = _protocol_send() + (
+    ("ots_verify.py",
+     "the OpenTimestamps parser. Round 4's 35-bytes-of-junk attack survived its own repair "
+     "because the repair added BINDING and never added PARSING -- run it against the forgeries"),
+    ("check_signature.py",
+     "who asserted the protocol documents. Anchoring is free, public and unilateral, so it "
+     "answers WHEN and never WHO"),
+    ("REGISTRATION.template.json",
+     "what --publishing now requires: a reporting address and an OPEN close date. The first "
+     "version of that gate accepted this template's own FILL-IN placeholder"),
+    ("MEASUREMENT-4-recording-gap-no-pyyaml.json",
+     "the same two arms as the CONFOUNDED record, re-evaluated: the arms did not change, the "
+     "word for what went wrong did"),
     ("anchor_status.py", "the proof check -- run it; a pass is narrower than it sounds"),
     ("ENVIRONMENT-LOCK.json", "interpreter and library, recorded not locked"),
     ("MEASUREMENT-2.json", "storage overhead, from measure_storage.py"),
     ("measure_storage.py", "measurement 2's derivation, with its boundary declared"),
-    ("PRE-REGISTRATION.md", "version 1, now the PILOT protocol"),
-    ("PRE-REGISTRATION.md.ots", "its proof, ANCHORED in a Bitcoin block"),
     ("PILOT-2026-08-29.md", "the observation that made the thread pin part of the protocol"),
     ("AMENDMENT-2026-08-30.md", "a deviation from section 2b, recorded on the day"),
     ("PHASE-2-FINDINGS.md", "what the pipeline found"),
@@ -56,12 +93,6 @@ SEND = (
     ("corpus/verify_shipped.py",
      "checks a SHIPPED corpus using only what a package contains -- build_corpus.py --verify "
      "cannot, because it re-derives from raw/ and raw/ is not shipped"),
-    ("PRE-REGISTRATION-v4-CONFIRMATORY.md",
-     "measurement 4's admissibility, committed while measurement 4 had NO data"),
-    ("PRE-REGISTRATION-v4-CONFIRMATORY.md.ots", "its proof"),
-    ("PRE-REGISTRATION-v5-CONFIRMATORY.md",
-     "THE DIGEST COMMITMENTS, re-committed after v3 §2 went unenforced for a day"),
-    ("PRE-REGISTRATION-v5-CONFIRMATORY.md.ots", "its proof"),
     ("check_commitments.py",
      "the control that enforces the digest commitments -- v3 §2 was prose, and was broken the "
      "next day without anything noticing"),
@@ -79,12 +110,6 @@ SEND = (
     # because unclassified() globbed *.py/*.md/*.json beside the builder and never looked in
     # runs/. A reviewer found all of it and called it round 4's own headline defect inside round
     # 4's own fix. They were right.
-    ("PRE-REGISTRATION-v7-CONFIRMATORY.md",
-     "v6 section 2b re-committed -- the first time the instrument-pinning rule cost a version"),
-    ("PRE-REGISTRATION-v7-CONFIRMATORY.md.ots", "its proof"),
-    ("PRE-REGISTRATION-v6-CONFIRMATORY.md",
-     "THE INSTRUMENTS AND GATES, committed -- round 4 showed only the inputs were"),
-    ("PRE-REGISTRATION-v6-CONFIRMATORY.md.ots", "its proof, PENDING as this goes out"),
     ("MEASUREMENT-4.json", "THE RESULT, with both arms' environments and every condition"),
     ("runs/tpc-thr-1/run.json", "arm A's run record -- rehash it"),
     ("runs/amd-thr-1/run.json", "arm B's run record -- rehash it"),

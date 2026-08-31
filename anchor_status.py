@@ -40,49 +40,95 @@ import io
 import pathlib
 import sys
 
+import ots_verify as _OTS
+
 NL = chr(10)
 D = chr(0x26D4)
 W = chr(0x26A0)
 HERE = pathlib.Path(__file__).resolve().parent
 BITCOIN_TAG = bytes([0x05, 0x88, 0x96, 0x0d, 0x73, 0xd7, 0x19, 0x01])
 
-# ⛔ EXPLICIT, because "whatever is on disk" is how a missing governing document passed.
-# Adding a protocol version means adding it here; that is the point.
-REQUIRED = [
-    ("PRE-REGISTRATION-v7-CONFIRMATORY.md",
-     "v6 section 2b re-committed after repairing a control, which v6 said would cost a version"),
-    ("PRE-REGISTRATION-v6-CONFIRMATORY.md",
-     "the instruments and gates, committed after round 4 showed only the inputs were"),
-    ("PRE-REGISTRATION-v5-CONFIRMATORY.md",
-     "the digest commitments, re-committed after v3 §2 went unenforced for a day"),
-    ("PRE-REGISTRATION-v4-CONFIRMATORY.md",
-     "measurement 4's admissibility, committed before any second-machine run exists"),
-    ("PRE-REGISTRATION-v3-CONFIRMATORY.md", "the protocol the study runs under"),
-    ("corpus/MANIFEST.json", "the corpus the model is trained on"),
-    ("PRE-REGISTRATION.md", "version 1, retained as the pilot protocol"),
-    ("PRE-REGISTRATION-v2-CONFIRMATORY.md", "version 2, retained as part of the record"),
-]
+# Reasons, where a document deserves one. ⚠ THIS IS AN ANNOTATION TABLE, NOT THE LIST OF WHAT
+# MUST BE ANCHORED -- a document missing from here is still required, and merely goes undescribed.
+WHY = {
+    "PRE-REGISTRATION-v8-CONFIRMATORY.md":
+        "proofs parsed rather than substring-matched, and signatures for WHO",
+    "PRE-REGISTRATION-v7-CONFIRMATORY.md":
+        "v6 section 2b re-committed after repairing a control, which v6 said would cost a version",
+    "PRE-REGISTRATION-v6-CONFIRMATORY.md":
+        "the instruments and gates, committed after round 4 showed only the inputs were",
+    "PRE-REGISTRATION-v5-CONFIRMATORY.md":
+        "the digest commitments, re-committed after v3 section 2 went unenforced for a day",
+    "PRE-REGISTRATION-v4-CONFIRMATORY.md":
+        "measurement 4's admissibility, committed before any second-machine run exists",
+    "PRE-REGISTRATION-v3-CONFIRMATORY.md": "the protocol the study runs under",
+    "PRE-REGISTRATION-v2-CONFIRMATORY.md": "version 2, retained as part of the record",
+    "PRE-REGISTRATION.md": "version 1, retained as the pilot protocol",
+    "corpus/MANIFEST.json": "the corpus the model is trained on",
+}
+# never annotated, always required
+ALWAYS = ("corpus/MANIFEST.json",)
+
+
+def required():
+    """Every protocol document PRESENT, discovered -- plus the inputs that must always be anchored.
+
+    ⛔ THIS WAS A HAND-KEPT LIST, AND IT IS INSTANCE THIRTEEN OF THE DEFECT THIS PROJECT KEEPS
+    MAKING. Worse, v7 NOTICED THE COST AND PAID IT THE WRONG WAY: it recorded that this file "moved
+    only because it must NAME this document", and the repair was to add a line to the list rather
+    than to remove the list. Fixing instance N by enumerating is how instance N+1 gets made -- here
+    inside a protocol version whose own subject was an enumeration defect.
+
+    ⚠ THE OLD COMMENT HAD A REAL ARGUMENT AND IT IS PRESERVED. "Whatever is on disk" is how a
+    missing governing document once passed unnoticed, and globbing alone would reintroduce exactly
+    that. So the projection FAILS CLOSED: a document that exists without a proof is a FAILURE
+    rather than an omission, and a version that is absent from the disk entirely is caught by
+    `check_commitments.governing()`, which selects authority rather than trusting this list.
+    """
+    out = [(p.name, WHY.get(p.name, "a protocol document -- undescribed here, still required"))
+           for p in sorted(HERE.glob("PRE-REGISTRATION*.md"))]
+    return out + [(f, WHY.get(f, "")) for f in ALWAYS]
+
+
+REQUIRED = required()
 # Proofs that are deliberately historical: they bind bytes that have been superseded, and their
 # failure to bind anything current is the fact they exist to record.
-SUPERSEDED_SUFFIXES = (".superseded-814acd24", ".superseded-metadata-only")
+#
+# ⛔ THIS WAS A LIST OF THE TWO SUFFIXES THAT HAPPENED TO EXIST, and it was found by trying to
+# USE the convention it encodes: retiring a proof under a new `.superseded-<digest>` name would
+# have made that proof an unrecognised extra, reported as clutter rather than as the record it is.
+# A convention with a documented naming rule, enforced by a list of the names used so far, is
+# instance fourteen of the defect this project keeps making.
+#
+# ⚠ IT STAYS ANCHORED TO A PATTERN, NOT OPENED UP. `.superseded-` followed by something is
+# recognised; a bare `.superseded` is not, because a retired proof must say WHAT it binds.
+def _is_superseded(path):
+    name = str(path)
+    i = name.find(".superseded-")
+    return i != -1 and len(name) > i + len(".superseded-")
 
 
 def check(rel):
     doc = HERE / rel
     proof = HERE / (rel + ".ots")
     if not doc.exists():
-        return "DOCUMENT MISSING", 0
+        return "DOCUMENT MISSING", 0, False
     if not proof.exists():
-        return "NO PROOF", 0
+        return "NO PROOF", 0, False
     blob = proof.read_bytes()
     if len(blob) < 32:
-        return "PROOF TOO SHORT TO BE ONE", len(blob)
+        return "PROOF TOO SHORT TO BE ONE", len(blob), False
     digest = hashlib.sha256(doc.read_bytes()).digest()
-    if digest not in blob:
-        return "PROOF DOES NOT BIND THIS DOCUMENT", len(blob)
-    if BITCOIN_TAG not in blob:
-        return "pending (calendar only)", len(blob)
-    return "ANCHORED", len(blob)
+    # ⛔ THIS SEARCHED FOR THE DIGEST AND THE TAG AS SUBSTRINGS. Forty bytes containing both
+    # passed as ANCHORED. It parses now, and the block heights it prints are read out of the
+    # attestation records rather than assumed to exist.
+    ok, why, found = _OTS.verify(blob, doc.read_bytes())
+    if ok:
+        return ("ANCHORED " + why.split(";")[0].replace("anchored in Bitcoin block(s) ", ""),
+                len(blob), True)
+    if "carries no Bitcoin attestation" in why:
+        return "pending (calendar only)", len(blob), False
+    return why[:46].upper() if "NOT A PROOF" in why else "PROOF DOES NOT BIND THIS DOCUMENT", len(blob)
 
 
 def main():
@@ -94,8 +140,15 @@ def main():
 
     bad = []
     for rel, why in REQUIRED:
-        st, n = check(rel)
-        ok = st == "ANCHORED"
+        # ⛔ THIS READ `ok = st == "ANCHORED"` WHILE `check()` HAD BEEN CHANGED TO RETURN
+        # `"ANCHORED [964761, 964762]"`. Making the status more informative silently broke every
+        # comparison against the bare literal, and the tool reported nine anchored documents as
+        # failures. It failed CLOSED, which is the only reason it was noticed within a minute --
+        # `"ANCHORED" in st` would have failed OPEN and matched "NOT ANCHORED" too.
+        #
+        # ⚠ A DISPLAY STRING IS NOT A VERDICT. The two are separate values now, so a change to
+        # what is printed cannot move what is decided.
+        st, n, ok = check(rel)
         print("  %-34s %6d B  %-46s %s" % (st, n, rel, why))
         if not ok:
             bad.append((rel, st))
@@ -104,10 +157,10 @@ def main():
                     if "package" not in p.parts and "review" not in p.parts
                     and str(p.relative_to(HERE)).replace(chr(92), "/")
                     not in {r + ".ots" for r, _ in REQUIRED}
-                    and not any(str(p).endswith(s) for s in SUPERSEDED_SUFFIXES))
+                    and not _is_superseded(p))
     print()
     for p in sorted(HERE.rglob("*.ots*")):
-        if any(str(p).endswith(s) for s in SUPERSEDED_SUFFIXES):
+        if _is_superseded(p):
             print("  (superseded, binds historical bytes)  %s" % p.relative_to(HERE))
     if extras:
         print()

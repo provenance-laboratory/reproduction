@@ -1,3 +1,4 @@
 runs/
 package/
 review/*.zip
+__pycache__/

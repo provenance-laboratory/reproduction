@@ -1,13 +1,19 @@
 {
-  "_what": "Measurement 4 under PRE-REGISTRATION-v4-CONFIRMATORY.md. The verdict labels the COMPARISON, not the result: a confounded pair is reported, never dropped.",
-  "verdict": "CONFOUNDED",
+  "_what": "The same two arms as MEASUREMENT-4-confounded-no-pyyaml.json, re-evaluated by the corrected instrument. The arms did not change; the WORD for what went wrong did. Arm B's record DID contain its BLAS library, version and build -- only the convenience field the extractor reads was empty, for want of `pyyaml`. That is the instrument failing to read evidence that was present, which is a RECORDING failure and recoverable by re-running that arm. Calling it CONFOUNDED said the science was spoiled, which it was not.",
+  "verdict": "RECORDING-SCHEMA INADMISSIBLE",
   "bit_identical": true,
   "conditions": [
+    {
+      "n": 0,
+      "condition": "the arms report DIFFERENT CPU identities",
+      "met": true,
+      "observed": "12th Gen Intel(R) Core(TM) i5-1240 vs AMD Ryzen 9 5900HX with Radeon Gra"
+    },
     {
       "n": 1,
       "condition": "operating system recorded and matching",
       "met": true,
-      "observed": "Windows-11 vs Windows-11"
+      "observed": "Windows-11-10.0.26200-SP0 vs Windows-11-10.0.26200-SP0"
     },
     {
       "n": 2,
@@ -23,15 +29,27 @@
     },
     {
       "n": 4,
-      "condition": "OpenBLAS build configuration matching",
+      "condition": "BLAS identity matching (library, version, build)",
       "met": false,
-      "observed": "NOT RECORDED on arm B (recorded on the other as 'Haswell MAX_THREADS=24'). This is usually a MISSING `pyyaml`, not a different BLAS: without it numpy's config output takes a format the parser cannot read. `pip install pyyaml` on arm B and re-run that arm."
+      "observed": "NOT RECORDED on arm B (the other says 'Haswell MAX_THREADS=24'). This is usually a MISSING `pyyaml`, not a different BLAS: without it numpy's config output takes a format the parser cannot read. It is a RECORDING failure, and the verdict below says so rather than calling the science confounded."
     },
     {
       "n": 5,
-      "condition": "runtime architecture and effective threads OBSERVED in both",
+      "condition": "runtime microkernel OBSERVED and IDENTICAL in both",
       "met": true,
-      "observed": "A observed / B observed"
+      "observed": "Haswell vs Haswell"
+    },
+    {
+      "n": 6,
+      "condition": "effective BLAS thread count OBSERVED and EQUAL",
+      "met": true,
+      "observed": "1 vs 1"
+    },
+    {
+      "n": 7,
+      "condition": "both arms run the CONFIRMATORY specification",
+      "met": true,
+      "observed": "True vs True"
     }
   ],
   "conditions_failed": [
@@ -153,6 +171,21 @@
     "PRE-REGISTRATION-v5-CONFIRMATORY.md": {
       "proof": true,
       "binds_document": true,
+      "bitcoin_attestation": true
+    },
+    "PRE-REGISTRATION-v6-CONFIRMATORY.md": {
+      "proof": true,
+      "binds_document": true,
+      "bitcoin_attestation": true
+    },
+    "PRE-REGISTRATION-v7-CONFIRMATORY.md": {
+      "proof": true,
+      "binds_document": true,
+      "bitcoin_attestation": false
+    },
+    "PRE-REGISTRATION-v8-CONFIRMATORY.md": {
+      "proof": true,
+      "binds_document": true,
       "bitcoin_attestation": false
     },
     "PRE-REGISTRATION.md": {
@@ -161,12 +194,6 @@
       "bitcoin_attestation": true
     }
   },
-  "_anchoring_caveat": "This is the anchoring state WHEN THIS RECORD WAS WRITTEN, which is not necessarily the state when either arm was RUN -- and the two differed for the first real pair: the second-machine arm was run while v4's proof was still calendar-only, and v4 anchored afterwards. The artifacts cannot settle that ordering by themselves, because run.json carries no timestamp: it records wall-clock DURATION but not when the run happened. That is a gap in the pipeline's record, stated here rather than papered over, and it cannot be closed retroactively for this pair.",
-  "_limits": "An ISOLATING verdict isolates the CPU only among the variables listed in v4 \u00a72. Microcode, BIOS settings, kernel scheduling and CPU features beyond the recorded SIMD baseline are neither held constant nor observed.",
-  "_superseded_by": {
-    "file": "MEASUREMENT-4-recording-gap-no-pyyaml.json",
-    "why": "This record's verdict field says CONFOUNDED. A round-5 reviewer was right that conflating a confound with a parser failure hides which one happened, and the instrument now distinguishes them. The verdict below is left exactly as it was recorded -- a result is not edited to agree with a later opinion -- and the re-evaluation of the same two arms is the file named above.",
-    "recomputed_verdict": "RECORDING-SCHEMA INADMISSIBLE",
-    "bit_identical_in_both": true
-  }
+  "_anchoring_caveat": "This is the anchoring state WHEN THIS RECORD WAS WRITTEN, which is not necessarily the state when either arm was RUN -- and the two differed for the first real pair: the FIRST pair's second-machine arm was run while v4's proof was still calendar-only. The artifacts cannot settle that ordering by themselves, because run.json carries no timestamp: it records wall-clock DURATION but not when the run happened. That is a gap in the pipeline's record, stated here rather than papered over, and it cannot be closed retroactively for this pair.",
+  "_limits": "An ISOLATING verdict isolates the CPU only among the variables listed in v4 \u00a72. Microcode, BIOS settings, kernel scheduling and CPU features beyond the recorded SIMD baseline are neither held constant nor observed."
 }

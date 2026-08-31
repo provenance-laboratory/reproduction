@@ -30,6 +30,7 @@ import hashlib
 import io
 import pathlib
 import re
+import ots_verify as _OTS
 import sys
 
 NL = chr(10)
@@ -48,34 +49,58 @@ def commitments(text):
 BITCOIN_TAG = bytes([0x05, 0x88, 0x96, 0x0d, 0x73, 0xd7, 0x19, 0x01])
 
 
+DISTRIBUTION_HEADING = "### 2c."
+
+
+def distribution_subset(text):
+    """The files the protocol says a REPRODUCER PACKAGE contains. Empty if it declares none.
+
+    ⛔ THE PACKAGE SHIPPED A CONTROL THAT COULD NOT PASS INSIDE THE PACKAGE. Since v6 pinned the
+    instruments, `check_commitments.py` has pinned sixteen files while the reproducer's package
+    deliberately contains nine -- so a stranger following the documented instruction saw nine
+    `MISSING` lines and a refusal, on an untampered package. It was never noticed because every
+    gate ran the checker against the SOURCE tree; nothing ever ran it where a reproducer runs it.
+
+    ⚠ AND "SKIP FILES THAT ARE NOT THERE" WOULD BE THE ABSENCE DEFECT AGAIN, in the checker whose
+    own protocol version was written about absences. Deleting a file would then be a way to avoid
+    its digest being checked. So the subset is DECLARED IN THE ANCHORED DOCUMENT and the rule is an
+    equality, not a skip: the absent set must be EXACTLY the pinned set minus the declared subset.
+    One file missing from the subset, or one absence outside the complement, and this refuses.
+    """
+    if DISTRIBUTION_HEADING not in text:
+        return set()
+    tail = text.split(DISTRIBUTION_HEADING, 1)[1]
+    block = re.search(r"```" + NL + r"(.*?)```", tail, re.S)
+    if not block:
+        return set()
+    return {ln.strip() for ln in block.group(1).split(NL) if ln.strip()}
+
+
 def anchored(doc):
-    """Does this document's OWN proof bind its current bytes and claim a Bitcoin attestation?
+    """Does this document's proof PARSE, commit to these bytes, and name a Bitcoin block?
 
-    ⛔ THIS CHECK DID NOT EXIST, AND WITHOUT IT THE WHOLE FILE WAS THEATRE. Two round-4 reviewers
-    broke it independently, by different routes:
+    ⛔ THIS SEARCHED THE FILE FOR TWO BYTE STRINGS. Two round-5 reviewers independently built the
+    same 40-byte forgery -- SHA256(document) followed by the Bitcoin tag -- and it passed here,
+    moved authority, and let a substituted train.py through with exit 0. `ots info` on that file
+    says it is not a timestamp file at all.
 
-        append a line to train.py, then sed its digest inside v5 section 3   -> exit 0
-        drop in an UNANCHORED synthetic v6 carrying the mutated digests      -> exit 0
-
-    Both work because the table was read out of a MUTABLE FILE IN THE SAME DIRECTORY. Reading the
-    protocol rather than restating it removed one hazard and introduced a worse one: whoever can
-    change train.py can also change the document that says what train.py should be.
-
-    ⇒ A digest table is authority only if the document carrying it is ANCHORED: the proof exists,
-    binds these exact bytes, and carries a Bitcoin attestation. The same three conditions
-    anchor_status.py applies -- applied here to the document this file takes its orders from.
+    ⇒ Round 4's 35-bytes-of-junk attack survived its own repair, because the repair added BINDING
+    and never added PARSING. The class was "a proof is a structure and I am looking for bytes in
+    it", and fixing the instance left the class alone. ots_verify.py reads the structure.
     """
     proof = doc.parent / (doc.name + ".ots")
     if not proof.exists():
-        return False, "no proof beside it"
-    blob = proof.read_bytes()
-    if len(blob) < 32:
-        return False, "proof too short to be one"
-    if hashlib.sha256(doc.read_bytes()).digest() not in blob:
-        return False, "its proof does not bind these bytes -- edited after stamping"
-    if BITCOIN_TAG not in blob:
-        return False, "pending: calendar receipt only, no Bitcoin attestation"
-    return True, "anchored"
+        return False, "no proof beside it", "MISSING"
+    ok, why, found = _OTS.verify(proof.read_bytes(), doc.read_bytes())
+    if ok:
+        return True, why, "ANCHORED"
+    # ⚠ PENDING AND TAMPERED ARE NOT THE SAME REJECTION, and §11 now turns on the difference,
+    # so it is a VALUE and not a phrase in `why`. A proof that parses, commits to these bytes and
+    # carries a calendar attestation is a document waiting for Bitcoin -- the normal state for
+    # hours after stamping. Anything else is a proof that is not a proof.
+    state = "PENDING" if (found and all(k != "bitcoin" for k, _v, _r in found)
+                          and any(k == "pending" for k, _v, _r in found)) else "TAMPERED"
+    return False, why, state
 
 
 def governing(here):
@@ -104,19 +129,43 @@ def governing(here):
                              "parses only %d commitment(s); the table's format has changed and "
                              "this parser no longer reads it" % len(pinned)))
             continue
-        ok, why = anchored(f)
+        ok, why, state = anchored(f)
         if not ok:
-            rejected.append((version, f.name, why))
+            rejected.append((version, f.name, why, state))
             continue
         found.append((version, f.name, pinned))
+
+    # ⛔ DESTROYING A PROOF MADE THE CHECKER CHECK LESS, AND PASS. Forging v6's proof did not
+    # promote anything -- `ots_verify` refused it correctly, and v6 simply dropped out of `found`.
+    # Authority then fell back to v5, WHICH PINS FOUR FILES WHERE v6 PINS SIXTEEN, and every one of
+    # the four still matched. Exit 0. The attack does not defeat the proof check; it defeats the
+    # SELECTION RULE by removing the strongest candidate, and a weaker table is not a smaller
+    # authority, it is a different one.
+    #
+    # ⚠ A PENDING VERSION MUST NOT TRIGGER THIS, or the project cannot function: for the hours
+    # between stamping a successor and its anchor, a legitimately pending document sits above the
+    # authority. That is why `anchored()` returns a STATE. Pending is a transition; TAMPERED or
+    # MISSING above the selected authority is someone removing the table that would have governed.
+    if found:
+        top = max(v for v, _n, _p in found)
+        blocking = [(v, n, w) for v, n, w, s in rejected
+                    if v > top and s in ("TAMPERED", "MISSING")]
+        if blocking:
+            raise SystemExit(
+                D + " %s is present, is a HIGHER version than the authority %s would select, and "
+                "its proof is not a proof (%s). Falling back to an older document would enforce a "
+                "SMALLER table -- v5 pins 4 files where v6 pins 16 -- so destroying a proof would "
+                "make this check weaker and still pass. A protocol document whose proof has been "
+                "destroyed is a tampered tree, not an older one."
+                % (blocking[-1][1], "the next version down", blocking[-1][2][:60]))
     return found, rejected
 
 
 def main():
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
     found, rejected = governing(HERE)
-    for _v, _name, _why in sorted(rejected, reverse=True):
-        print("  " + W + " %-46s NOT AUTHORITY: %s" % (_name, _why))
+    for _v, _name, _why, _state in sorted(rejected, reverse=True):
+        print("  " + W + " %-46s NOT AUTHORITY [%s]: %s" % (_name, _state, _why))
     if rejected:
         print()
     if not found:
@@ -156,10 +205,26 @@ def main():
         print("  BROKEN CHECK, not a pass: fix the parser before trusting anything below.")
         return 1
 
+    # the subset a distribution is allowed to be, read from the ANCHORED document
+    _subset = distribution_subset((HERE / PROTOCOL).read_text(encoding="utf-8"))
+    _absent = {rel for rel, _w in pinned if not (HERE / rel).exists()}
+    _complement = {rel for rel, _w in pinned if rel not in _subset}
+    _is_distribution = bool(_subset) and _absent and _absent == _complement
+    if _is_distribution:
+        print("  " + W + " THIS IS THE REPRODUCER PACKAGE, not the source tree. %s declares a"
+              % PROTOCOL)
+        print("  subset of %d file(s); the %d pinned file(s) outside it are absent, which is"
+              % (len(_subset), len(_absent)))
+        print("  EXACTLY the complement -- not a file missing, and not a file hidden.")
+        print()
+
     bad = []
     for rel, want in pinned:
         f = HERE / rel
         if not f.exists():
+            if _is_distribution:
+                print("  --   %-26s not in this distribution, by %s" % (rel, PROTOCOL))
+                continue
             print("  " + D + " %-26s MISSING" % rel)
             bad.append((rel, "missing", want, None))
             continue
@@ -181,9 +246,19 @@ def main():
                  if re.search(r"-v%d-" % _pending, f.name)]
         _ptable = dict(commitments(_pdoc[0].read_text(encoding="utf-8"))) if _pdoc else {}
         _pproof = HERE / (_pdoc[0].name + ".ots") if _pdoc else None
-        _stamped = bool(_pproof and _pproof.exists()
-                        and hashlib.sha256(_pdoc[0].read_bytes()).digest()
-                        in _pproof.read_bytes())
+        # ⛔ THE ALLOWANCE REIMPLEMENTED A WEAKER TWO-TEST VERSION INLINE and dropped the length
+        # guard, so a 32-byte "proof" containing only the document's own digest satisfied it. A
+        # reviewer found the duplicate. One parser, one place.
+        #
+        # ⚠ AND THE ALLOWANCE'S STATED ARGUMENT WAS WRONG. It said a pending stamp is "exactly
+        # what an attacker cannot fake" -- but stamping is free, public and unilateral. The one
+        # unforgeable property is the Bitcoin attestation, which the allowance is DEFINED by
+        # waiving. It is a convenience for the hours before an anchor lands, and nothing more.
+        _stamped = False
+        if _pproof and _pproof.exists():
+            _pok, _pwhy, _pf = _OTS.verify(_pproof.read_bytes(), _pdoc[0].read_bytes())
+            # a pending proof is legitimately not anchored; it must still BE a proof
+            _stamped = _pok or ("carries no Bitcoin attestation" in _pwhy)
         # ⛔ AND THE EXCUSE MUST NOT SURVIVE A MISSING PROOF. The transitional allowance was
         # added so a freshly stamped version does not make every build look like an attack -- and
         # it immediately swallowed one: DELETING the anchored document's proof dropped authority

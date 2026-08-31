@@ -13,6 +13,7 @@ The artifact under test is the procedure, not the file.
 
     python build_package.py
 """
+import ast
 import hashlib
 import io
 import json
@@ -32,33 +33,17 @@ OUT = HERE / "package"
 CONTENTS = (
     ("train.py", "the pipeline. One file, numpy only, no network"),
     ("REPRODUCTION-CALL.md", "what we are asking for and the two rules we bind ourselves with"),
-    ("PRE-REGISTRATION-v3-CONFIRMATORY.md",
-     "THE PROTOCOL THIS STUDY RUNS UNDER"),
-    ("PRE-REGISTRATION-v3-CONFIRMATORY.md.ots", "its proof"),
-    ("PRE-REGISTRATION-v4-CONFIRMATORY.md",
-     "AND MEASUREMENT 4'S ADMISSIBILITY -- v3 governs everything else"),
-    ("PRE-REGISTRATION-v4-CONFIRMATORY.md.ots", "its proof"),
-    ("PRE-REGISTRATION-v5-CONFIRMATORY.md",
-     "AND THE DIGEST COMMITMENTS, which replace v3 §2"),
-    ("PRE-REGISTRATION-v5-CONFIRMATORY.md.ots", "its proof"),
-    ("PRE-REGISTRATION-v6-CONFIRMATORY.md",
-     "AND THE INSTRUMENTS AND GATES -- round 4 showed only the inputs were committed"),
-    ("PRE-REGISTRATION-v6-CONFIRMATORY.md.ots", "its proof"),
-    ("PRE-REGISTRATION-v7-CONFIRMATORY.md",
-     "v6 section 2b re-committed: the first time v6's rule cost a version, paid not relaxed"),
-    ("PRE-REGISTRATION-v7-CONFIRMATORY.md.ots", "its proof"),
     ("check_commitments.py",
      "the control that enforces them -- v3 §2 was prose and was broken the next day"),
     ("test_controls.py",
-     "every attack round 4 used against these controls, as a suite -- run it"),
+     "every attack rounds 4 and 5 used against these controls, as a suite -- run it"),
+    ("check_signature.py",
+     "who asserted the protocol documents. Nothing IMPORTS it, so the dependency closure "
+     "below would never have pulled it in -- and an anchor answers WHEN, never WHO"),
     ("corpus/verify_shipped.py",
      "check the shipped corpus against the manifest, using only what the package contains"),
-    ("PRE-REGISTRATION-v2-CONFIRMATORY.md", "version 2, superseded, retained as record"),
-    ("PRE-REGISTRATION-v2-CONFIRMATORY.md.ots", "its proof"),
     ("ENVIRONMENT-LOCK.json",
      "the interpreter and library recorded -- NOT a lock; see the file"),
-    ("PRE-REGISTRATION.md", "version 1, retained: the pilot protocol"),
-    ("PRE-REGISTRATION.md.ots", "its OpenTimestamps proof, anchored in a Bitcoin block"),
     ("PILOT-2026-08-29.md", "the observation that made the thread pin part of the protocol"),
     ("AMENDMENT-2026-08-30.md",
      "a deviation from the protocol, disclosed to the reproducer rather than to a reader later"),
@@ -67,6 +52,154 @@ CONTENTS = (
     ("corpus/sources.json", "where each text came from, so the corpus can be rebuilt from source"),
     ("corpus/build_corpus.py", "how raw became clean. The cleaning is part of the specification"),
 )
+
+
+# ⛔ INSTANCE THIRTEEN, AND V7 PAID FOR IT THE WRONG WAY. Every protocol document and its proof
+# were listed here BY NAME, so shipping a new version meant editing this file -- and v7 recorded
+# that edit as a cost of v6's rule rather than as the enumeration defect it was. A package that
+# silently omits the version governing it is the exact failure `build_package` already refuses one
+# line below, so the list was one forgotten edit away from producing it.
+#
+# ⚠ THE PROOF IS NOT OPTIONAL. A document shipped without its `.ots` is a rule a reader cannot
+# check, so a missing proof raises rather than being skipped -- the projection fails closed.
+def _local_imports(py):
+    """Module names this file imports that are OUR files, resolved by reading the source.
+
+    ⛔ `check_commitments.py` GAINED `import ots_verify` AND THE PACKAGE LIST DID NOT. The build
+    reported exit 0 and shipped a package in which `check_commitments.py` and `test_controls.py`
+    both died with ModuleNotFoundError -- the two scripts a reproducer is asked to run to check
+    that anything here is what it claims. **The exit code was the envelope; the package was the
+    letter, and nobody opened it.**
+
+    ⚠ AND ADDING THE TWO NAMES TO THE LIST WOULD BE THE DEFECT, NOT THE FIX. A hand-kept list of
+    what to ship goes stale the next time a script gains an import, which is the same shape as the
+    protocol-document lists removed a section earlier. So the dependency is DERIVED: what a shipped
+    script imports, the package contains, transitively.
+    """
+    try:
+        tree = ast.parse(py.read_text(encoding="utf-8"))
+    except (OSError, SyntaxError):
+        return set()
+    names = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            names |= {a.name.split(".")[0] for a in node.names}
+        elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+            names.add(node.module.split(".")[0])
+    return {n for n in names if (HERE / (n + ".py")).exists()}
+
+
+def _with_dependencies(contents):
+    """Close the shipped set over local imports, and over the signatures beside each document."""
+    have = {rel for rel, _why in contents}
+    out = list(contents)
+    queue = [rel for rel in have if rel.endswith(".py")]
+    while queue:
+        rel = queue.pop()
+        for mod in _local_imports(HERE / rel):
+            dep = mod + ".py"
+            if dep not in have:
+                have.add(dep)
+                out.append((dep, "imported by %s -- without it that script does not run" % rel))
+                queue.append(dep)
+    # ⛔ THE SIGNATURES DID NOT SHIP. This version's own section 4 says an anchor answers WHEN and
+    # a signature answers WHO -- and the package carried every proof and not one signature, so the
+    # question it introduced could not be asked by the person it was introduced for.
+    for rel in sorted(have):
+        if rel.endswith(".md") and (HERE / (rel + ".asc")).exists() and rel + ".asc" not in have:
+            out.append((rel + ".asc", "its detached signature -- the anchor says WHEN, this WHO"))
+    return tuple(out)
+
+
+def _protocol_contents():
+    out = []
+    for doc in sorted(HERE.glob("PRE-REGISTRATION*.md")):
+        why = ("THE PROTOCOL THIS STUDY RUNS UNDER"
+               if doc.name == "PRE-REGISTRATION-v3-CONFIRMATORY.md"
+               else "a protocol document, retained as part of the record")
+        out.append((doc.name, why))
+        if not (doc.parent / (doc.name + ".ots")).exists():
+            raise SystemExit(
+                D + " %s has no .ots proof. Shipping a protocol document a reader cannot check "
+                "the provenance of is worse than not shipping it." % doc.name)
+        out.append((doc.name + ".ots", "its OpenTimestamps proof"))
+    return tuple(out)
+
+
+CONTENTS = _with_dependencies(CONTENTS + _protocol_contents())
+
+
+def publication_preconditions(expected_included):
+    """v6 section 7's last two conditions, in code instead of in prose.
+
+    ⛔ A REVIEWER DEMONSTRATED BOTH. `--with-target --publishing` wrote `EXPECTED.json` with no
+    public commitment to the digest it contains, and `--publishing` succeeded with no reporting
+    address and no close date. v6 listed them as known gaps so they would be commitments rather
+    than discoveries -- which was the honest move, and is not the same as closing them.
+
+    ⚠ A DECLARED GAP IS STILL A GAP. Writing "not yet enforced in code" converts a defect into a
+    disclosure, and a reader who trusts the disclosure still gets a build that publishes a target
+    nobody committed to. This is the enforcement; the disclosure stays in the paper as history.
+    """
+    import datetime
+    fail = []
+
+    # ⛔ A TARGET NOBODY COMMITTED TO IS NOT A PREDICTION. If the expected digest is published
+    # without a prior public commitment, nothing stops it being chosen AFTER seeing a result. The
+    # commitment is the anchored protocol document pinning the pipeline that produces it.
+    if expected_included:
+        import check_commitments as _CC
+        found, _rej = _CC.governing(HERE)
+        if not found:
+            fail.append("EXPECTED.json is being published and NO anchored protocol document "
+                        "governs. The target would be a number with no prior commitment behind "
+                        "it, which is the thing this design exists to rule out.")
+
+    # ⛔ A WINDOW WITH NO CLOSE DATE NEVER CLOSES, and a report with nowhere to arrive is not a
+    # report. v3 section 7 makes both load-bearing: everything filed by the close date is reported,
+    # including nothing.
+    reg = HERE / "REGISTRATION.json"
+    if not reg.exists():
+        fail.append("REGISTRATION.json is absent: no reporting address and no close date. v3 "
+                    "section 7 promises that everything filed by the close date is reported, "
+                    "which is unfalsifiable without a date and unreachable without an address.")
+    else:
+        try:
+            r = json.loads(reg.read_text(encoding="utf-8"))
+        except Exception as e:                                                  # noqa: BLE001
+            r = {}
+            fail.append("REGISTRATION.json does not parse (%s)." % e)
+        # ⛔ THE FIRST VERSION OF THIS CHECK ACCEPTED THE TEMPLATE'S OWN PLACEHOLDER. It refused
+        # only "", "None", "TBD" and "?", so `report_to` reading "FILL IN: the URL a reproducer
+        # files at..." passed -- an unfilled field satisfying the gate written to require it. Only
+        # the date was caught, and only because a date must PARSE. Testing the shape of a value is
+        # not testing the claim it makes.
+        for key, why in (("report_to", "nowhere for a reproducer to file"),
+                         ("window_closes_utc", "a window with no close date never closes")):
+            v = str(r.get(key) or "").strip()
+            if not v or v in ("None", "TBD", "?", "-"):
+                fail.append("REGISTRATION.json states no %s -- %s." % (key, why))
+                continue
+            if any(m in v.upper() for m in ("FILL IN", "TODO", "TBD", "XXX", "EXAMPLE.COM",
+                                            "<", ">")):
+                fail.append("REGISTRATION.json's %s is still a placeholder (%r) -- %s."
+                            % (key, v[:40], why))
+        addr = str(r.get("report_to") or "").strip()
+        if addr and not addr.lower().startswith(("http://", "https://", "mailto:")):
+            fail.append("report_to %r is not an address a reproducer can open. The reproduction "
+                        "call promises 'the address published with these artifacts'; prose is "
+                        "not an address." % addr[:40])
+        w = str(r.get("window_closes_utc") or "").strip()
+        if w:
+            try:
+                when = datetime.datetime.strptime(w[:10], "%Y-%m-%d").replace(
+                    tzinfo=datetime.timezone.utc)
+                if when <= datetime.datetime.now(datetime.timezone.utc):
+                    fail.append("the reproduction window closed on %s. Publishing an invitation "
+                                "to a window that has shut is not an invitation." % w[:10])
+            except ValueError:
+                fail.append("window_closes_utc %r is not a YYYY-MM-DD date." % w)
+    return fail
 
 
 def main():
@@ -114,13 +247,20 @@ def main():
                          "built against an unanchored draft has no protocol.")
     GOVERNING = sorted(_anchored)[-1][1]
     GOVERNING_M4 = "PRE-REGISTRATION-v4-CONFIRMATORY.md"
-    for _v, _n, _why in _rejected:
-        print("  " + chr(0x26A0) + " %s is present and is NOT authority: %s" % (_n, _why))
+    for _v, _n, _why, _state in _rejected:
+        print("  " + chr(0x26A0) + " %s is present and is NOT authority [%s]: %s"
+              % (_n, _state, _why))
     # ⛔ v3 §2 SAID A CHANGED DIGEST VOIDS THE PRE-REGISTRATION, AND NOTHING CHECKED IT. train.py
     # was edited the next day and every tool here reported success for a day, SHA256SUMS included
     # -- a checksum regenerated from the bytes it polices cannot notice a substitution. The
     # commitment is verified before a package is built, not described in a document.
-    _cc = subprocess.run([sys.executable, "-X", "utf8", "check_commitments.py"], cwd=str(HERE),
+    # ⛔ `--publishing` DID NOT TRAVEL. This build ran `check_commitments.py` with no arguments
+    # even on a publishing run, so the checker's publishing path -- the one refusing to publish
+    # while a newer protocol version is stamped and not yet anchored -- was never taken. The strict
+    # mode existed, was tested, and was unreachable from the only tool that calls it.
+    _pub = ["--publishing"] if "--publishing" in sys.argv else []
+    _cc = subprocess.run([sys.executable, "-X", "utf8", "check_commitments.py"] + _pub,
+                         cwd=str(HERE),
                          capture_output=True, text=True, encoding="utf-8", errors="replace")
     _tc = subprocess.run([sys.executable, "-X", "utf8", "test_controls.py"], cwd=str(HERE),
                          capture_output=True, text=True, encoding="utf-8", errors="replace")
@@ -189,6 +329,58 @@ def main():
         shutil.copy2(tpl, OUT / ".github" / "ISSUE_TEMPLATE" / "reproduction-report.yml")
         shipped.append(".github/ISSUE_TEMPLATE/reproduction-report.yml")
 
+    # ⛔ THE ONLY REASON THIS EXISTS IS THAT A GREEN BUILD SHIPPED A BROKEN PACKAGE. Every check
+    # above reads the SOURCE tree; none of them ever ran anything inside `package/`. So the build
+    # now imports each shipped module with the package as the working directory, which is the
+    # cheapest possible test that the artifact is what the exit code claimed.
+    _mods = [r[:-3].replace("/", ".") for r, _w in CONTENTS
+             if r.endswith(".py") and "/" not in r]
+    _broken = []
+    for _m in _mods:
+        _r = subprocess.run([sys.executable, "-X", "utf8", "-c", "import " + _m],
+                            cwd=str(OUT), capture_output=True, text=True,
+                            encoding="utf-8", errors="replace")
+        if _r.returncode != 0:
+            _broken.append((_m, ((_r.stderr or "").strip().splitlines() or [""])[-1][:80]))
+    if _broken:
+        print()
+        for _m, _e in _broken:
+            print("  " + D + " package/%s.py does not import: %s" % (_m, _e))
+        raise SystemExit(D + " the package was written and it does not run. A build that reports "
+                         "success while shipping scripts that die on import is the exit code "
+                         "standing in for the artifact.")
+    print("  ok  %d shipped module(s) import cleanly INSIDE the package" % len(_mods))
+
+    # {D} IMPORTING IS NOT RUNNING, and the import check passed while `test_controls.py` died in
+    # the package with a FileNotFoundError -- the exact file the reproduction call tells a stranger
+    # to run. The envelope again: the module loaded, so the artifact was assumed to work.
+    #
+    # {W} `check_commitments.py` CANNOT PASS IN THE PACKAGE UNTIL v8 ANCHORS, because section 2c is
+    # declared there and v6 is still in force. That is reported by name rather than excused, and
+    # `--publishing` refuses on it -- publishing a package whose own control refuses is exactly the
+    # failure this block exists to prevent.
+    _run_in_pkg = [r for r, _w in CONTENTS
+                   if r in ("test_controls.py", "check_signature.py", "corpus/verify_shipped.py",
+                            "check_commitments.py")]
+    _fail = []
+    for _rel in _run_in_pkg:
+        _r = subprocess.run([sys.executable, "-X", "utf8", _rel], cwd=str(OUT),
+                            capture_output=True, text=True, encoding="utf-8", errors="replace")
+        _tail = ((_r.stdout or "") + (_r.stderr or "")).strip().splitlines()
+        print("  %s  package/%-24s exit %d" % ("ok " if _r.returncode == 0 else D, _rel,
+                                               _r.returncode))
+        if _r.returncode != 0:
+            _fail.append((_rel, _tail[-1][:90] if _tail else ""))
+    if _fail:
+        print()
+        for _rel, _why in _fail:
+            print("      " + D + " %s: %s" % (_rel, _why))
+        if "--publishing" in sys.argv:
+            raise SystemExit(D + " a shipped control fails INSIDE the package. Publishing a "
+                             "package whose own controls refuse is worse than shipping none.")
+        print("  " + W + " REVIEW BUILD: continuing. check_commitments.py cannot pass here until")
+        print("  v8 anchors and section 2c takes effect. --publishing makes this fatal.")
+
     # ⚠️ THE WEIGHTS ARE NOT SHIPPED, ONLY THEIR DIGEST. See the module docstring.
     expected = {
         "_what": ("The result configuration A obtained. Compare the weights_sha256 your run "
@@ -220,6 +412,17 @@ def main():
     # at step 4 that the whole ordering exists to obtain. Two reviewers found it from the file
     # timestamps. v3 publishes a TARGET-FREE package; the reference bundle and EXPECTED.json are a
     # separate, later, signed artifact.
+    if "--publishing" in sys.argv:
+        _fail = publication_preconditions("--with-target" in sys.argv)
+        if _fail:
+            print()
+            print("  " + D + " PUBLICATION PRECONDITIONS NOT MET (v6 section 7):")
+            for _f in _fail:
+                print("      - " + _f)
+            raise SystemExit("  Stopping. These are publishing conditions; a REVIEW build (no "
+                             "--publishing) is unaffected.")
+        print("  ok  publication preconditions met (commitment, address, open window)")
+
     if "--with-target" in sys.argv:
         (OUT / "EXPECTED.json").write_text(json.dumps(expected, indent=2) + NL,
                                            encoding="utf-8", newline=NL)

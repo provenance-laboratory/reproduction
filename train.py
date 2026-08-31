@@ -320,9 +320,34 @@ def _provenance():
             "bitcoin_attestation": bytes([0x05, 0x88, 0x96, 0x0d, 0x73, 0xd7, 0x19,
                                           0x01]) in blob,
         }
-    pkg = HERE / "package" / "SHA256SUMS"
-    if pkg.exists():
-        prov["package_sha256sums_sha256"] = hashlib.sha256(pkg.read_bytes()).hexdigest()
+    # ⛔ THIS RECORDED WHICHEVER PACKAGE HAPPENED TO EXIST, not the one being run. In the source
+    # tree it bound a stale package whose train.py was a DIFFERENT pipeline (1231a42a while
+    # 22cbfeb7 ran); inside an extracted package it looked for package/SHA256SUMS beneath the
+    # package root and found nothing, recording no binding at all. A reviewer found both halves.
+    #
+    # ⇒ A package binding is only meaningful if that package's manifest lists THIS train.py. Both
+    # candidate locations are tried, the manifest's own entry for train.py is compared against the
+    # digest of the file executing, and a mismatch records the disagreement rather than the digest.
+    me = prov["pipeline_sha256"]
+    for cand in (HERE / "package" / "SHA256SUMS", HERE / "SHA256SUMS"):
+        if not cand.exists():
+            continue
+        listed = None
+        for line in cand.read_text(encoding="utf-8", errors="replace").splitlines():
+            parts = line.split()
+            if len(parts) == 2 and parts[1].replace(chr(92), "/").endswith("train.py"):
+                listed = parts[0]
+        if listed is None:
+            continue
+        if listed == me:
+            prov["package_sha256sums_sha256"] = hashlib.sha256(cand.read_bytes()).hexdigest()
+            prov["package_manifest"] = str(cand.relative_to(HERE)).replace(chr(92), "/")
+        else:
+            prov["package_binding_refused"] = (
+                "%s lists train.py as %s; this run is %s. A package that does not contain the "
+                "pipeline being run is not evidence about it."
+                % (str(cand.relative_to(HERE)).replace(chr(92), "/"), listed[:16], me[:16]))
+        break
     return prov
 
 
@@ -369,6 +394,11 @@ def main():
         # first matmul" -- a reviewer drew exactly that line. Step -1 is the initialisation.
         trace.append({k: hashlib.sha256(np.ascontiguousarray(v).tobytes()).hexdigest()
                       for k, v in (("E", E), ("W1", W1), ("b1", b1), ("W2", W2), ("b2", b2))})
+    # ⛔ `started_utc` WAS CAPTURED AFTER TRAINING FINISHED -- an END time labelled a start
+    # time. A round-5 reviewer measured it: shell before 09:12:38, recorded "started" 09:12:42,
+    # shell after 09:12:42, wall clock 3.8s. The only field in the record that says WHEN was
+    # wrong by the duration of the run, and the field name asserted the opposite.
+    _prov = _provenance()
     t0 = time.perf_counter()
     for step in range(STEPS):
         idx = order[step]
@@ -434,7 +464,7 @@ def main():
            "loss_first": round(losses[0], 8),
            "weights_sha256": wdigest,
            "weights_npz_bytes": npz.stat().st_size,
-           "provenance": _provenance()}
+           "provenance": _prov}
     (out / "run.json").write_text(json.dumps(rec, indent=2) + NL, encoding="utf-8", newline=NL)
     # ⚠ loss.json stays ROUNDED because it is a curve for reading, not evidence of
     # divergence. The full-precision values go beside it, so nothing has to be recomputed from a

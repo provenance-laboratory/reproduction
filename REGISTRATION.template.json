@@ -1,0 +1,19 @@
+{
+  "_what": "Copy this to REGISTRATION.json and fill it in AT THE MOMENT OF PUBLICATION. build_package.py --publishing refuses without it. The template is not a substitute: it is deliberately not named REGISTRATION.json, so an unfilled file cannot satisfy the gate.",
+
+  "_why_this_file_exists": "Pre-registration v6 section 7 listed two conditions as invalidating and noted they were 'not yet enforced in code', so the gap would be a commitment rather than a discovery. A reviewer then demonstrated both: --with-target --publishing wrote EXPECTED.json with no public commitment behind the target, and --publishing succeeded with no reporting address and no window. v8 section 6 enforces them. A declared gap is still a gap.",
+
+  "report_to": "FILL IN: the URL a reproducer files at. The reproduction call says 'file a report at the address published with these artifacts', so this is that address. A GitHub issue form is the intended shape -- the template ships in the package at .github/ISSUE_TEMPLATE/reproduction-report.yml.",
+
+  "window_closes_utc": "FILL IN: YYYY-MM-DD. Pre-registration v3 section 7 promises that everything filed by this date is reported, INCLUDING NOTHING. That promise is unfalsifiable without a date, and section 2c of the pilot protocol fixes the date at the moment of publication -- so it is chosen once, publicly, and not moved afterwards.",
+
+  "_moving_this_date_destroys_the_result": "If nobody reproduces the run, the null outcome is only a result because the window was fixed in advance. Extending it after seeing no reports converts a measurement into a wait, and there is no way for a reader to tell the two apart from the outside.",
+
+  "_the_gate_checks": [
+    "report_to is present and is not a placeholder",
+    "window_closes_utc is present, parses as YYYY-MM-DD, and has NOT already passed",
+    "an ANCHORED protocol document governs, if EXPECTED.json is being published"
+  ],
+
+  "_not_checked_here": "Whether the address actually receives anything. A URL that 404s satisfies every rule above, so open the form once from a browser that is not signed in before publishing -- the checker reads a record, not the world."
+}

@@ -109,6 +109,49 @@ def _blas_identity(env):
     return (lib, ver, env.get("blas_build_config_line"))
 
 
+def _stated(v):
+    """Has this field been STATED? None, "", "None", "?" and whitespace are all silence.
+
+    ⛔ FIVE MORE ABSENCE ATTACKS PASSED, IN THE TOOL ALREADY REPAIRED TWICE FOR EXACTLY THIS.
+    Round 5 removed both arms' `spec`, then `corpus_merkle_root`, then `threads_requested`, then
+    `python`, and each time the pair was declared MATCHED-STACK CROSS-MACHINE -- the strongest
+    verdict this tool can issue -- because `a.get(k) != b.get(k)` is FALSE when neither arm states
+    k. Deleting the evidence made the pair look MORE comparable, not less. A sixth attack, blanking
+    one arm's CPU, crashed on a None slice.
+
+    ⚠ THE PREVIOUS REPAIRS FIXED THE CONDITIONS AND LEFT THE PREMISE. Round 4's absences were
+    caught one at a time inside `conditions()`; nothing was done about the same-input gate ABOVE
+    it, which is the gate deciding whether the comparison is a comparison at all. Repairing
+    instance N where it appears is how instance N+1 gets made.
+
+    ⛔ AND `python` FAILED A SECOND WAY: `str(None).split(".")` is `["None"]`, so two absent
+    Pythons compared EQUAL AND TRUTHY as the string "None". A guard that tests truthiness after
+    stringifying tests the truthiness of the word None.
+
+    ⚠ `_stated` DOES NOT PROJECT OVER THE RECORD'S KEYS -- it is asked about named fields, so a
+    field nobody thought to guard is still unguarded. That is the honest limit. The defence is that
+    every comparison below now routes through `_agree`, so adding an unguarded one takes deliberate
+    effort instead of being what happens by default.
+    """
+    if v is None:
+        return False
+    return str(v).strip() not in ("", "None", "null", "?", "-")
+
+
+def _agree(va, vb, norm=None):
+    """(ok, detail). Absence is never agreement -- on either side, in either direction."""
+    if not _stated(va) and not _stated(vb):
+        return False, "ABSENT IN BOTH ARMS -- two silences are not a match, nothing was held fixed"
+    if not _stated(va) or not _stated(vb):
+        return False, ("NOT RECORDED on arm %s (the other says %s)"
+                       % ("A" if not _stated(va) else "B",
+                          str(vb if not _stated(va) else va)[:40]))
+    na, nb = (norm(va), norm(vb)) if norm else (va, vb)
+    if not _stated(na) or not _stated(nb):
+        return False, "recorded but unparseable: %s vs %s" % (str(va)[:26], str(vb)[:26])
+    return na == nb, "%s vs %s" % (str(va)[:34], str(vb)[:34])
+
+
 def conditions(a, b):
     """v4 section 2's conditions, plus the ones round 4 showed were missing entirely.
 
@@ -128,22 +171,26 @@ def conditions(a, b):
 
     # ⛔ NEW, AND FIRST, BECAUSE IT IS THE COMPARISON'S PREMISE. The tool compared two files
     # without ever asking whether they were two MACHINES.
-    same_cpu = str(ea.get("cpu", "")).strip() == str(eb.get("cpu", "")).strip()
-    out.append((0, "the two arms are DIFFERENT machines", not same_cpu and bool(ea.get("cpu")),
-                "%s vs %s" % (str(ea.get("cpu"))[:34], str(eb.get("cpu"))[:34])))
+    # ⚠ RENAMED FROM "the two arms are DIFFERENT machines", which this cannot observe. It
+    # compares two SELF-REPORTED CPU STRINGS: two hosts of one model report the same string, and a
+    # copied record reports its source's. What is actually checked is that the arms report
+    # DIFFERENT identities, which is weaker than being different machines, so it is now named that
+    # way. And it required only arm A to HAVE a CPU, so blanking arm B's passed it.
+    ok0, det0 = _agree(ea.get("cpu"), eb.get("cpu"))
+    if not _stated(ea.get("cpu")) or not _stated(eb.get("cpu")):
+        out.append((0, "both arms REPORT a CPU identity", False, det0))
+    else:
+        out.append((0, "the arms report DIFFERENT CPU identities", not ok0, det0))
 
-    fa, fb = os_family(ea.get("platform")), os_family(eb.get("platform"))
-    out.append((1, "operating system recorded and matching", bool(fa and fb) and fa == fb,
-                "%s vs %s" % (fa or "NOT RECORDED", fb or "NOT RECORDED")))
+    ok1, det1 = _agree(ea.get("platform"), eb.get("platform"), norm=os_family)
+    out.append((1, "operating system recorded and matching", ok1, det1))
 
-    pa = ".".join(str(ea.get("python", "")).split(".")[:2])
-    pb = ".".join(str(eb.get("python", "")).split(".")[:2])
-    out.append((2, "Python matching to major.minor", bool(pa and pb) and pa == pb,
-                "%s vs %s" % (ea.get("python"), eb.get("python"))))
+    ok2, det2 = _agree(ea.get("python"), eb.get("python"),
+                       norm=lambda v: ".".join(str(v).split(".")[:2]))
+    out.append((2, "Python matching to major.minor", ok2, det2))
 
-    out.append((3, "numpy matching exactly",
-                bool(ea.get("numpy")) and ea.get("numpy") == eb.get("numpy"),
-                "%s vs %s" % (ea.get("numpy"), eb.get("numpy"))))
+    ok3, det3 = _agree(ea.get("numpy"), eb.get("numpy"))
+    out.append((3, "numpy matching exactly", ok3, det3))
 
     # ⛔ AN IDENTICAL BUILD LINE IS NOT AN IDENTICAL BLAS, and two ABSENT lines are not agreement.
     ia, ib = _blas_identity(ea), _blas_identity(eb)
@@ -165,14 +212,11 @@ def conditions(a, b):
     out.append((4, "BLAS identity matching (library, version, build)", ok4, detail4))
 
     # ⛔ PRESENCE WAS NOT EQUALITY. This is the condition the section-10 caveat depends on.
-    ra, rb = ea.get("blas_runtime_arch"), eb.get("blas_runtime_arch")
-    out.append((5, "runtime microkernel OBSERVED and IDENTICAL in both",
-                bool(ra) and ra == rb, "%s vs %s" % (ra or "NOT OBSERVED", rb or "NOT OBSERVED")))
+    ok5, det5 = _agree(ea.get("blas_runtime_arch"), eb.get("blas_runtime_arch"))
+    out.append((5, "runtime microkernel OBSERVED and IDENTICAL in both", ok5, det5))
 
-    ta, tb = _threads(ea), _threads(eb)
-    out.append((6, "effective BLAS thread count OBSERVED and EQUAL", ta is not None and ta == tb,
-                "%s vs %s" % (ta if ta is not None else "NOT OBSERVED",
-                              tb if tb is not None else "NOT OBSERVED")))
+    ok6, det6 = _agree(_threads(ea), _threads(eb))
+    out.append((6, "effective BLAS thread count OBSERVED and EQUAL", ok6, det6))
 
     # ⛔ A NON-CONFIRMATORY RUN CANNOT SUPPORT A CONFIRMATORY MEASUREMENT. Both arms passed with
     # seed 1 and is_confirmatory_spec false.
@@ -197,24 +241,34 @@ def main():
     print("  MEASUREMENT 4 — bit-identity across hardware")
     print("=" * 78)
     print()
-    print("  A  %-34s %s" % (a["environment"].get("cpu", "?")[:34], pa))
-    print("  B  %-34s %s" % (b["environment"].get("cpu", "?")[:34], pb))
+    print("  A  %-34s %s" % (str(a["environment"].get("cpu") or "NOT REPORTED")[:34], pa))
+    print("  B  %-34s %s" % (str(b["environment"].get("cpu") or "NOT REPORTED")[:34], pb))
     print()
 
     # ⛔ THE INPUTS MUST BE THE SAME QUESTION. Comparing two runs of different specifications
     # would produce a difference that says nothing about hardware, and nothing else here checks it.
+    # ⛔ THIS GATE READ `a.get(k) != b.get(k)`, WHICH IS FALSE WHEN NEITHER ARM STATES k.
+    # Deleting both arms' `spec` -- the field saying the two runs asked the same question -- made
+    # the pair MORE comparable, not less, and the tool answered MATCHED-STACK CROSS-MACHINE. The
+    # same for `corpus_merkle_root` and `threads_requested`. Three attacks, one line, and that line
+    # is the PREMISE of everything printed below it.
     same_input = True
-    for key in ("spec", "corpus_merkle_root"):
-        if a.get(key) != b.get(key):
-            same_input = False
-            print("  " + D + " THE TWO ARMS DO NOT SHARE %s. They are not the same experiment, "
-                  "and no comparison below is meaningful." % key)
-    if a["environment"].get("threads_requested") != b["environment"].get("threads_requested"):
+    for key, why in (("spec", "the two runs asked the same question"),
+                     ("corpus_merkle_root", "they trained on the same bytes"),
+                     ("threads_requested", "the known divergence cause was pinned")):
+        src_a, src_b = (a, b) if key != "threads_requested" else (a["environment"],
+                                                                  b["environment"])
+        ok, detail = _agree(src_a.get(key), src_b.get(key))
+        if ok:
+            continue
         same_input = False
-        print("  " + D + " the arms pinned different thread counts (%s vs %s). Thread count is a "
-              "known cause of divergence in this pipeline; holding it fixed is not optional."
-              % (a["environment"].get("threads_requested"),
-                 b["environment"].get("threads_requested")))
+        if not _stated(src_a.get(key)) or not _stated(src_b.get(key)):
+            print("  " + D + " %s IS NOT STATED (%s). It is the field establishing that %s; "
+                  "unstated it establishes nothing, and an absence is not an agreement."
+                  % (key, detail, why))
+        else:
+            print("  " + D + " THE TWO ARMS DO NOT SHARE %s (%s). They are not the same "
+                  "experiment, and no comparison below is meaningful." % (key, detail))
     if not same_input:
         print()
 
