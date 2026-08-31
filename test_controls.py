@@ -40,6 +40,25 @@ HERE = pathlib.Path(__file__).resolve().parent
 IGNORE = shutil.ignore_patterns("runs", "package", "reference", ".git", "review", "__pycache__")
 
 
+def _governing(root):
+    """The document that is ACTUALLY authority in this tree, not one named in this file.
+
+    {D} THIS FILE HARDCODED v5. The moment v6 anchored and became authority, "delete the governing
+    document's proof" deleted a SUPERSEDED document's proof and the check correctly passed -- so
+    the control stopped testing anything and reported success. The enumeration defect, in the file
+    written to catch enumeration defects, found by the suite one minute after v6 anchored.
+    """
+    import importlib
+    import sys as _s
+    _s.path.insert(0, str(root))
+    for m in ("check_commitments",):
+        if m in _s.modules:
+            del _s.modules[m]
+    cc = importlib.import_module("check_commitments")
+    found, _rej = cc.governing(root)
+    return sorted(found)[-1][1] if found else "PRE-REGISTRATION-v3-CONFIRMATORY.md"
+
+
 def run(root, tool, *args):
     r = subprocess.run([sys.executable, "-X", "utf8", tool] + list(args), cwd=str(root),
                        capture_output=True, text=True, encoding="utf-8", errors="replace")
@@ -51,9 +70,13 @@ def a_edit_both(root):
     """Change the pipeline AND the digest that pins it. The document's proof must catch it."""
     b = (root / "train.py").read_bytes() + b"# appended" + bytes([10])
     (root / "train.py").write_bytes(b)
-    v5 = root / "PRE-REGISTRATION-v5-CONFIRMATORY.md"
-    v5.write_text(re.sub(r"1231a42a[0-9a-f]{56}", hashlib.sha256(b).hexdigest(),
-                         v5.read_text(encoding="utf-8")), encoding="utf-8")
+    # the digest is edited in whichever document is AUTHORITY, not in a version this file names
+    gov = root / _governing(root)
+    txt = gov.read_text(encoding="utf-8")
+    gov.write_text(re.sub(r"(?<![0-9a-f])[0-9a-f]{64}(?![0-9a-f])",
+                          lambda m: hashlib.sha256(b).hexdigest()
+                          if m.group(0) != hashlib.sha256(b).hexdigest() else m.group(0),
+                          txt, count=1), encoding="utf-8")
 
 
 def a_fake_v6(root):
@@ -69,12 +92,12 @@ def a_fake_v6(root):
 
 
 def a_strip_proof(root):
-    """Delete the governing document's proof. An unanchored protocol is a draft."""
-    (root / "PRE-REGISTRATION-v5-CONFIRMATORY.md.ots").unlink()
+    """Delete the ACTUAL governing document's proof. An unanchored protocol is a draft."""
+    (root / (_governing(root) + ".ots")).unlink()
 
 
 COMMIT_ATTACKS = [
-    ("edit train.py AND its digest inside v5", a_edit_both),
+    ("edit train.py AND its digest inside the governing document", a_edit_both),
     ("mint an unanchored synthetic v7", a_fake_v6),
     ("delete the governing document's proof", a_strip_proof),
 ]
