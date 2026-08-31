@@ -1,34 +1,34 @@
-# Paper B (`reproduction`) — internal review packet, round 4
+# Paper B (`reproduction`) — internal review packet, round 5
 
 *Every figure below is read from the measurement files, and every claim is lifted from `PHASE-2-FINDINGS.md` rather than retyped. `build_review_packet.py` refuses to write if a figure it prints is absent from that document.*
 
 ## ⇒ SEND THESE TWO
 
 ```
-paper-b-review.zip     120 files
-  sha256 d98b62c82bf822b9e8b3fac850229a1f9ca7d70f33c4d0296cfcd54c47272fbf
+paper-b-review.zip     122 files
+  sha256 45782ce2ef6b3d415fd64c8bf3346fb80f87f25874b7bb20d46ccb3700ef9383
 this file
 ```
 
-Repository `provenance-laboratory/reproduction`, commit `ca9d47b`  ⚠️ TREE DIRTY.
+Repository `provenance-laboratory/reproduction`, commit `a60628b`  ⚠️ TREE DIRTY.
 
 ---
 
 ## ★ THE COVERING NOTE — paste this verbatim
 
-> **This is round 4.** Both reviewers refused the freeze again, and the central finding is the worst error of this project: the governing protocol was never in the package.
+> **This is round 5.** Both reviewers refused the freeze and both broke BOTH new controls, nine ways between them. One gave the generalisation: every break is a control that can be satisfied by the ABSENCE, the NAME, or the DESCRIPTION of the thing it checks.
 >
-> - v3 was written, stamped, announced as governing -- and never added to CONTENTS or SEND. The package shipped v1 and a v2 whose own text says 'superseded by v3'. It ships now, and build_package refuses without it.
-> - v2 and v3 were each stamped and then EDITED, so their proofs bound bytes that no longer existed. v3 was edited to say 'now anchored' -- the sentence whose truth the edit destroyed. v3 now makes no claim about its own anchoring; anchor_status.py's output is the claim.
-> - anchor_status.py was a dead control: a reviewer passed it with 35 bytes of junk, with 16 bytes of a real proof, and by DELETING EVERY PROOF. It now takes an explicit required list, recomputes each digest, requires the proof to contain it, and fails closed on absence -- and states that tag presence is not path verification.
-> - The packet's cross-check contained literal BACKSPACE bytes where word boundaries were meant, so it matched nothing; and its refusal used an undefined name. It now carries a canary that proves it can fire before it is trusted.
-> - m5 and m7 were the last hardcoded figures and were one and two rounds stale. They are computed into MEASUREMENT-5-7.json and read as fields.
-> - m7 is not separable from the seed: varying only the seed moves the differing fraction 25.4 points against a thread spread of 41.6. The doctrine 'a single timing is one sample' had been applied to m1 three times and never to divergence.
-> - measurement 1 is marked DESCRIPTIVE: the schedule is fixed alternation, not randomised, so there is no design-based randomisation distribution; and its p is a magnitude-weighted sign-flip test, not the sign test it was called.
-> - verify_package accepted an unlisted forged EXPECTED.json as authoritative. It now rejects any file not in SHA256SUMS and requires exactly one stage marker.
-> - The packet claimed a reviewer's own run could falsify configuration A. It cannot -- it measures a different machine, and the script said so while the packet said the opposite.
+> - AUTHORITY WAS DISCOVERED FROM A MUTABLE FILE IN THE SAME DIRECTORY. Reading the digest table out of the protocol instead of restating it removed one hazard and introduced a worse one: whoever can change train.py can change the document saying what train.py should be. Editing both passed; minting an unanchored v6 silently moved authority. A table is authority only if its document's own proof binds its bytes and carries a Bitcoin attestation.
+> - measure_hardware granted ISOLATING to SIX pairs that should not have one -- the same record as both arms, identical CPUs, Haswell vs SkylakeX, 1 thread vs 8, two absent build lines, two non-confirmatory runs -- and reported BIT-IDENTICAL: YES for an arm whose weights.npz was deleted. Every condition was satisfied by the PRESENCE or ABSENCE of a field rather than its VALUE. Conditions 0 and 4-8 added; bit-identity recomputed from the artifacts.
+> - THE VERDICT IS NO LONGER ISOLATING. Both reviewers said it claimed too much; MATCHED-STACK CROSS-MACHINE is adopted. And CONFOUNDED was wrong for the first pair: arm B's record CONTAINED the BLAS library, version and build, and only the field the extractor reads was empty. That case reports RECORDING-SCHEMA INADMISSIBLE.
+> - THE ROUND'S HEADLINE DEFECT WAS INSIDE THE ROUND'S OWN FIX: MEASUREMENT-4.json was excused from the packet as 'absent until measurement 4 is retaken' while on disk and being read by the packet builder. The one new result reached both reviewers with none of its evidence. An excuse claiming absence must now be true, and the packet ships the result, both run records, both artifacts and five divergence runs the same check found missing.
+> - v6 commits THE INSTRUMENTS AND GATES, not only the inputs -- twelve scripts by digest. A change to any of them now requires a new anchored version, and the cost of that rule is stated in v6 rather than discovered later.
+> - Every run now binds itself to what produced it: pipeline digest, every protocol document's digest and anchor state, the package's SHA256SUMS digest, and a self-reported time labelled as the weak half.
+> - test_controls.py runs all eleven attacks plus the positive case, ships in package and packet, and is fatal in the publication gate. Round 3's positive controls were prose; that is why they broke.
+> - The measurement-4 pair is RECLASSIFIED AS DESCRIPTIVE. Its conditions were strengthened after its result was known and it bound itself to no protocol. A confirmatory pair requires a fresh run under v6 on both machines.
+> - Measurement 3's digest was two pipeline corrections old and incomparable with every other figure. Re-measured rather than annotated.
 >
-> ⚠️ **v3 is anchored ONLY when anchor_status.py says so over its CURRENT bytes -- it is pending as this goes out, and the package carries ANCHOR-STATUS.txt saying it is not publishable in this state. A finding in train.py, the corpus or the model spec still forces v4.**
+> ⚠️ **v6 is stamped and PENDING. Nothing may be published until it anchors, and --publishing refuses while any version is pending. A finding in train.py, the corpus, or the admissibility conditions still forces v7.**
 
 ## ⭐ CHECK THE FINDINGS, NOT ONLY THE PACKAGING
 

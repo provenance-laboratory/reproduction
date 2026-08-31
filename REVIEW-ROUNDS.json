@@ -2,7 +2,7 @@
   "_readme": [
     "The review history for Paper B, as a record the packet builder reads.",
     "",
-    "\u26d4 WHY THIS FILE EXISTS. The round-1 packet was circulated with a covering note claiming",
+    "⛔ WHY THIS FILE EXISTS. The round-1 packet was circulated with a covering note claiming",
     "'+37%', 'divergence at step 8', '83% of parameters' and 'numerically indistinguishable' --",
     "all four withdrawn in the findings document the packet claimed to summarise. The note was a",
     "hardcoded string; a patch meant to update it matched nothing, printed success, and the stale",
@@ -30,7 +30,7 @@
       "summary": "Both reviewers required a v3 pre-registration, and both were right again. Round 2's repairs each needed their own repair.",
       "changed": [
         "`blas_kernel_selected` was NOT the selected kernel -- it is the build-configuration line, and a reviewer's run recorded `Haswell MAX_THREADS=64` while the same process reported a SkylakeX runtime architecture. Renamed to `blas_build_config_line`, with `blas_runtime_arch` recorded where observable.",
-        "That field was also REQUIRED by the \u00a72a gate, which refused conda/MKL, macOS Accelerate and non-DYNAMIC_ARCH OpenBLAS outright -- three honest installs that could file nothing but 'I could not run it', which \u00a72c would have scored as an ecosystem finding about our own gate. Now recorded as an absence, exactly as \u00a75 already settled for the effective thread count.",
+        "That field was also REQUIRED by the §2a gate, which refused conda/MKL, macOS Accelerate and non-DYNAMIC_ARCH OpenBLAS outright -- three honest installs that could file nothing but 'I could not run it', which §2c would have scored as an ecosystem finding about our own gate. Now recorded as an absence, exactly as §5 already settled for the effective thread count.",
         "An off-by-one in the sampling range excluded the last valid (context, target) pair. Negligible in effect, and part of the model specification, so it changes every digest.",
         "The trace began after the first update, so it could show the arrays DIFFER at step 0 but not that they STARTED identical. It now records the initialisation as step -1.",
         "'Final loss identical to eight decimals' was false: 3.21813250 against 3.21812963. It was the sentence written to replace a claim withdrawn in round 1.",
@@ -54,6 +54,22 @@
         "The packet claimed a reviewer's own run could falsify configuration A. It cannot -- it measures a different machine, and the script said so while the packet said the opposite."
       ],
       "deadline": "v3 is anchored ONLY when anchor_status.py says so over its CURRENT bytes -- it is pending as this goes out, and the package carries ANCHOR-STATUS.txt saying it is not publishable in this state. A finding in train.py, the corpus or the model spec still forces v4."
+    },
+    {
+      "round": 4,
+      "summary": "Both reviewers refused the freeze and both broke BOTH new controls, nine ways between them. One gave the generalisation: every break is a control that can be satisfied by the ABSENCE, the NAME, or the DESCRIPTION of the thing it checks.",
+      "changed": [
+        "AUTHORITY WAS DISCOVERED FROM A MUTABLE FILE IN THE SAME DIRECTORY. Reading the digest table out of the protocol instead of restating it removed one hazard and introduced a worse one: whoever can change train.py can change the document saying what train.py should be. Editing both passed; minting an unanchored v6 silently moved authority. A table is authority only if its document's own proof binds its bytes and carries a Bitcoin attestation.",
+        "measure_hardware granted ISOLATING to SIX pairs that should not have one -- the same record as both arms, identical CPUs, Haswell vs SkylakeX, 1 thread vs 8, two absent build lines, two non-confirmatory runs -- and reported BIT-IDENTICAL: YES for an arm whose weights.npz was deleted. Every condition was satisfied by the PRESENCE or ABSENCE of a field rather than its VALUE. Conditions 0 and 4-8 added; bit-identity recomputed from the artifacts.",
+        "THE VERDICT IS NO LONGER ISOLATING. Both reviewers said it claimed too much; MATCHED-STACK CROSS-MACHINE is adopted. And CONFOUNDED was wrong for the first pair: arm B's record CONTAINED the BLAS library, version and build, and only the field the extractor reads was empty. That case reports RECORDING-SCHEMA INADMISSIBLE.",
+        "THE ROUND'S HEADLINE DEFECT WAS INSIDE THE ROUND'S OWN FIX: MEASUREMENT-4.json was excused from the packet as 'absent until measurement 4 is retaken' while on disk and being read by the packet builder. The one new result reached both reviewers with none of its evidence. An excuse claiming absence must now be true, and the packet ships the result, both run records, both artifacts and five divergence runs the same check found missing.",
+        "v6 commits THE INSTRUMENTS AND GATES, not only the inputs -- twelve scripts by digest. A change to any of them now requires a new anchored version, and the cost of that rule is stated in v6 rather than discovered later.",
+        "Every run now binds itself to what produced it: pipeline digest, every protocol document's digest and anchor state, the package's SHA256SUMS digest, and a self-reported time labelled as the weak half.",
+        "test_controls.py runs all eleven attacks plus the positive case, ships in package and packet, and is fatal in the publication gate. Round 3's positive controls were prose; that is why they broke.",
+        "The measurement-4 pair is RECLASSIFIED AS DESCRIPTIVE. Its conditions were strengthened after its result was known and it bound itself to no protocol. A confirmatory pair requires a fresh run under v6 on both machines.",
+        "Measurement 3's digest was two pipeline corrections old and incomparable with every other figure. Re-measured rather than annotated."
+      ],
+      "deadline": "v6 is stamped and PENDING. Nothing may be published until it anchors, and --publishing refuses while any version is pending. A finding in train.py, the corpus, or the admissibility conditions still forces v7."
     }
   ]
 }

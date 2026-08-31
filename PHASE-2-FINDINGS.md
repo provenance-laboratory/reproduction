@@ -243,7 +243,15 @@ derives the governing version from what is on disk rather than naming one in a c
 closed on an empty parse, and is fatal inside `build_package.py`. Four positive controls, including
 one that deletes v5 to confirm v3 does not silently resume governing.
 
-## 10. Measurement 4 — a matched-stack cross-machine pair, bit-identical
+## 10. Measurement 4 — a matched-stack cross-machine pair, bit-identical, and DESCRIPTIVE
+
+⛔ **This result is descriptive, not confirmatory, and `PRE-REGISTRATION-v6-CONFIRMATORY.md` §6
+says so.** The pair meets every admissibility condition — but those conditions were *strengthened
+after its result was known*, and it was taken under a `run.json` that bound itself to no pipeline
+or protocol digest. Neither can be repaired retroactively. A confirmatory measurement 4 requires a
+fresh pair under v6, on both machines. What follows is the evidence and the record of how the
+conditions were found to be insufficient.
+
 
 ⛔ **As v3 specified it, this comparison could not isolate anything**, and v4 added the conditions
 before any second-machine data existed. Round 4 then showed that the conditions were checked

@@ -63,8 +63,8 @@ def a_fake_v6(root):
     rows = ["train.py                   %s" % hashlib.sha256(b).hexdigest()]
     for f in ("corpus/MANIFEST.json", "corpus/build_corpus.py", "corpus/sources.json"):
         rows.append("%-26s %s" % (f, hashlib.sha256((root / f).read_bytes()).hexdigest()))
-    (root / "PRE-REGISTRATION-v6-CONFIRMATORY.md").write_text(
-        "# v6" + NL * 2 + "## 3. What is committed" + NL + "```" + NL
+    (root / "PRE-REGISTRATION-v7-CONFIRMATORY.md").write_text(
+        "# v7" + NL * 2 + "## 3. What is committed" + NL + "```" + NL
         + NL.join(rows) + NL + "```" + NL, encoding="utf-8")
 
 
@@ -75,7 +75,7 @@ def a_strip_proof(root):
 
 COMMIT_ATTACKS = [
     ("edit train.py AND its digest inside v5", a_edit_both),
-    ("mint an unanchored synthetic v6", a_fake_v6),
+    ("mint an unanchored synthetic v7", a_fake_v6),
     ("delete the governing document's proof", a_strip_proof),
 ]
 

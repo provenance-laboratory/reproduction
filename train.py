@@ -287,6 +287,45 @@ def corpus_ids():
     return np.frombuffer(bytes(blob), dtype=np.uint8), man["merkle_root"]
 
 
+def _provenance():
+    """What produced this run: the pipeline, the protocol it ran under, and when.
+
+    ⛔ A RUN BOUND ITSELF TO NOTHING. run.json recorded the corpus root, the spec and the
+    environment -- and never which pipeline file, which protocol version, or what time. So
+    "this measurement was taken under the committed pipeline, after the protocol was anchored"
+    could only ever rest on operator testimony, which is the kind of claim this project refuses
+    everywhere else. A round-4 reviewer put it exactly: current file matching says nothing about
+    historical runs.
+
+    ⚠ WHAT THIS IS AND IS NOT. The timestamp is this machine's clock, self-reported, and a
+    reproducer may not trust it any further than they trust the machine. It is recorded because
+    an absent timestamp cannot be checked at all, while a present one can at least be compared
+    against an anchor and found impossible. The DIGESTS are the load-bearing half: they say which
+    bytes of pipeline and protocol were on disk when the run started, and those can be compared
+    with what a protocol commits without trusting anyone.
+    """
+    import datetime
+    prov = {"pipeline_sha256": hashlib.sha256(pathlib.Path(__file__).read_bytes()).hexdigest(),
+            "started_utc": datetime.datetime.now(datetime.timezone.utc)
+            .strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "_clock": ("self-reported by the machine that ran this. Load-bearing claims should "
+                       "rest on the digests below, not on this field."),
+            "protocols": {}}
+    for doc in sorted(HERE.glob("PRE-REGISTRATION*.md")):
+        proof = HERE / (doc.name + ".ots")
+        blob = proof.read_bytes() if proof.exists() else b""
+        prov["protocols"][doc.name] = {
+            "sha256": hashlib.sha256(doc.read_bytes()).hexdigest(),
+            "proof_binds_it": bool(blob) and hashlib.sha256(doc.read_bytes()).digest() in blob,
+            "bitcoin_attestation": bytes([0x05, 0x88, 0x96, 0x0d, 0x73, 0xd7, 0x19,
+                                          0x01]) in blob,
+        }
+    pkg = HERE / "package" / "SHA256SUMS"
+    if pkg.exists():
+        prov["package_sha256sums_sha256"] = hashlib.sha256(pkg.read_bytes()).hexdigest()
+    return prov
+
+
 def main():
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
     out = pathlib.Path(sys.argv[sys.argv.index("--out") + 1]) if "--out" in sys.argv \
@@ -394,7 +433,8 @@ def main():
            "final_loss": round(losses[-1], 8),
            "loss_first": round(losses[0], 8),
            "weights_sha256": wdigest,
-           "weights_npz_bytes": npz.stat().st_size}
+           "weights_npz_bytes": npz.stat().st_size,
+           "provenance": _provenance()}
     (out / "run.json").write_text(json.dumps(rec, indent=2) + NL, encoding="utf-8", newline=NL)
     # ⚠ loss.json stays ROUNDED because it is a curve for reading, not evidence of
     # divergence. The full-precision values go beside it, so nothing has to be recomputed from a

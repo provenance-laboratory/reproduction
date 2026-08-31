@@ -79,6 +79,9 @@ SEND = (
     # because unclassified() globbed *.py/*.md/*.json beside the builder and never looked in
     # runs/. A reviewer found all of it and called it round 4's own headline defect inside round
     # 4's own fix. They were right.
+    ("PRE-REGISTRATION-v6-CONFIRMATORY.md",
+     "THE INSTRUMENTS AND GATES, committed -- round 4 showed only the inputs were"),
+    ("PRE-REGISTRATION-v6-CONFIRMATORY.md.ots", "its proof, PENDING as this goes out"),
     ("MEASUREMENT-4.json", "THE RESULT, with both arms' environments and every condition"),
     ("runs/tpc-thr-1/run.json", "arm A's run record -- rehash it"),
     ("runs/amd-thr-1/run.json", "arm B's run record -- rehash it"),
