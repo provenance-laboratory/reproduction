@@ -1,0 +1,68 @@
+{
+ "_readme": "The Bitcoin blocks our OpenTimestamps proofs attest to, with the merkle root each one really has. ots_verify.py grants ANCHORED only when a proof's computed root equals the root pinned here; a proof naming a block absent from this file is STRUCTURAL and is never authority.",
+ "source": "https://blockstream.info/api",
+ "fetched_utc": "2026-08-31T17:11:21Z",
+ "caveat": "\u26a0 A pin is an explorer's word on a date, not a node. It is recorded so a reader can recompute it against the chain, which is the only thing that settles it.",
+ "blocks": {
+  "964534": {
+   "hash": "00000000000000000000b194e093440a498b3b9bf4462bd1a606db131faa9bee",
+   "merkle_root": "018d69dc7bf4e2e8a45fdf3a89855b9b7e03027227aa14e596a91dcf320e09b9",
+   "timestamp": 1787981780
+  },
+  "964535": {
+   "hash": "000000000000000000001ab2506b8b810b0fd87ce88a11f0556670ae20a99ebc",
+   "merkle_root": "ef17461955701f9c1d296245df4ab22a71a7e3e0fd3ceeb7213de12958ba69c5",
+   "timestamp": 1787982051
+  },
+  "964549": {
+   "hash": "000000000000000000021b5a93058a1a36749e5b75d94869ffda22220b58c2c9",
+   "merkle_root": "e863c303c5b515da7544652b29648659c66ff2fa6ffad9fe82ccc975042eb439",
+   "timestamp": 1787995444
+  },
+  "964761": {
+   "hash": "00000000000000000001da2088b8cc564e17ccc96d30d6a90c160be86b4e2a6d",
+   "merkle_root": "23019c9499bd74096ae1d9c4015bc4f10176900d99cb805e7252011ed7415d37",
+   "timestamp": 1788110851
+  },
+  "964762": {
+   "hash": "000000000000000000006841d8610d869a87039d84bae1add0018919bc1a4c00",
+   "merkle_root": "ff5f6043b9883f8e8830856a16dc52783c66d1185d6ffebab5dbe3598f42c543",
+   "timestamp": 1788110997
+  },
+  "964775": {
+   "hash": "00000000000000000001b5aa0d31a32d97bd4785ab3ccb5d80d5b3c9c6a31b08",
+   "merkle_root": "ed2dd86c5b3c983d859139542aeced248e1f18ec030ccd550e36286a59f54f5e",
+   "timestamp": 1788118331
+  },
+  "964785": {
+   "hash": "00000000000000000000064bacd7e77b24ea2fb4b66051c3aeb664778122b415",
+   "merkle_root": "8aac2039e614e1557aab7264848c8b0cb1152970f2d5e7fa76170ccdfbf2a587",
+   "timestamp": 1788122967
+  },
+  "964789": {
+   "hash": "000000000000000000001eebe1e80e999bbb78cd2fdb715e577d3176f409628f",
+   "merkle_root": "b73d9657064cb4a9842e18ec1a007bc4702308730257cc378dd56ed3443ec0dd",
+   "timestamp": 1788125713
+  },
+  "964812": {
+   "hash": "00000000000000000000c4361aba268ea267f4082705582cd284eb9be7606c89",
+   "merkle_root": "9cd60bdc0fdc9ba7784f8a4705c22d11b82b081a41d69ff598729522834dbd4a",
+   "timestamp": 1788141604
+  },
+  "964815": {
+   "hash": "0000000000000000000154deae8e5cda60920f2aab75680ab4294220e3016078",
+   "merkle_root": "ac3592ef064ea4e4c7db187954f057550018a38dfa02afc7a2c3d33ad2955b76",
+   "timestamp": 1788144491
+  },
+  "964848": {
+   "hash": "000000000000000000023ba78f847eef713ce963f70a7be43e15295b01ed3f01",
+   "merkle_root": "5784c7dab006cedba2172ec6cce265b83b1f75c8a27a117f4b2df1165b151d9c",
+   "timestamp": 1788163811
+  },
+  "964856": {
+   "hash": "000000000000000000009e4d8c9f3f93b674810d2d988864aaa35a91bee4b14b",
+   "merkle_root": "a2c750b72ab68db7602962f230b1e8a236633d5cef8f132fed1547b3ac6aba9e",
+   "timestamp": 1788166826
+  }
+ }
+}

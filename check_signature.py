@@ -59,6 +59,36 @@ def verify(doc):
                            capture_output=True, text=True, encoding="utf-8", errors="replace")
     except FileNotFoundError:
         return "BAD", "gpg is not available, so the signature cannot be checked", ""
+    # ⛔ THIS PASSED ON THE AUTHOR'S MACHINE AND COULD NOT PASS ANYWHERE ELSE. The key lived in
+    # the author's keyring and no public key shipped, so every reproducer got NO_PUBKEY on every
+    # document -- a check that returns the same answer for a good signature and a forged one,
+    # for everyone but the one person who does not need it. Both round-6 reviewers reported it.
+    # PUBKEY.asc ships now, and verification falls back to a THROWAWAY KEYRING containing only it.
+    #
+    # ⚠ THIS MAKES THE MATHEMATICS CHECKABLE, NOT THE IDENTITY. A signature verified against a
+    # key we also shipped says these bytes were signed by whoever holds that key -- it cannot say
+    # who that is. The fingerprint still has to be confirmed through a channel that is not us.
+    if "[GNUPG:] NO_PUBKEY" in (r.stdout or ""):
+        pub = HERE / "PUBKEY.asc"
+        if pub.exists():
+            import os as _os
+            import shutil as _sh
+            import tempfile as _tf
+            # ⚠ A RELATIVE HOMEDIR, RUN FROM HERE. The gpg on this platform is an MSYS
+            # build that resolves a Windows absolute path against its own POSIX cwd, so an
+            # absolute --homedir produced "keyblock resource ...\\C:...: No such file" and
+            # the fallback silently did nothing. The bug was in the fallback, not in the key.
+            home = _tf.mkdtemp(prefix=".sigchk-", dir=str(HERE))
+            rel = _os.path.basename(home)
+            try:
+                subprocess.run(["gpg", "--homedir", rel, "--batch", "--quiet", "--import",
+                                pub.name], capture_output=True, text=True, cwd=str(HERE))
+                r = subprocess.run(["gpg", "--homedir", rel, "--batch", "--status-fd", "1",
+                                    "--verify", sig.name, doc.name],
+                                   capture_output=True, text=True, encoding="utf-8",
+                                   errors="replace", cwd=str(HERE))
+            finally:
+                _sh.rmtree(home, ignore_errors=True)
     out = (r.stdout or "") + (r.stderr or "")
     fpr = ""
     for line in (r.stdout or "").splitlines():

@@ -452,12 +452,27 @@ def main():
         encoding="utf-8", newline=NL)
     shipped.append("ANCHOR-STATUS.txt")
 
-    # SHA256SUMS over everything shipped, written last so it covers the final bytes
+    # ⛔ SHA256SUMS WAS WRITTEN FROM `shipped` -- THE LIST -- AND A REPRODUCER VERIFIES THE
+    # TREE. Running the shipped controls during the build made CPython write __pycache__/*.pyc
+    # into the package after the list was fixed, so verify_package.py reported unlisted files and
+    # the package failed its own verifier. Both round-6 reviewers hit it. The list is the
+    # intention; the directory is the artifact, and only one of them is what gets extracted.
+    for _pyc in list(OUT.rglob("__pycache__")):
+        if _pyc.is_dir():
+            shutil.rmtree(_pyc, ignore_errors=True)
     lines = []
-    for rel in sorted(shipped):
-        h = hashlib.sha256((OUT / rel).read_bytes()).hexdigest()
-        lines.append("%s  %s" % (h, rel))
+    for f in sorted(OUT.rglob("*")):
+        if not f.is_file() or f.name == "SHA256SUMS":
+            continue
+        rel = str(f.relative_to(OUT)).replace(chr(92), "/")
+        lines.append("%s  %s" % (hashlib.sha256(f.read_bytes()).hexdigest(), rel))
     (OUT / "SHA256SUMS").write_text(NL.join(lines) + NL, encoding="utf-8", newline=NL)
+    _unlisted = sorted({str(f.relative_to(OUT)).replace(chr(92), "/")
+                        for f in OUT.rglob("*") if f.is_file()}
+                       - {L.split("  ", 1)[1] for L in lines} - {"SHA256SUMS"})
+    if _unlisted:
+        raise SystemExit(D + " %d file(s) in the package are still unlisted after writing "
+                         "SHA256SUMS from the tree: %s" % (len(_unlisted), _unlisted[:4]))
 
     # ⛔ WITHOUT THE REFERENCE ARRAYS, MEASUREMENT 5 IS IMPOSSIBLE FOR A REPRODUCER.
     # After a digest mismatch they can see THAT their model differs and can compute nothing about

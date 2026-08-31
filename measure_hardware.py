@@ -57,11 +57,11 @@ def protocol_anchoring():
         if not proof.exists():
             out[doc.name] = {"proof": False, "binds_document": False, "bitcoin_attestation": False}
             continue
-        blob = proof.read_bytes()
-        out[doc.name] = {
-            "proof": True,
-            "binds_document": _hl.sha256(doc.read_bytes()).digest() in blob,
-            "bitcoin_attestation": BITCOIN_TAG in blob}
+        # ⛔ THIS WAS TWO SUBSTRING TESTS -- the round-5 forgery class, inside the instrument
+        # that records provenance. Forty bytes of SHA256(doc) || BitcoinTag set both to true while
+        # ots_verify.py called the same file NOT A PROOF. One parser now, called here.
+        import ots_verify as _OV
+        out[doc.name] = _OV.status(doc)
     return out
 
 

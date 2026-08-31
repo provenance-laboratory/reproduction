@@ -34,6 +34,7 @@ module deliberately does not pretend to provide.
 """
 import hashlib
 import io
+import json
 import pathlib
 import sys
 
@@ -153,6 +154,18 @@ def _walk(r, found, msg, depth=0):
         raise NotAProof("unknown operation byte 0x%02x at offset %d" % (tag, r.i - 1))
 
 
+def _pinned():
+    """Block height -> real merkle root, pinned independently. See pin_anchors.py."""
+    f = pathlib.Path(__file__).resolve().parent / "ANCHORS.json"
+    if not f.exists():
+        return None
+    try:
+        return {int(k): v["merkle_root"]
+                for k, v in json.loads(f.read_text(encoding="utf-8"))["blocks"].items()}
+    except Exception:                                                        # noqa: BLE001
+        return None
+
+
 def verify(proof_bytes, document_bytes):
     """(ok, why, attestations). ok means: a real proof, over THESE bytes, with a Bitcoin block."""
     try:
@@ -182,9 +195,73 @@ def verify(proof_bytes, document_bytes):
         pend = [v for k, v, _r in found if k == "pending"]
         return False, ("parsed, over the right bytes, and carries no Bitcoin attestation%s"
                        % (" (pending at %s)" % ", ".join(pend[:2]) if pend else "")), found
-    return True, ("anchored in Bitcoin block(s) %s; merkle root(s) computed from these bytes: "
-                  "%s" % (sorted({h for h, _r in blocks}),
-                          ", ".join(sorted({r[:16] for _h, r in blocks})))), found
+    # ⛔ PARSING AN ATTESTATION IS NOT VERIFYING ONE. This returned True -- and moved authority
+    # in check_commitments.py -- on the strength of having READ a Bitcoin attestation record. Two
+    # round-6 reviewers minted one offline; one named block 999999 and governed. The warning
+    # printed below said the block was never checked, and the caller treated exit 0 as authority
+    # anyway, which is what "a warning is not a control" means in practice.
+    #
+    # An attestation asserts: these operations over the document's digest yield the MERKLE ROOT OF
+    # BLOCK N. That is one number per block, checkable offline against an independent pin.
+    pins = _pinned()
+    if pins is None:
+        return False, ("STRUCTURAL only: this parses and names Bitcoin block(s) %s, but "
+                       "ANCHORS.json is absent so no block could be checked. Naming a block is "
+                       "not being in it." % sorted({h for h, _r in blocks})), found
+    unpinned = sorted({h for h, _r in blocks if h not in pins})
+    if unpinned:
+        return False, ("STRUCTURAL only: block(s) %s are named by this proof and are NOT PINNED "
+                       "in ANCHORS.json, so nothing here was verified against Bitcoin. A "
+                       "fabricated attestation looks exactly like this." % unpinned), found
+    wrong = sorted({h for h, r in blocks if pins[h] != r})
+    if wrong:
+        return False, ("REFUSED: block(s) %s are pinned, and the merkle root computed from these "
+                       "bytes is NOT the root of that block. This proof does not attest to this "
+                       "document." % wrong), found
+    return True, ("ANCHORED in Bitcoin block(s) %s; the merkle root computed from these bytes IS "
+                  "the pinned root of each" % sorted({h for h, _r in blocks})), found
+
+
+def status(doc_path):
+    """The one place anything in this project may ask what a document's proof says.
+
+    ⛔ train.py AND measure_hardware.py EACH REIMPLEMENTED THIS AS TWO SUBSTRING TESTS --
+    `sha256(document) in proof` and `BITCOIN_TAG in proof` -- which is precisely the round-5
+    forgery that `ots_verify.py` was written to refuse, still live inside the instruments that
+    RECORD PROVENANCE. A round-6 reviewer replaced v8's proof with SHA256(document) || BitcoinTag:
+    ots_verify.py said NOT A PROOF and both recorders wrote `bitcoin_attestation: true`.
+
+    ⇒ The defect was never that the check was weak; it was that there were THREE checks. A repair
+    to one of them cannot reach the others, so the fix is that there is one and everything calls
+    it.
+
+    Returns: {"proof", "parses", "binds_document", "bitcoin_attestation", "anchored", "why"}
+    -- where `anchored` is true only when a pinned block's merkle root matches, and
+    `bitcoin_attestation` means the proof merely NAMES a block.
+    """
+    doc = pathlib.Path(doc_path)
+    proof = pathlib.Path(str(doc) + ".ots")
+    base = {"proof": False, "parses": False, "binds_document": False,
+             "bitcoin_attestation": False, "anchored": False, "why": "no proof file"}
+    if not proof.exists():
+        return base
+    base["proof"] = True
+    try:
+        ok, why, found = verify(proof.read_bytes(), doc.read_bytes())
+    except Exception as e:                                                   # noqa: BLE001
+        base["why"] = "not a proof: %s" % str(e)[:60]
+        return base
+    # ⛔ THIS SET parses=True WHENEVER verify() DID NOT RAISE -- and verify() does not raise for
+    # a file it calls NOT A PROOF, it returns False with a reason. So the 40-byte forgery came
+    # back parses=True, in the very function written to stop instruments believing forgeries. A
+    # boolean derived from "no exception" is not the same fact as "this parsed", and the gap
+    # between them is where the third check keeps reappearing.
+    base["parses"] = bool(found) or ok
+    base["binds_document"] = bool(found) or ok
+    base["bitcoin_attestation"] = any(k == "bitcoin" for k, _v, _r in (found or []))
+    base["anchored"] = bool(ok)
+    base["why"] = str(why)[:140]
+    return base
 
 
 def main():
@@ -198,10 +275,10 @@ def main():
         print("      attestation %-10s %s %s" % (k, v, ("root " + root[:32]) if root else ""))
     if ok:
         print()
-        print("  " + W + " This says the file IS a proof, over THESE bytes, naming a block. It does")
-        print("  not contact a node, so it does not confirm the block exists or that its merkle")
-        print("  root matches. And an anchor answers WHEN, never WHO.")
-    return 0 if ok else 1
+        print("  " + W + " The root is checked against ANCHORS.json, which is an explorer's word")
+        print("  on a recorded date, not a node of our own. Re-check it against the chain if it")
+        print("  matters. And an anchor answers WHEN, never WHO.")
+    return 0 if ok else (3 if "STRUCTURAL" in str(why) else 1)
 
 
 if __name__ == "__main__":

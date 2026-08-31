@@ -70,7 +70,10 @@ def main():
         _extra = sorted(_present - _listed - {"SHA256SUMS"}
                         - {f for f in _present if f.startswith("my-run/")})
         if _extra:
-            bad += ["%s IS NOT LISTED in SHA256SUMS" % e for e in _extra[:5]]
+            # ⚠ THIS TRUNCATED TO FIVE BEFORE COUNTING, so a reviewer who counted eight unlisted
+            # files read a report saying five problems. A cap on what is PRINTED is fine; a cap on
+            # what is COUNTED misreports the size of the fault.
+            bad += ["%s IS NOT LISTED in SHA256SUMS" % e for e in _extra]
         # ⛔ AND EXACTLY ONE STAGE. The input package carries NO-TARGET.md and no
         # EXPECTED.json; the target package carries EXPECTED.json and no NO-TARGET.md. Both, or
         # neither, means the package does not know which stage of the protocol it is.

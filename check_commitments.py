@@ -103,6 +103,35 @@ def anchored(doc):
     return False, why, state
 
 
+def compose(found):
+    """The cumulative commitment table: every path any anchored version pins, highest version wins.
+
+    ⛔ v7 PINS TWELVE FILES AND NONE OF THEM IS THE EXPERIMENT. v3 pinned train.py,
+    corpus/MANIFEST.json, corpus/build_corpus.py and corpus/sources.json; v6 pinned sixteen; v7
+    pinned twelve and silently dropped all four. Both round-6 reviewers substituted train.py and
+    corrupted the corpus manifest under v7 authority and both gates exited 0. **The selection
+    attack the blocking rule above was written to stop was achieved by legitimate succession** --
+    no forgery needed, just a successor that pins less. The rule guarded the direction the attack
+    came from, not the property it was defending.
+
+    ⇒ So authority is not "the highest anchored table" but the UNION of every anchored table, with
+    the highest version's digest winning for any path two of them both pin. This is v8 section 2c's
+    own equality-not-skip reasoning -- absence must be accounted for, never assumed benign --
+    applied to succession instead of to the package.
+
+    ⚠ A COMPOSED TABLE CAN REPORT A FILE AS CHANGED THAT NO CURRENT DOCUMENT PINS. That is not a
+    bug in the composition; it is the situation being reported honestly. train.py's digest moved
+    when two recording defects were repaired, and no ANCHORED document pins the new one, so the
+    experiment is currently unpinned and this will say so.
+    """
+    table, whence = {}, {}
+    for version, name, pinned in sorted(found, key=lambda x: x[0]):
+        for path, digest in pinned:
+            table[path] = digest
+            whence[path] = (version, name)
+    return table, whence
+
+
 def governing(here):
     """Every ANCHORED protocol version carrying a digest table, and every rejected candidate.
 
@@ -193,9 +222,25 @@ def main():
             raise SystemExit(
                 D + " v%d is pending and this is a PUBLISHING run. Publish under an anchored "
                 "protocol or wait for the anchor." % _pending)
+    # ⛔ THE AUTHORITY'S OWN TABLE IS NOT THE COMMITMENT. Every anchored version's pins are
+    # composed, highest wins, because v7 dropped the four files v3 pinned -- train.py and the
+    # corpus -- and under v7 alone the experiment was checked by nothing.
+    _composed, _whence = compose(found)
+    _inherited = sorted(k for k, (v, _n) in _whence.items() if v != version)
+    pinned = sorted(_composed.items())
+
     print("=" * 78)
-    print("  COMMITMENTS — the files %s pins by digest" % PROTOCOL)
+    print("  COMMITMENTS — every file any ANCHORED version pins, highest version wins")
     print("=" * 78)
+    print()
+    print("  authority %s (v%d), composed over %d anchored version(s): %d path(s)"
+          % (PROTOCOL, version, len(found), len(pinned)))
+    if _inherited:
+        print("  " + W + " %d path(s) are INHERITED from an older version because v%d does not"
+              % (len(_inherited), version))
+        print("  pin them. Under the authority's own table alone these were checked by nothing:")
+        for k in _inherited[:6]:
+            print("      %-28s pinned by v%d" % (k, _whence[k][0]))
     print()
 
     if len(pinned) < MIN_EXPECTED:
@@ -275,10 +320,18 @@ def main():
             print("  transitional allowance does not apply. A missing proof is the alarm.")
             _stamped = False
         if _stamped:
+            # ⛔ THIS REMOVED THE FILE FROM `bad`, so a changed committed file became exit 0 on
+            # the strength of a document that "governs nothing". A round-6 reviewer wrote a
+            # synthetic pending v9 containing the digest of a train.py they had just modified and
+            # the check went green. A pending document has no authority BY DEFINITION -- that is
+            # what pending means -- so it cannot excuse a mismatch, only explain one.
+            #
+            # ⚠ The build may continue past a non-zero commitment result; that is build_package's
+            # decision to make and it says so loudly. What must not happen is the COMMITMENT CHECK
+            # reporting green. Reported, not excused.
             for rel, why, want, got in list(bad):
                 if why == "changed" and _ptable.get(rel) == got:
                     _transitional.append(rel)
-                    bad.remove((rel, why, want, got))
 
     print()
     if _transitional:
@@ -290,6 +343,8 @@ def main():
         print("  It becomes a violation if v%d never anchors. --publishing already refuses"
               % _pending)
         print("  while anything is pending.")
+        print("  " + D + " THIS IS STILL A MISMATCH AGAINST THE ANCHORED PROTOCOL and is counted")
+        print("  as one. A pending document explains a change; it cannot authorise one.")
         print()
     if bad:
         print("  " + D + " %d COMMITTED FILE(S) NO LONGER MATCH. By %s this pre-registration"

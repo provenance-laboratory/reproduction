@@ -28,7 +28,7 @@ of the class: a proof is a structure, and looking for bytes inside it is not rea
 ### 2a. Experimental inputs
 
 ```
-train.py                   f44a74f0dcd4e9588bd821b85cf9639188051332ee1c707ae675c8b48dec5b49
+train.py                   ebd61532782573a04aca8ab5d526ab6d233c450963ac111460f2d5d86f81d2fe
 corpus/MANIFEST.json       fa67e35a7b7fb0c4b79f467cda6708226a4f0fab97e6116ed2ef69655b642c47
 corpus/build_corpus.py     2d3ce23b80e9de7b25679e1a0eb81f4da62b058dc3dd15b466f2983306c87ec3
 corpus/sources.json        7548856806ec771d973789c5e62d1cf8101976255ddbcae474d0f290e6d45b30
@@ -55,19 +55,23 @@ What changed is that the record now says something true about when the run began
 
 ```
 anchor_status.py           a98181d1e7229de6d8b136714c8c59f051df8d03f5849de0d4cb51d8000dec33
-build_package.py           043a7044c579fdcac48781e7448ea7867b646ba651a828bc605ad2b959a0783f
-check_commitments.py       1bf24d7dc245ababe69f7d3bec4a38a3ef0e5374bb11fa3e35b6db0a8a435f50
-check_signature.py         4bf4cb00274891f7bf633e819bcbd144e8b9df56ac6c430b405fd748deb59614
+build_package.py           f9405bef062316caebab9c532cae4a8356c6d88c1c46f711d69195033397a8fa
+check_commitments.py       d9e960804a9aacd8a1090a9b8fc36b1c6f4a5c6dc2bdfd3cd9835feff6687651
+check_signature.py         76923dcbcf0d6b4b36af0cc0057dacba39194baab5ff9babf05f350b24f49fe5
 corpus/verify_shipped.py   943ebf0f6051a6b7c822378430a5e482b9e02b11de799a420b1bf9c838748749
 measure_cost.py            4b8bdd95c6fcbc37fd557ff81041e0af28202bf4816ef34e5e458e9e8bdedba9
 measure_divergence.py      d1dc9c7630e4b5c36231dd1a8ff7c044355463349ab6f674e390f2c63969711f
-measure_hardware.py        36dd832bd5cdbd4b97961fb356943686a54becaea020def6387298280d6cff94
+measure_hardware.py        36138157abbfb210f688d3d94b4a87bd99c0f3a10f6c6cbb78dd0db9f1c0bea3
 measure_storage.py         1254e4049813bd28ef2064f2252bcc5983e6d2bbac22825bf445ff1f4e0895c5
-ots_verify.py              a2e06b83c25dc70aec9722605d4e2a6cf958528b14fede2b8aeffbc68a961368
+ots_verify.py              15ca911511c6c8aff0eee0c2821203cc201d689788f4687bee63e00c8a7c2ca9
 reproduce_findings.py      78d570f5df51245e5d9a9b2ddeb75ef5e22cda283a06e64383ca383b80827bbf
 seed_sensitivity.py        1012eb90d895146cac6d5f212ec18bc3012bc1e12176cb8918b83ea4563c24f5
 test_controls.py           6116aeec9e675f2ae89ed851b423f58a6dea6b5e59ca22349b24a868e3b385af
-verify_package.py          bf88fd51fe247bebcd6769645eeb570f6381983decdd5867a94c04a4a5a6c87d
+verify_package.py          bac029355505ad25b09ceb9f6743908d13f48d4257a48da34f02fa407325bbc4
+ANCHORS.json               3dadbf814367abeec56e0913aedd146a4230fd5c3a05d59a0a25a43bcbf8a45b
+PUBKEY.asc                 88f9a69659c87a898c6a4408d28e69520306b6916744642f60519469cbb24273
+build_review_packet.py     404361318ec15883af080e83f17f389ec2f1ccc9fb11abbb6ba49b0db9e072a0
+pin_anchors.py             d1c3d0398da0cba753b088813c33bbacc6fb2db8c17eaa3565aa33a31c796dba
 ```
 
 ⇒ **Fourteen, up from twelve.** Six unchanged from v7; `ots_verify.py` and `check_signature.py` are
@@ -310,8 +314,9 @@ v3, v4 and v6 in this directory, which is how §10's six were found.
 
 ## 12. The control suite
 
-**11 attacks → 25**, five of them against the proofs themselves,, all refused, with both positive controls still passing. The suite is in the
-package and in the publication gate.
+**The count is deliberately not written here.** ⛔ The previous version of this section read *"11 attacks → 25 ... with both positive controls still passing"*, and by the time a reviewer read it the suite ran 30 and one positive control was FAILING. Section 11 one page above refuses to write a count for exactly this reason and then this section wrote one. `test_controls.py` reports the number; the suite is in the package and in the publication gate.
+
+⚠ **A failing positive control is not an attack succeeding.** It means the REAL tree no longer passes `check_commitments.py` -- which is currently true and is the finding, not a bug: no anchored document pins the present `train.py`.
 
 ## 13. What this version does NOT do
 

@@ -311,15 +311,17 @@ def _provenance():
             "_clock": ("self-reported by the machine that ran this. Load-bearing claims should "
                        "rest on the digests below, not on this field."),
             "protocols": {}}
+    # ⛔ THESE WERE TWO SUBSTRING TESTS -- `sha256(document) in proof` and `BITCOIN_TAG in
+    # proof` -- the exact round-5 forgery class, still live in the instrument that RECORDS the
+    # provenance of every run. A round-6 reviewer fed it SHA256(doc) || BitcoinTag; ots_verify.py
+    # called the file NOT A PROOF and this wrote bitcoin_attestation: true beside it. The problem
+    # was never that this check was weak, it was that it was a THIRD check: a repair to the parser
+    # could not reach it. There is one parser now and this calls it.
+    import ots_verify as _OV
     for doc in sorted(HERE.glob("PRE-REGISTRATION*.md")):
-        proof = HERE / (doc.name + ".ots")
-        blob = proof.read_bytes() if proof.exists() else b""
-        prov["protocols"][doc.name] = {
-            "sha256": hashlib.sha256(doc.read_bytes()).hexdigest(),
-            "proof_binds_it": bool(blob) and hashlib.sha256(doc.read_bytes()).digest() in blob,
-            "bitcoin_attestation": bytes([0x05, 0x88, 0x96, 0x0d, 0x73, 0xd7, 0x19,
-                                          0x01]) in blob,
-        }
+        st = _OV.status(doc)
+        st["sha256"] = hashlib.sha256(doc.read_bytes()).hexdigest()
+        prov["protocols"][doc.name] = st
     # ⛔ THIS RECORDED WHICHEVER PACKAGE HAPPENED TO EXIST, not the one being run. In the source
     # tree it bound a stale package whose train.py was a DIFFERENT pipeline (1231a42a while
     # 22cbfeb7 ran); inside an extracted package it looked for package/SHA256SUMS beneath the
