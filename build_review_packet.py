@@ -54,6 +54,15 @@ def _protocol_send():
 
 
 SEND = _protocol_send() + (
+    ("pin_anchors.py",
+     "the blocks our proofs name, fetched from a public explorer with the source and date kept. "
+     "Parsing an attestation is not verifying one: two round-6 reviewers minted a structurally "
+     "valid attestation offline, one naming block 999999, and moved authority with it"),
+    ("ANCHORS.json",
+     "the real merkle root of each of those blocks. ANCHORED now means the root computed from "
+     "the document's own bytes IS the pinned root; a proof naming an unpinned block is "
+     "STRUCTURAL and never authority. NOT pinned by v9, because anchoring a document changes "
+     "this file -- see v9 section 14"),
     ("ots_verify.py",
      "the OpenTimestamps parser. Round 4's 35-bytes-of-junk attack survived its own repair "
      "because the repair added BINDING and never added PARSING -- run it against the forgeries"),
