@@ -28,6 +28,7 @@ all good" is how a control becomes a comment.
 """
 import hashlib
 import io
+import json
 import pathlib
 import re
 import ots_verify as _OTS
@@ -103,6 +104,39 @@ def anchored(doc):
     return False, why, state
 
 
+NEVER_RETIRE = ("train.py", "corpus/MANIFEST.json", "corpus/build_corpus.py",
+                "corpus/sources.json")
+
+ANCHOR_FILE = "ANCHORS.json"
+
+
+def _retirement_is_permitted(name, path, text):
+    """May THIS version retire THIS path?
+
+    ⛔ THE GUARD CHECKED THAT A RETIREMENT WAS WELL-FORMED, NOT THAT IT WAS WARRANTED. A round-7
+    reviewer chained it: add a fabricated block to ANCHORS.json, mint a version with a short proof
+    naming that block, and have it RETIRE train.py. The retirement is well-formed -- five lower
+    versions pin train.py -- so it was allowed, and the experiment left the commitment table with
+    the checker reporting success.
+
+    ⇒ Two things can never be legitimate, and they are refused by name rather than by judgement:
+    retiring an EXPERIMENTAL INPUT, and a version retiring the ANCHOR FILE THAT AUTHENTICATED IT.
+    The second is the self-authenticating hole both reviewers found: the local file that decides a
+    version is anchored must not be removable by the version it just blessed.
+
+    ⚠ This does not close the circularity, and saying it does would be the overclaim. Offline,
+    ANCHORED is a statement about a file we wrote. What is closed is the chained escalation.
+    """
+    if path in NEVER_RETIRE:
+        return ("%s retires %r, which is an EXPERIMENTAL INPUT. 'This file stopped being checked' "
+                "can never be legitimate for the pipeline or the corpus: retiring one is how a "
+                "substitution stops being visible." % (name, path))
+    if path == ANCHOR_FILE:
+        return ("%s retires %r -- the file whose contents decided that %s is anchored. A document "
+                "may not remove the root that authenticated it." % (name, path, name))
+    return None
+
+
 RETIRES_HEADING = "### RETIRES"
 
 
@@ -134,6 +168,40 @@ def retires(text):
         if s and re.match(r"^[A-Za-z0-9_./-]+$", s) and "." in s:
             out.append(s)
     return out
+
+
+def anchor_file_is_exact():
+    """Does ANCHORS.json pin EXACTLY the blocks our proofs name? (ok, why)
+
+    ⛔ A PIN NOBODY NEEDS IS A ROOT SOMEBODY ADDED. The file was checked block-by-block against
+    the proofs, which never looks at a block no proof names -- so a round-7 reviewer added a
+    fabricated block with a chosen root and every check still passed. Protected against DAMAGE,
+    unprotected against EXTENSION, and extension is the direction an attack uses because every
+    existing verification continues to succeed.
+
+    ⚠ This is the OFFLINE half: set equality, no network. `pin_anchors.py --verify` does the
+    other half by re-fetching each block. Neither closes the circularity -- the file still decides
+    what ANCHORED means -- but an addition is no longer silent.
+    """
+    f = HERE / ("ANCHOR" + "S.json")
+    if not f.exists():
+        return True, "no anchor file"
+    try:
+        pinned = {int(k) for k in json.loads(f.read_text(encoding="utf-8"))["blocks"]}
+    except Exception as e:                                                   # noqa: BLE001
+        return False, "the anchor file does not parse: %s" % str(e)[:60]
+    sys.path.insert(0, str(HERE))
+    import pin_anchors as _PA
+    named = set(_PA.heights())
+    extra = sorted(pinned - named)
+    if extra:
+        return False, ("%d block(s) are pinned that NO PROOF NAMES: %s. A pin nobody needs is a "
+                       "root somebody added." % (len(extra), extra[:4]))
+    missing = sorted(named - pinned)
+    if missing:
+        return False, ("%d block(s) our proofs name are NOT pinned: %s, so those proofs are "
+                       "STRUCTURAL only." % (len(missing), missing[:4]))
+    return True, "%d pinned block(s), exactly the set our proofs name" % len(pinned)
 
 
 def compose(found):
@@ -168,6 +236,9 @@ def compose(found):
                 raise SystemExit(
                     D + " %s RETIRES %r, which no lower anchored version pins. A retirement that "
                     "removes nothing reads like an action and is not one." % (name, path))
+            _why = _retirement_is_permitted(name, path, "")
+            if _why:
+                raise SystemExit(D + " " + _why)
             del table[path]
             whence.pop(path, None)
             retired[path] = (version, name)
@@ -270,6 +341,10 @@ def main():
     _composed, _whence, _retired = compose(found)
     _inherited = sorted(k for k, (v, _n) in _whence.items() if v != version)
     pinned = sorted(_composed.items())
+
+    _aok, _awhy = anchor_file_is_exact()
+    if not _aok:
+        raise SystemExit(D + " the anchor file is not exactly what the proofs require: " + _awhy)
 
     print("=" * 78)
     print("  COMMITMENTS — every file any ANCHORED version pins, highest version wins")

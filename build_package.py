@@ -38,12 +38,16 @@ CONTENTS = (
     ("test_controls.py",
      "every attack rounds 4 and 5 used against these controls, as a suite -- run it"),
     ("check_signature.py",
-        # ⛔ THE KEY THAT MAKES check_signature.py CAPABLE OF PASSING. It shipped the checker
-        # and not the key, so every reproducer got NO_PUBKEY on every document -- a check
-        # that returns the same answer for a good signature and a forged one.
-        "PUBKEY.asc",
      "who asserted the protocol documents. Nothing IMPORTS it, so the dependency closure "
      "below would never have pulled it in -- and an anchor answers WHEN, never WHO"),
+    # ⛔ THE KEY THAT MAKES check_signature.py CAPABLE OF PASSING, and my edit adding it put the
+    # filename INSIDE the tuple above, making it three elements where every consumer unpacks two.
+    # build_package.py then crashed on an untouched tree, and I did not notice because the REVIEW
+    # PACKET built fine -- a different tool passing is not this tool passing, which is the same
+    # envelope-for-letter mistake this project keeps naming.
+    ("PUBKEY.asc",
+     "the public key. Without it check_signature.py returns NO_PUBKEY for every document, so the "
+     "check gives the same answer for a good signature and a forged one"),
     ("corpus/verify_shipped.py",
      "check the shipped corpus against the manifest, using only what the package contains"),
     ("ENVIRONMENT-LOCK.json",
@@ -477,6 +481,20 @@ def main():
     if _unlisted:
         raise SystemExit(D + " %d file(s) in the package are still unlisted after writing "
                          "SHA256SUMS from the tree: %s" % (len(_unlisted), _unlisted[:4]))
+
+    # ⛔ THE BUILD NEVER VERIFIED WHAT IT WROTE. Round 6 added RUNNING the shipped controls and
+    # not a gate that the shipped TREE is clean, so the package went on carrying unlisted bytecode
+    # and a SHA256SUMS disagreeing with its own v8 proof -- both found again in round 7, both on
+    # the reproducer's side of the boundary, both surviving a round that fixed the source half.
+    # The verifier a reader is told to run first is run here, on the bytes just written.
+    _vp = OUT / "verify_package.py"
+    if _vp.exists():
+        _r = subprocess.run([sys.executable, "-X", "utf8", "verify_package.py"], cwd=str(OUT),
+                            capture_output=True, text=True, encoding="utf-8", errors="replace")
+        if _r.returncode != 0:
+            print((_r.stdout or "")[-900:])
+            raise SystemExit(D + " the package this build just wrote does not pass its own "
+                             "verifier. A reproducer runs that command first.")
 
     # ⛔ WITHOUT THE REFERENCE ARRAYS, MEASUREMENT 5 IS IMPOSSIBLE FOR A REPRODUCER.
     # After a digest mismatch they can see THAT their model differs and can compute nothing about

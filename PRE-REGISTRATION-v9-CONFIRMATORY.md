@@ -55,8 +55,8 @@ What changed is that the record now says something true about when the run began
 
 ```
 anchor_status.py           6a25887d9758fdc629c96b2e84f4380bb6fe7abf8581c7e63b7507cd3958206a
-build_package.py           b88d8d0bbf59528b1f2452659328dc6ef1e5bfa9331b8ec75f90fe7ba8161c65
-check_commitments.py       e7bd8d6c45ec4fef69487fa2fd27d77beae8194e8d7f9274eacb5788327ff58a
+build_package.py           6de4603b85ae61c65f250403bcea7007f4238e10ee49eabb8c1afa9703db6702
+check_commitments.py       ae58761d81fb1557a9f38b4f584aa74a8519823d335e71d330edc98545e33578
 check_signature.py         76923dcbcf0d6b4b36af0cc0057dacba39194baab5ff9babf05f350b24f49fe5
 corpus/verify_shipped.py   943ebf0f6051a6b7c822378430a5e482b9e02b11de799a420b1bf9c838748749
 measure_cost.py            4b8bdd95c6fcbc37fd557ff81041e0af28202bf4816ef34e5e458e9e8bdedba9
@@ -70,7 +70,8 @@ test_controls.py           6116aeec9e675f2ae89ed851b423f58a6dea6b5e59ca22349b24a
 verify_package.py          bac029355505ad25b09ceb9f6743908d13f48d4257a48da34f02fa407325bbc4
 PUBKEY.asc                 88f9a69659c87a898c6a4408d28e69520306b6916744642f60519469cbb24273
 build_review_packet.py     1eb0dfce7e1d72fce7dbd39f5dcc4d87b642474f6c086c8d67b140ee9eaf1908
-pin_anchors.py             f284816bc283cb4f3af492fd55b9e736e756e1c49a1a86fc6bb67a71ac862d1b
+pin_anchors.py             027e068318393b96720d1ae5d6608b3e6ee679271cd407f12bdc5152a859ae9e
+ANCHORS.json               48d15809564dc02c488b9a094a2eeef5c8dec6c99e19dd9669887f94be602ea2
 ```
 
 ⇒ **Fourteen, up from twelve.** Six unchanged from v7; `ots_verify.py` and `check_signature.py` are
@@ -327,52 +328,12 @@ machines under this document once it is anchored.
 that `_agree` closes the absence class. Each of those would be the kind of overclaim this version
 exists to remove.
 
-## 14. What would invalidate this version
+## 14. What v9 changes, and the problem it does NOT solve
 
-Everything in v3 §6, v4 §3 and v6 §7, with §2a, §2b and the two formerly unenforced conditions
-replaced by §2 and §6 above, plus:
+⛔ **v9 was drafted to RETIRE `ANCHORS.json`, and that was the wrong direction.** v8 pinned that file, and anchoring v8 added v8's own blocks to it, so the pin went stale the moment the thing it was waiting for happened. Retirement looked like the fix. A round-7 reviewer showed it is not: *retiring the file converts a line carrying no information into no line at all, and leaves the file that decides what ANCHORED means as the only unchecked input in the system.* A second reviewer chained it -- edit the local file to bless a version, have that version retire the file that blessed it.
 
-- accepting a timestamp proof without parsing it
-- publishing a protocol document that carries no valid signature by the committed key
-- reporting a cross-machine claim from a pair whose same-input fields are absent rather than equal
-- any check that decides a verdict by comparing a human-readable status string
-- any tool that requires a hand-kept list of protocol documents rather than discovering them
-- selecting authority from a lower version while a higher one's proof is destroyed rather than pending
-- a distribution whose absent files are not exactly the complement of §2c
+⇒ **So the file stays pinned, and three things changed instead.** A version may not retire the anchor file that authenticated it, nor any experimental input (`train.py`, the corpus) -- refused by name, because *this file stopped being checked* can never be legitimate for those. And `pin_anchors.py --verify` now requires the pinned block set to EQUAL what the proofs name, rather than merely to contain it: the file was protected against damage and unprotected against EXTENSION, so a fabricated block with a chosen root was added and every check still passed.
 
-⚠️ **Three protocol versions in four days is the cost of committing instruments, and it is being
-reported rather than smoothed over.** v6 said that if the rule ever became an excuse for not
-repairing a checker it had failed and should be reported as failing. It has not become that yet —
-but the honest reading of v7 and v9 is that the repairs are arriving faster than the anchors, and
-the defence is that each version has to justify itself in prose a reviewer reads.
+⚠ **THE CIRCULARITY IS NOT CLOSED AND THIS VERSION DOES NOT CLAIM IT IS.** Offline, `ANCHORED` remains a statement about a file we wrote; the file's own caveat says a pin is an explorer's word and not a node, and `ots_verify.py` then makes that word decisive. What is closed is the chained escalation and the addition direction. What is open is the root itself, and the two candidate designs are named rather than chosen: stop making the file decisive -- report height and computed root as data and let a reader settle it against a chain -- or anchor the file itself, accepting that this is a one-step bootstrap rather than a fixed point.
 
----
-
-*Replaces: v6 §2a, v6 §2b, v7 §3 · Alongside: [`v3`](PRE-REGISTRATION-v3-CONFIRMATORY.md),
-[`v4`](PRE-REGISTRATION-v4-CONFIRMATORY.md), [`v6`](PRE-REGISTRATION-v6-CONFIRMATORY.md),
-[`v7`](PRE-REGISTRATION-v7-CONFIRMATORY.md) · Enforced by
-[`check_commitments.py`](check_commitments.py), [`ots_verify.py`](ots_verify.py),
-[`check_signature.py`](check_signature.py) and [`test_controls.py`](test_controls.py)*
-
-
-### RETIRES
-
-ANCHORS.json
-
-⛔ **Omission is not deletion.** v9 originally expressed this by simply not listing
-`ANCHORS.json` in its table, and that did nothing: authority composes as a UNION over every
-anchored version, so a path leaves the frozen set only when a document SAYS SO. Two round-7
-reviewers proved it independently -- one forged this version's anchoring to reach the state the
-project was waiting for and found `ANCHORS.json` still pinned by v8, still mismatched, exit 1.
-
-⚠ A retirement is as load-bearing as a pin, because it is how a file stops being checked. The
-checker refuses a retirement of a path no lower anchored version pinned, so this cannot be used
-to quietly drop something that was never frozen.
-
-## 14. What v9 changes, and why it is a whole version for one line
-
-⛔ **v8 pinned `ANCHORS.json`, and anchoring v8 is what changed it.** That file records the real merkle root of every Bitcoin block this project's proofs name; when v8's own proof anchored into blocks 964920, 964922 and 964923, those blocks were added to it. So the document pinned a file whose contents change as a *consequence* of that document anchoring -- a circular pin, and the commitment check went red the moment the thing it was waiting for happened.
-
-⇒ **A record of anchors is evidence ABOUT the chain, not part of the pipeline the protocol freezes.** Anyone can re-fetch those blocks and recompute it; nothing is weakened by leaving it unpinned, and `ots_verify.py` -- which reads it -- IS pinned, so the code that consumes it is still frozen.
-
-⚠ Everything else in v8's table is carried forward unchanged. This version exists for one deletion, because editing an anchored document is not available and should not be.
+⚠ **A known consequence, stated rather than discovered later:** each time a version anchors, its blocks are added to the pinned file, so that file's digest goes stale until the next version re-pins it. That is a treadmill, not a defect being hidden -- and the equality check makes the change legible: the additions must be exactly the newly anchored version's blocks, and anything else is refused.

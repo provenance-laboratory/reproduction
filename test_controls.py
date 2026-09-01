@@ -137,7 +137,23 @@ def a_trailing_bytes(root):
     p.write_bytes(p.read_bytes() + b"smuggled")
 
 
+def a_add_anchor_block(root):
+    """Add a block nobody's proof names. Every existing verification still succeeds.
+
+    ⛔ ZERO OF THIRTY CASES TOUCHED THE FILE THAT DECIDES WHAT ANCHORED MEANS. A round-7
+    reviewer added a fabricated block to it and nothing noticed: the file was protected against
+    DAMAGE -- rewriting a real root breaks a real proof and everything goes red -- and unprotected
+    against EXTENSION, which is the direction an attack uses because every existing check passes.
+    """
+    import json as _j
+    f = root / "ANCHORS.json"
+    d = _j.loads(f.read_text(encoding="utf-8"))
+    d["blocks"]["7654321"] = {"hash": "0" * 64, "merkle_root": "a" * 64, "timestamp": 0}
+    f.write_text(_j.dumps(d, indent=1) + chr(10), encoding="utf-8")
+
+
 COMMIT_ATTACKS = [
+    ("add a fabricated block to the anchor file", a_add_anchor_block),
     ("edit train.py AND its digest inside the governing document", a_edit_both),
     ("mint an unanchored synthetic v7", a_fake_v6),
     ("delete the governing document's proof", a_strip_proof),

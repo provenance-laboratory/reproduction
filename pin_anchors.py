@@ -127,13 +127,32 @@ def main():
             bad.append(h)
         time.sleep(1.0)
 
+    # ⛔ A SUBSET TEST WHERE IT SHOULD BE AN EQUALITY. This walked the blocks OUR PROOFS NAME and
+    # checked each one, so a block nobody names was simply never looked at: a round-7 reviewer
+    # added a fabricated block with a chosen root and `--verify` exited 0. The file was protected
+    # against DAMAGE -- rewriting a real root breaks a real proof and everything goes red -- and
+    # unprotected against EXTENSION, which is the direction an attack uses, because every existing
+    # verification still succeeds. It is the same equality-not-skip rule this project already
+    # applies to distribution subsets, missing here.
+    _recorded = set(old) if verify else set()
+    if verify:
+        _extra = sorted(_recorded - {str(h) for h in want})
+        if _extra:
+            print()
+            print("  " + D + " %d block(s) are pinned that NO PROOF NAMES: %s"
+                  % (len(_extra), _extra[:4]))
+            print("  A pin nobody needs is a root somebody added. Additions are the direction an")
+            print("  attack uses: every existing check still passes, so nothing else notices.")
+            bad.extend(_extra)
+
     if bad:
         print()
         print("  " + D + " %d block(s) failed" % len(bad))
         return 1
     if verify:
         print()
-        print("  ok  every pin re-fetches to the same block and matches our proofs.")
+        print("  ok  every pin re-fetches to the same block, matches our proofs, and NO PIN IS")
+        print("  PRESENT THAT NO PROOF NAMES.")
         return 0
     OUT.write_text(json.dumps({
         "_readme": ("The Bitcoin blocks our OpenTimestamps proofs attest to, with the merkle root "
