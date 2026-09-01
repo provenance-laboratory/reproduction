@@ -54,6 +54,11 @@ def _protocol_send():
 
 
 SEND = _protocol_send() + (
+    ("PUBKEY.asc",
+     "the public key. ⛔ The round-6 repair shipped check_signature.py and NOT the key, so "
+     "every reproducer got NO_PUBKEY on all eight documents -- a check that returns the same "
+     "answer for a good signature and a forged one, for everyone except the one person who "
+     "does not need it. A round-7 reviewer found it reported as fixed and absent"),
     ("pin_anchors.py",
      "the blocks our proofs name, fetched from a public explorer with the source and date kept. "
      "Parsing an attestation is not verifying one: two round-6 reviewers minted a structurally "

@@ -1,7 +1,7 @@
 {
  "_readme": "The Bitcoin blocks our OpenTimestamps proofs attest to, with the merkle root each one really has. ots_verify.py grants ANCHORED only when a proof's computed root equals the root pinned here; a proof naming a block absent from this file is STRUCTURAL and is never authority.",
  "source": "https://blockstream.info/api",
- "fetched_utc": "2026-09-01T06:48:47Z",
+ "fetched_utc": "2026-09-01T09:10:18Z",
  "caveat": "\u26a0 A pin is an explorer's word on a date, not a node. It is recorded so a reader can recompute it against the chain, which is the only thing that settles it.",
  "blocks": {
   "964534": {
@@ -18,6 +18,11 @@
    "hash": "000000000000000000021b5a93058a1a36749e5b75d94869ffda22220b58c2c9",
    "merkle_root": "e863c303c5b515da7544652b29648659c66ff2fa6ffad9fe82ccc975042eb439",
    "timestamp": 1787995444
+  },
+  "964747": {
+   "hash": "0000000000000000000220167f0e83e8cf4955fde282d115c86a7f4915571854",
+   "merkle_root": "8a9766909969f175693a1fd85a7236e3be4d33a95cd4a0bcab3fff2e76e16857",
+   "timestamp": 1788103948
   },
   "964761": {
    "hash": "00000000000000000001da2088b8cc564e17ccc96d30d6a90c160be86b4e2a6d",
@@ -63,6 +68,16 @@
    "hash": "000000000000000000009e4d8c9f3f93b674810d2d988864aaa35a91bee4b14b",
    "merkle_root": "a2c750b72ab68db7602962f230b1e8a236633d5cef8f132fed1547b3ac6aba9e",
    "timestamp": 1788166826
+  },
+  "964878": {
+   "hash": "0000000000000000000170df33186c16ae5e46c7732c1d0242471c0f9157caee",
+   "merkle_root": "b9fef3d8dd2fc6b2945cb580525f25beaf5612b7b71e3a1b78799e22f353dce0",
+   "timestamp": 1788180792
+  },
+  "964881": {
+   "hash": "00000000000000000001810c65e84e86093436237fcc577a6f0f6cf2543a7437",
+   "merkle_root": "45cb82a2d9677e318826afb6fd6f3a6be84b5cf94780ee1487b49097d5293579",
+   "timestamp": 1788183116
   },
   "964920": {
    "hash": "00000000000000000001a4e089022e0c8abef86966a8dc6d5e12b0609e8db9d0",

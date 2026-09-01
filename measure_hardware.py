@@ -407,7 +407,11 @@ def main():
     }
     (HERE / args.out).write_text(json.dumps(rec, indent=2) + NL, encoding="utf-8", newline=NL)
     _anch = rec["protocol_anchoring_when_this_record_was_written"]
-    _unanchored = sorted(k for k, v in _anch.items() if not v["bitcoin_attestation"])
+    # ⛔ THIS WARNED ON `bitcoin_attestation`, WHICH ONLY MEANS THE PROOF NAMES A BLOCK. Under
+    # the pinned-root rule a proof can name a block, be refused as STRUCTURAL, and still set that
+    # field -- so the JSON recorded anchored:false while the human-readable warning stayed silent.
+    # The field a reader acts on must be the field authority is granted on.
+    _unanchored = sorted(k for k, v in _anch.items() if not v.get("anchored"))
     if _unanchored:
         print()
         print("  " + W + " PROTOCOL NOT FULLY ANCHORED AS THIS RECORD IS WRITTEN: %s"

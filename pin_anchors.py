@@ -56,8 +56,31 @@ def heights():
     """Every Bitcoin height our own proofs attest to. Projected over the directory."""
     sys.path.insert(0, str(HERE))
     import ots_verify as OV
+    # ⛔ THIS GLOBBED `PRE-REGISTRATION*.md` -- A FILENAME PATTERN STANDING IN FOR "every proof
+    # this artifact requires". It pinned 15 blocks; the required proofs name 16. The missing one
+    # is block 964747, `corpus/MANIFEST.json.ots` -- the only non-protocol document in the
+    # required list, and the timestamp v3 section 2's non-retrofit argument rests on. Under the
+    # new rule an unpinned block is STRUCTURAL, so my own repair made the corpus timestamp
+    # indistinguishable from a fabrication. Both round-7 reviewers found it.
+    #
+    # ⚠ The projection is over EVERY .ots beside a file it binds, plus anchor_status.py's own
+    # ALWAYS list, so a proof this project treats as required cannot fall outside the pin set by
+    # not being named like a protocol document.
+    import anchor_status as _AS
+    docs = [d for d in sorted(HERE.glob("PRE-REGISTRATION*.md"))]
+    for _rel in getattr(_AS, "ALWAYS", ()):
+        _d = HERE / _rel
+        if _d.exists() and _d not in docs:
+            docs.append(_d)
+    for _o in sorted(HERE.rglob("*.ots")):
+        if ".superseded-" in _o.name:
+            continue
+        _d = _o.with_suffix("")
+        if _d.exists() and _d not in docs:
+            docs.append(_d)
+
     out = {}
-    for doc in sorted(HERE.glob("PRE-REGISTRATION*.md")):
+    for doc in docs:
         p = pathlib.Path(str(doc) + ".ots")
         if not p.exists():
             continue

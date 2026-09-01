@@ -38,6 +38,10 @@ CONTENTS = (
     ("test_controls.py",
      "every attack rounds 4 and 5 used against these controls, as a suite -- run it"),
     ("check_signature.py",
+        # ⛔ THE KEY THAT MAKES check_signature.py CAPABLE OF PASSING. It shipped the checker
+        # and not the key, so every reproducer got NO_PUBKEY on every document -- a check
+        # that returns the same answer for a good signature and a forged one.
+        "PUBKEY.asc",
      "who asserted the protocol documents. Nothing IMPORTS it, so the dependency closure "
      "below would never have pulled it in -- and an anchor answers WHEN, never WHO"),
     ("corpus/verify_shipped.py",

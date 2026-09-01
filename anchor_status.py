@@ -128,7 +128,21 @@ def check(rel):
                 len(blob), True)
     if "carries no Bitcoin attestation" in why:
         return "pending (calendar only)", len(blob), False
-    return why[:46].upper() if "NOT A PROOF" in why else "PROOF DOES NOT BIND THIS DOCUMENT", len(blob)
+    # ⛔ THIS RETURNED TWO VALUES WHERE THE CALLER UNPACKS THREE, so the tool CRASHED on the
+    # tampering path -- the one failure it exists to report. The comment above separated display
+    # from verdict and updated five of six return paths; the sixth is this one. A round-7 reviewer
+    # reached it by making the corpus proof structural, and got a traceback instead of a verdict.
+    #
+    # ⚠ And "PROOF DOES NOT BIND THIS DOCUMENT" was FALSE for that input: the corpus proof binds
+    # its document perfectly well and was refused for naming an unpinned block. A catch-all label
+    # that asserts a specific cause is worse than one that admits it does not know.
+    if "NOT A PROOF" in why:
+        return why[:46].upper(), len(blob), False
+    if "STRUCTURAL" in why:
+        return "STRUCTURAL, BLOCK NOT PINNED", len(blob), False
+    if "REFUSED" in why:
+        return "ROOT IS NOT THAT BLOCK'S", len(blob), False
+    return "PROOF DOES NOT BIND THIS DOCUMENT", len(blob), False
 
 
 def main():

@@ -103,6 +103,39 @@ def anchored(doc):
     return False, why, state
 
 
+RETIRES_HEADING = "### RETIRES"
+
+
+def retires(text):
+    """Paths a version explicitly RETIRES from the commitment table.
+
+    ⛔ v9 WAS INERT AND BOTH ROUND-7 REVIEWERS PROVED IT. `compose()` is a monotone union --
+    every path any anchored version pins stays pinned, and a newer version wins only where it
+    supplies a digest for the SAME path. v9's entire content was the ABSENCE of ANCHORS.json, and
+    absence is not a statement. One reviewer forged v9's anchoring to put the tree in the state I
+    was waiting for and asked the tool: ANCHORS.json, pinned by v8, still mismatched, exit 1, with
+    v9 governing. The round-6 repair forbade the round-7 one.
+
+    ⇒ Retirement is a DECLARATION, not an omission, and it is checked the way v8 section 2c checks
+    the distribution subset: named explicitly, so a path can only leave the table by a document
+    saying so under its own anchor.
+
+    ⚠ A retirement is as load-bearing as a pin -- it is how a file stops being checked -- so it
+    is refused unless some lower anchored version actually pinned that path. Retiring something
+    nothing pinned is a no-op that reads like an action.
+    """
+    if RETIRES_HEADING not in text:
+        return []
+    body = text.split(RETIRES_HEADING, 1)[1].split(NL + "## ", 1)[0]
+    out = []
+    for line in body.splitlines():
+        s = line.strip().lstrip("-*").strip()
+        s = s.strip("`")
+        if s and re.match(r"^[A-Za-z0-9_./-]+$", s) and "." in s:
+            out.append(s)
+    return out
+
+
 def compose(found):
     """The cumulative commitment table: every path any anchored version pins, highest version wins.
 
@@ -124,12 +157,21 @@ def compose(found):
     when two recording defects were repaired, and no ANCHORED document pins the new one, so the
     experiment is currently unpinned and this will say so.
     """
-    table, whence = {}, {}
+    table, whence, retired = {}, {}, {}
     for version, name, pinned in sorted(found, key=lambda x: x[0]):
         for path, digest in pinned:
             table[path] = digest
             whence[path] = (version, name)
-    return table, whence
+            retired.pop(path, None)
+        for path in retires((HERE / name).read_text(encoding="utf-8")):
+            if path not in table:
+                raise SystemExit(
+                    D + " %s RETIRES %r, which no lower anchored version pins. A retirement that "
+                    "removes nothing reads like an action and is not one." % (name, path))
+            del table[path]
+            whence.pop(path, None)
+            retired[path] = (version, name)
+    return table, whence, retired
 
 
 def governing(here):
@@ -225,7 +267,7 @@ def main():
     # ⛔ THE AUTHORITY'S OWN TABLE IS NOT THE COMMITMENT. Every anchored version's pins are
     # composed, highest wins, because v7 dropped the four files v3 pinned -- train.py and the
     # corpus -- and under v7 alone the experiment was checked by nothing.
-    _composed, _whence = compose(found)
+    _composed, _whence, _retired = compose(found)
     _inherited = sorted(k for k, (v, _n) in _whence.items() if v != version)
     pinned = sorted(_composed.items())
 
@@ -235,6 +277,13 @@ def main():
     print()
     print("  authority %s (v%d), composed over %d anchored version(s): %d path(s)"
           % (PROTOCOL, version, len(found), len(pinned)))
+    if _retired:
+        print("  " + W + " %d path(s) are RETIRED by an anchored version and are no longer"
+              % len(_retired))
+        print("  checked. A retirement is a declaration, not an omission:")
+        for _k, (_v, _n) in sorted(_retired.items()):
+            print("      %-28s retired by v%d" % (_k, _v))
+        print()
     if _inherited:
         print("  " + W + " %d path(s) are INHERITED from an older version because v%d does not"
               % (len(_inherited), version))

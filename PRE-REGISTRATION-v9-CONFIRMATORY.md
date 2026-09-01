@@ -54,14 +54,14 @@ What changed is that the record now says something true about when the run began
 ### 2b. Instruments and gates
 
 ```
-anchor_status.py           a98181d1e7229de6d8b136714c8c59f051df8d03f5849de0d4cb51d8000dec33
-build_package.py           f9405bef062316caebab9c532cae4a8356c6d88c1c46f711d69195033397a8fa
-check_commitments.py       d9e960804a9aacd8a1090a9b8fc36b1c6f4a5c6dc2bdfd3cd9835feff6687651
+anchor_status.py           6a25887d9758fdc629c96b2e84f4380bb6fe7abf8581c7e63b7507cd3958206a
+build_package.py           b88d8d0bbf59528b1f2452659328dc6ef1e5bfa9331b8ec75f90fe7ba8161c65
+check_commitments.py       e7bd8d6c45ec4fef69487fa2fd27d77beae8194e8d7f9274eacb5788327ff58a
 check_signature.py         76923dcbcf0d6b4b36af0cc0057dacba39194baab5ff9babf05f350b24f49fe5
 corpus/verify_shipped.py   943ebf0f6051a6b7c822378430a5e482b9e02b11de799a420b1bf9c838748749
 measure_cost.py            4b8bdd95c6fcbc37fd557ff81041e0af28202bf4816ef34e5e458e9e8bdedba9
 measure_divergence.py      d1dc9c7630e4b5c36231dd1a8ff7c044355463349ab6f674e390f2c63969711f
-measure_hardware.py        36138157abbfb210f688d3d94b4a87bd99c0f3a10f6c6cbb78dd0db9f1c0bea3
+measure_hardware.py        9686200fc21b08e1ef0cfeb14f7ecda9733bc34296e0318b7e63c4f390b6effc
 measure_storage.py         1254e4049813bd28ef2064f2252bcc5983e6d2bbac22825bf445ff1f4e0895c5
 ots_verify.py              15ca911511c6c8aff0eee0c2821203cc201d689788f4687bee63e00c8a7c2ca9
 reproduce_findings.py      78d570f5df51245e5d9a9b2ddeb75ef5e22cda283a06e64383ca383b80827bbf
@@ -69,8 +69,8 @@ seed_sensitivity.py        1012eb90d895146cac6d5f212ec18bc3012bc1e12176cb8918b83
 test_controls.py           6116aeec9e675f2ae89ed851b423f58a6dea6b5e59ca22349b24a868e3b385af
 verify_package.py          bac029355505ad25b09ceb9f6743908d13f48d4257a48da34f02fa407325bbc4
 PUBKEY.asc                 88f9a69659c87a898c6a4408d28e69520306b6916744642f60519469cbb24273
-build_review_packet.py     404361318ec15883af080e83f17f389ec2f1ccc9fb11abbb6ba49b0db9e072a0
-pin_anchors.py             d1c3d0398da0cba753b088813c33bbacc6fb2db8c17eaa3565aa33a31c796dba
+build_review_packet.py     1eb0dfce7e1d72fce7dbd39f5dcc4d87b642474f6c086c8d67b140ee9eaf1908
+pin_anchors.py             f284816bc283cb4f3af492fd55b9e736e756e1c49a1a86fc6bb67a71ac862d1b
 ```
 
 ⇒ **Fourteen, up from twelve.** Six unchanged from v7; `ots_verify.py` and `check_signature.py` are
@@ -353,6 +353,21 @@ the defence is that each version has to justify itself in prose a reviewer reads
 [`v7`](PRE-REGISTRATION-v7-CONFIRMATORY.md) · Enforced by
 [`check_commitments.py`](check_commitments.py), [`ots_verify.py`](ots_verify.py),
 [`check_signature.py`](check_signature.py) and [`test_controls.py`](test_controls.py)*
+
+
+### RETIRES
+
+ANCHORS.json
+
+⛔ **Omission is not deletion.** v9 originally expressed this by simply not listing
+`ANCHORS.json` in its table, and that did nothing: authority composes as a UNION over every
+anchored version, so a path leaves the frozen set only when a document SAYS SO. Two round-7
+reviewers proved it independently -- one forged this version's anchoring to reach the state the
+project was waiting for and found `ANCHORS.json` still pinned by v8, still mismatched, exit 1.
+
+⚠ A retirement is as load-bearing as a pin, because it is how a file stops being checked. The
+checker refuses a retirement of a path no lower anchored version pinned, so this cannot be used
+to quietly drop something that was never frozen.
 
 ## 14. What v9 changes, and why it is a whole version for one line
 
