@@ -10,7 +10,7 @@ paper-b-review.zip     186 files
 this file
 ```
 
-Repository `provenance-laboratory/reproduction`, commit `11b1bfd`.
+Repository `provenance-laboratory/reproduction`, commit `34e7252`.
 
 ---
 
