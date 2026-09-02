@@ -36,6 +36,7 @@ import tempfile
 
 NL = chr(10)
 D = chr(0x26D4)
+W = chr(0x26A0)
 HERE = pathlib.Path(__file__).resolve().parent
 IGNORE = shutil.ignore_patterns("runs", "package", "reference", ".git", "review", "__pycache__")
 
@@ -405,16 +406,85 @@ def main():
     rc2, _o2 = run(HERE, "check_commitments.py")
     print("  %s the REAL tree still passes check_commitments" % ("ok      " if rc2 == 0
                                                                  else D + " BROKEN"))
-    if not real_ok or rc2 != 0:
+    # ⛔ THIS FOLDED A POSITIVE-CONTROL FAILURE INTO THE ATTACK TALLY, and then printed the sum
+    # as "N PASSED THAT SHOULD NOT HAVE" -- a sentence asserting that a control accepted an input
+    # it must refuse, when no negative case had passed at all. A reviewer flagged the conflation
+    # at rounds 6, 7 and 8 and I called it cosmetic each time.
+    #
+    # ⇒ IT STOPPED BEING COSMETIC WHEN TWO CORRECT REPAIRS MET. Wiring the suite into the build
+    # gate was right; shipping `runs/det-1/run.json` so the builder reaches the suite was right;
+    # together they mean the build now refuses on an honest tree, citing an attack that did not
+    # happen. Two right repairs made a third defect consequential, which is this project's
+    # recurring shape seen from the other side.
+    #
+    # ⚠ THE FIX IS NOT TO FORCE THE POSITIVE CASE GREEN. While v9 pends the tree is genuinely
+    # red and the positive control genuinely cannot pass; pretending otherwise would be the
+    # substitution this suite exists to catch. The two claims are SEPARATED instead: the negative
+    # cases carry the security claim, the positive case carries a liveness claim, and a liveness
+    # failure is reported as one.
+    positive_failed = (not real_ok) or rc2 != 0
+    if positive_failed:
         print()
-        print("  " + D + " A SUITE THAT REJECTS EVERYTHING PROVES NOTHING. The negative cases")
-        print("  above are only meaningful while the positive case still passes.")
+        print("  " + W + " THE POSITIVE CONTROL FAILED, AND NO ATTACK PASSED. A suite that")
+        print("  rejects everything proves nothing, so the negative cases below are reported")
+        print("  separately from the positive case rather than summed with it.")
+
+
+    # ⛔ A NAME USED ONLY ON AN ERROR PATH IS A NAME NOBODY EXECUTES UNTIL SOMETHING BREAKS. This
+    # project has now shipped four of them -- `W` in a cleanup that reported a leak, `D` in a disk
+    # pre-flight, `D` in an audit's own count-fell warning, `W` in the counter split beside this
+    # comment. Each would have raised NameError instead of reporting the thing it exists to
+    # report: a control that crashes on its own failure path, which is the defect a reviewer found
+    # in anchor_status.py and which I then reproduced three more times by hand.
+    #
+    # ⚠ `symtable` answers the question directly -- which names does a function read from module
+    # scope that module scope does not define -- so this is a property of the code rather than a
+    # list of the symbols that have bitten so far.
+    import symtable as _st
+    _undef = []
+    for _f in sorted(HERE.glob("*.py")):
+        try:
+            _src = _f.read_text(encoding="utf-8")
+            _tab = _st.symtable(_src, _f.name, "exec")
+        except (SyntaxError, UnicodeDecodeError):
+            continue
+        _mod = {s.get_name() for s in _tab.get_symbols() if s.is_assigned() or s.is_imported()}
+        import builtins as _b
+        # ⚠ MODULE DUNDERS ARE PROVIDED, NOT ASSIGNED, so symtable does not see them and
+        # the first version of this check reported __file__ as undefined in two modules. A
+        # checker that cries wolf gets switched off, which is the outcome it exists to prevent.
+        _dunders = {"__file__", "__name__", "__doc__", "__package__", "__spec__",
+                    "__loader__", "__builtins__", "__debug__"}
+        _known = _mod | set(dir(_b)) | _dunders
+        for _fn in _tab.get_children():
+            if _fn.get_type() != "function":
+                continue
+            for _s in _fn.get_symbols():
+                if _s.is_global() and not _s.is_assigned() and _s.get_name() not in _known:
+                    _undef.append("%s:%s reads %r, which module scope never defines"
+                                  % (_f.name, _fn.get_name(), _s.get_name()))
+    print()
+    if _undef:
+        print("  " + D + " %d name(s) read from module scope that do not exist:" % len(_undef))
+        for _u in _undef[:6]:
+            print("      " + _u)
+        print("  Each raises NameError the first time its path runs -- and these paths run when")
+        print("  something has already gone wrong, which is when a report matters most.")
         missed += 1
+    else:
+        print("  ok      no function reads a module-scope name that does not exist")
 
     print()
-    print("  %d refused, %d PASSED THAT SHOULD NOT HAVE" % (caught, missed))
+    print("  %d attack(s) refused, %d PASSED THAT SHOULD NOT HAVE" % (caught, missed))
+    if positive_failed:
+        print("  " + D + " positive control: FAILED -- the real tree does not currently pass")
+        print("  check_commitments.py. That is a liveness statement about the tree, not a")
+        print("  security statement about these controls.")
+    else:
+        print("  ok  positive control: the real tree still passes check_commitments.py")
     print("=" * 78)
-    return 1 if missed else 0
+    # ⚠ Both still fail the run, because both are real -- but a caller can now tell which.
+    return 1 if (missed or positive_failed) else 0
 
 
 if __name__ == "__main__":

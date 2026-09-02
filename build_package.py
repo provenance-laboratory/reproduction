@@ -274,6 +274,19 @@ def main():
                          capture_output=True, text=True, encoding="utf-8", errors="replace")
     if _tc.returncode != 0:
         print((_tc.stdout or "") + (_tc.stderr or ""))
+        # ⛔ THIS SAID "A CONTROL ACCEPTS AN INPUT IT MUST REFUSE" WHENEVER THE SUITE EXITED
+        # NON-ZERO, and the suite exits non-zero for two unrelated reasons: an attack passing,
+        # which is a security failure, and the positive control failing, which while v9 pends is
+        # a true statement about a red tree. So the build refused on an honest tree citing an
+        # attack that did not happen. A reviewer flagged the counter conflation three rounds
+        # running and it became consequential only when the suite reached the build gate.
+        _out = (_tc.stdout or "") + (_tc.stderr or "")
+        if "0 PASSED THAT SHOULD NOT HAVE" in _out:
+            raise SystemExit(
+                D + " the control suite's POSITIVE case failed and no attack passed. The real "
+                "tree does not currently satisfy check_commitments.py -- which is a liveness "
+                "statement about the tree, not a security statement about these controls -- so "
+                "this package is not built. Nothing here says a control was fooled.")
         raise SystemExit(D + " a control this package depends on accepts an input it must refuse. "
                          "Round 4's reviewers broke both new controls because their positive "
                          "controls were PROSE; the suite runs in the gate now.")

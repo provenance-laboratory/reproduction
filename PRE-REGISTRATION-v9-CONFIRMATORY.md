@@ -55,8 +55,8 @@ What changed is that the record now says something true about when the run began
 
 ```
 anchor_status.py           6a25887d9758fdc629c96b2e84f4380bb6fe7abf8581c7e63b7507cd3958206a
-build_package.py           a53e8df06a67be366c53dc93de5e2338c0a4412cf4619e9e9a959953b4d726c9
-check_commitments.py       42563331d1c626e94c1ac6223c898e2584482b20e14e84e8afcfffe09f7b9231
+build_package.py           8f5f53139d4d3370ef60670e08cbaba62257bc724c43d8e71d95c788fe7940d7
+check_commitments.py       a83088bdbe9555972ce4558b25414c1cec41315664cab5dc7ac519a7bf1abf82
 check_signature.py         76923dcbcf0d6b4b36af0cc0057dacba39194baab5ff9babf05f350b24f49fe5
 corpus/verify_shipped.py   943ebf0f6051a6b7c822378430a5e482b9e02b11de799a420b1bf9c838748749
 measure_cost.py            4b8bdd95c6fcbc37fd557ff81041e0af28202bf4816ef34e5e458e9e8bdedba9
@@ -66,10 +66,10 @@ measure_storage.py         1254e4049813bd28ef2064f2252bcc5983e6d2bbac22825bf445f
 ots_verify.py              15ca911511c6c8aff0eee0c2821203cc201d689788f4687bee63e00c8a7c2ca9
 reproduce_findings.py      78d570f5df51245e5d9a9b2ddeb75ef5e22cda283a06e64383ca383b80827bbf
 seed_sensitivity.py        1012eb90d895146cac6d5f212ec18bc3012bc1e12176cb8918b83ea4563c24f5
-test_controls.py           7daa7d0d9430f90309362911c3b95d1d024ffc4f1bc26dc14a8eb3e172051e92
+test_controls.py           ed6c0fe3fc747aae8df0496af4a7c7faf50f844b9e15c02aada0669da2f4bfb1
 verify_package.py          bac029355505ad25b09ceb9f6743908d13f48d4257a48da34f02fa407325bbc4
 PUBKEY.asc                 88f9a69659c87a898c6a4408d28e69520306b6916744642f60519469cbb24273
-build_review_packet.py     1eb0dfce7e1d72fce7dbd39f5dcc4d87b642474f6c086c8d67b140ee9eaf1908
+build_review_packet.py     6c056ecfbd4d048b94790ecde5c36b51e4965266b9713c14675a004ab994a442
 pin_anchors.py             027e068318393b96720d1ae5d6608b3e6ee679271cd407f12bdc5152a859ae9e
 ANCHORS.json               48d15809564dc02c488b9a094a2eeef5c8dec6c99e19dd9669887f94be602ea2
 ```
