@@ -204,6 +204,49 @@ def anchor_file_is_exact():
     return True, "%d pinned block(s), exactly the set our proofs name" % len(pinned)
 
 
+def anchor_file_is_self_invalidating(protocol, bad):
+    """Is the ONLY mismatch the anchor file, differing by the authority's own blocks?
+
+    ⛔ THE PACKET CLAIMED THE TREE GOES GREEN THE MOMENT v9 ANCHORS, AND IT DOES NOT. A round-9
+    reviewer simulated the anchor and showed the shape: to promote a version its blocks must be in
+    ANCHORS.json, and adding them changes the file that version pins -- so the version can be
+    STRUCTURAL (blocks absent) or GOVERNING-AND-RED (blocks present), and never green. That is the
+    circularity this project has been circling since round 7, arriving as a LIVENESS failure
+    rather than an escalation: not a hole an attacker walks through, a state the honest path
+    cannot leave.
+
+    ⇒ Naming it is not fixing it. What is fixed here is that the checker stops calling it a
+    substitution: a file that changed because the thing it records happened is a different
+    situation from a file somebody swapped, and reporting them identically is how a permanently
+    red line stops carrying information -- which a reviewer warned about two rounds ago.
+
+    ⚠ STILL NON-ZERO. The state is unresolved and the exit code says so. The fix is v10's
+    adopted design: report height and computed root as DATA, verdict unverified-here, and let a
+    live re-fetch settle authority -- because no version can authenticate itself offline from a
+    file its own anchoring rewrites.
+    """
+    if [rel for rel, _w, _a, _b in bad] != [ANCHOR_FILE]:
+        return None
+    try:
+        import ots_verify as _OV
+        doc = HERE / protocol
+        _ok, _why, found = _OV.verify((HERE / (protocol + ".ots")).read_bytes(),
+                                      doc.read_bytes())
+        mine = sorted({int(h) for k, h, _r in (found or []) if k == "bitcoin"})
+    except Exception:                                                        # noqa: BLE001
+        return None
+    if not mine:
+        return None
+    try:
+        have = {int(k) for k in json.loads(
+            (HERE / ANCHOR_FILE).read_text(encoding="utf-8"))["blocks"]}
+    except Exception:                                                        # noqa: BLE001
+        return None
+    if not set(mine) <= have:
+        return None
+    return mine
+
+
 def compose(found):
     """The cumulative commitment table: every path any anchored version pins, highest version wins.
 
@@ -469,6 +512,23 @@ def main():
         print("  while anything is pending.")
         print("  " + D + " THIS IS STILL A MISMATCH AGAINST THE ANCHORED PROTOCOL and is counted")
         print("  as one. A pending document explains a change; it cannot authorise one.")
+        print()
+    _selfinv = anchor_file_is_self_invalidating(PROTOCOL, bad) if bad else None
+    if _selfinv:
+        print()
+        print("  " + D + " THE ONLY MISMATCH IS THE ANCHOR FILE, AND IT CHANGED BECAUSE THIS")
+        print("  VERSION ANCHORED. %s attests to Bitcoin block(s) %s, and those blocks had to be"
+              % (PROTOCOL, _selfinv))
+        print("  added to %s for the attestation to be checkable -- which changes the file this"
+              % ANCHOR_FILE)
+        print("  version pins. A version can be STRUCTURAL with its blocks absent or GOVERNING")
+        print("  AND RED with them present, and never green.")
+        print()
+        print("  " + W + " This is NOT a substitution and is not reported as one -- but it is")
+        print("  unresolved, so this still exits non-zero. The fix is the adopted v10 design:")
+        print("  report height and computed root as DATA, verdict unverified-here, and let a live")
+        print("  re-fetch settle authority. No version can authenticate itself offline from a")
+        print("  file its own anchoring rewrites.")
         print()
     if bad:
         print("  " + D + " %d COMMITTED FILE(S) NO LONGER MATCH. By %s this pre-registration"

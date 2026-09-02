@@ -125,6 +125,11 @@ SEND = _protocol_send() + (
     # runs/. A reviewer found all of it and called it round 4's own headline defect inside round
     # 4's own fix. They were right.
     ("MEASUREMENT-4.json", "THE RESULT, with both arms' environments and every condition"),
+    ("runs/det-1/run.json",
+     "the reference run build_package.py requires. ⛔ Without it the builder "
+     "refuses before reaching any control, so a round-9 reviewer could not exercise the "
+     "repaired build path from this packet at all -- the fix was untestable exactly "
+     "where it needed testing"),
     ("runs/tpc-thr-1/run.json", "arm A's run record -- rehash it"),
     ("runs/amd-thr-1/run.json", "arm B's run record -- rehash it"),
     ("runs/tpc-thr-1/weights.npz", "arm A's artifact, so bit-identity can be recomputed"),
