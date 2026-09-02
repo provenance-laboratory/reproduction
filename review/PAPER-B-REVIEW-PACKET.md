@@ -5,12 +5,12 @@
 ## ⇒ SEND THESE TWO
 
 ```
-paper-b-review.zip     183 files
-  sha256 5a233e97711e221a9c200773ae042aa05177a1df03cfc06dda06e37d513e2730
+paper-b-review.zip     184 files
+  sha256 fd457e902b8d0aed44a464789ec4ca0bb5adc2b985a85d1ca052d3a63fc6c55d
 this file
 ```
 
-Repository `provenance-laboratory/reproduction`, commit `cfcec38`.
+Repository `provenance-laboratory/reproduction`, commit `da8c342`.
 
 ---
 
@@ -23,7 +23,7 @@ Repository `provenance-laboratory/reproduction`, commit `cfcec38`.
 > - THE ADJUDICATION IS ACCEPTED AND RECORDED: report the datum, do not anchor the file. Anchoring it does not terminate -- verifying the anchor file's own proof needs the block roots, which live in the anchor file, so it vouches for itself and is strictly worse for LOOKING verified. Reporting height and computed root as data, with a verdict that says unverified here, is the same move this project already makes with `admissible_for_causal_attribution: false`, with measurement 6's NOT MEASURABLE, and with measurement 4's rename. The anchor file is the last place still asserting a conclusion where it holds only a datum.
 > - The equality check is kept and DOCUMENTED AS REDUNDANT rather than left looking load-bearing: the digest pin is the real guard, and the reviewer is right that the equality becomes live only under the design being declined.
 >
-> ⚠️ **v9 is stamped and PENDING again after the table refresh, and NEEDS RE-SIGNING -- the packet said signed while no signature shipped, which was false of the artifact and is the claim being corrected rather than repeated. The included `package/` remains the stale one: it cannot be rebuilt while v9 is pending because the gate correctly refuses, so it is labelled retired evidence rather than described as the artifact under test. THE ONE REMAINING GATE IS NOT A BREAK BUT A FORECLOSED MEASUREMENT: v6 condition 5 requires the runtime microkernel to be observed and identical, while section 7 puts divergence in the reduction shape, so the only configuration that would test vendor-independence -- two vendors, different kernels -- now fails a CONDITION instead of returning a RESULT. Measurement 4 can currently return agreement or a defect and nothing else. Two admissible verdicts, MATCHED-SHAPE and DIFFERING-SHAPE CROSS-MACHINE, would fix it, and that is a v10 change.**
+> ⚠️ **v9 is stamped, SIGNED and PENDING after the table refresh. The previous packet said signed while no signature shipped -- false of the artifact -- so the signature is in this one and check_signature.py --require exits 0 across all nine documents, from an empty keyring as well as the author's. The included `package/` remains the stale one: it cannot be rebuilt while v9 is pending because the gate correctly refuses, so it is labelled retired evidence rather than described as the artifact under test. THE ONE REMAINING GATE IS NOT A BREAK BUT A FORECLOSED MEASUREMENT: v6 condition 5 requires the runtime microkernel to be observed and identical, while section 7 puts divergence in the reduction shape, so the only configuration that would test vendor-independence -- two vendors, different kernels -- now fails a CONDITION instead of returning a RESULT. Measurement 4 can currently return agreement or a defect and nothing else. Two admissible verdicts, MATCHED-SHAPE and DIFFERING-SHAPE CROSS-MACHINE, would fix it, and that is a v10 change.**
 
 ## ⭐ CHECK THE FINDINGS, NOT ONLY THE PACKAGING
 
