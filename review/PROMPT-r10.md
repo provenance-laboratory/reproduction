@@ -13,15 +13,36 @@ anchors" — which was false, and the retraction is kept in place rather than ed
 ## The state you will find, stated plainly
 
 `test_controls.py` reports **31 attacks refused, 0 passed that should not have**, and then
-reports separately that **the positive control is FAILING**. That is the honest state of the
-tree, not an oversight. The v9 pre-registration is stamped and timestamped but **not yet
-signed**, and a table governs only once anchored, so the real tree does not currently satisfy
-`check_commitments.py`. Round 9 separated these two claims precisely so that this state is
-legible: the negative cases carry the security claim, the positive case carries a liveness
-claim, and a liveness failure is no longer summed into a sentence asserting that a control
-accepted an input it must refuse.
+reports separately that **the positive control is FAILING**. That is the honest state of the tree,
+and the reason it fails changed on 2 September in a way worth understanding before you start.
 
-**The most useful thing you can do is attack that separation.** It was introduced to fix a
+v9 is now **signed** (good signature, required key) and **anchored** — its OpenTimestamps proof
+carries Bitcoin attestations in blocks 965140, 965142 and 965152, and all three merkle roots were
+checked against the live chain via an independent explorer and match. So the earlier reason for
+the red tree — an unsigned, unanchored pre-registration — is gone.
+
+**What is red now is the circularity, and it is the interesting part.** v9's own table pins
+`ANCHORS.json`. `ANCHORS.json` is what makes an attestation mean anything: without a block's real
+merkle root pinned there, a proof naming that block is STRUCTURAL only, which is exactly what two
+round-6 reviewers exploited by minting a valid-looking attestation naming block 999999. But
+anchoring v9 produces three new blocks that must be pinned into `ANCHORS.json` — which changes the
+digest v9 pins. **The act of satisfying the protocol invalidates the document that demanded it.**
+
+Round 7 already closed the obvious escape: v9 was drafted to RETIRE `ANCHORS.json`, and a reviewer
+showed that converts a line carrying no information into no line at all, leaving the file that
+decides what ANCHORED means as the only unchecked input — and a second reviewer chained it, editing
+the local file to bless a version that then retires the file that blessed it. So retirement is not
+available. The adjudicated design is v10's "report the datum", and it is deliberately **not
+implemented**, so you are looking at the trap in its live form rather than at a description of it.
+
+**We did not improvise around this.** Running `pin_anchors.py` would have made the tree green and
+would have been the wrong thing: it edits a file the governing document pins, which is precisely
+the move the protocol exists to forbid. The blocks were verified read-only instead, and nothing
+was written.
+
+**The most useful thing you can do is attack that separation.**
+
+It was introduced to fix a
 counter conflation flagged at rounds 6, 7 and 8 and dismissed as cosmetic each time. It stopped
 being cosmetic when two correct repairs met and the build began refusing an honest tree while
 citing an attack that had not happened.
