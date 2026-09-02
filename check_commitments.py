@@ -288,6 +288,44 @@ def compose(found):
     return table, whence, retired
 
 
+def declared_version(text):
+    """The version the document's own SIGNED, ANCHORED BYTES claim.
+
+    ⛔ THE VERSION THAT DECIDES PRECEDENCE WAS READ FROM THE FILENAME, WHICH NOTHING
+    AUTHENTICATES. `re.search(r"-v(\\d+)-", f.name)` -- and `compose()` resolves every
+    per-path digest conflict by "highest version wins". Every instrument in this pipeline is
+    pinned at two to four distinct digests across the anchored history, because each version
+    froze the then-current bytes, so which digest governs turned entirely on an unauthenticated
+    string. A round-10 reviewer demonstrated it in two commands:
+
+        cp PRE-REGISTRATION-v5-CONFIRMATORY.md      PRE-REGISTRATION-v101-CONFIRMATORY.md
+        cp PRE-REGISTRATION-v5-CONFIRMATORY.md.ots  PRE-REGISTRATION-v101-CONFIRMATORY.md.ots
+
+    v5 is genuinely anchored -- its proof parses, commits to its own bytes and names a real
+    Bitcoin block -- so `anchored()` accepts the copy, and as the highest version its oldest
+    `train.py` pin governs. The signed content still said "Pre-registration v5" while the
+    filename said v101, and the composition trusted the filename over the bytes the signature
+    covers.
+
+    ⚠ BOUNDED, AND WORTH STATING PRECISELY: this is a DOWNGRADE, not a substitution. The
+    winning digest must be one some real anchored document committed, and the attacker cannot
+    invent one -- that needs a forged proof, which `ots_verify` still refuses. The harm is that
+    anyone holding a historically-anchored (document, instrument) pair can relabel it highest,
+    put that round's bytes on disk, and the tree goes green over a superseded pipeline the
+    current protocol does not intend, with every control passing.
+
+    ⇒ Reading the version from the H1 title closes it completely. To make `declared_version`
+    return 101 an attacker must edit the document body, and the proof commits to those bytes,
+    so `anchored()` refuses. The ordering key is now covered by the same anchor as the table.
+    """
+    m = re.search(r"^#\s*Pre-registration\s+v(\d+)\b", text, re.M)
+    if m:
+        return int(m.group(1))
+    if re.search(r"^#\s*Pre-registration\b", text, re.M):
+        return 1
+    return None
+
+
 def governing(here):
     """Every ANCHORED protocol version carrying a digest table, and every rejected candidate.
 
@@ -304,15 +342,34 @@ def governing(here):
     """
     found, rejected = [], []
     for f in sorted(here.glob("PRE-REGISTRATION*.md")):
+        _body = f.read_text(encoding="utf-8")
         m = re.search(r"-v(\d+)-", f.name)
-        version = int(m.group(1)) if m else 1
-        pinned = commitments(f.read_text(encoding="utf-8"))
+        _named = int(m.group(1)) if m else 1
+        version = declared_version(_body)
+        if version is None:
+            rejected.append((_named, f.name,
+                             "no version in the document's own title line, so its precedence "
+                             "would have to come from the filename, which no proof or signature "
+                             "covers", "UNVERSIONED"))
+            continue
+        if version != _named:
+            rejected.append((_named, f.name,
+                             "the FILENAME says v%d and the signed, anchored CONTENT says v%d. "
+                             "Precedence is decided by the content. A relabelled copy of a real "
+                             "anchored document is how an old table is promoted over a new one."
+                             % (_named, version), "RELABELLED"))
+            continue
+        pinned = commitments(_body)
         if not pinned:
             continue
         if len(pinned) < MIN_EXPECTED:
+            # ⛔ A THREE-TUPLE WHERE THE CONSUMER UNPACKS FOUR. This rejection path
+            # raised ValueError instead of reporting, which is the same class as the eight
+            # crashing error paths the sibling project found this round: a control that fires
+            # and then destroys its own message. Found by adding a second rejection beside it.
             rejected.append((version, f.name,
                              "parses only %d commitment(s); the table's format has changed and "
-                             "this parser no longer reads it" % len(pinned)))
+                             "this parser no longer reads it" % len(pinned), "UNPARSEABLE"))
             continue
         ok, why, state = anchored(f)
         if not ok:
