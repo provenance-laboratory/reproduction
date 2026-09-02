@@ -40,9 +40,7 @@ would have been the wrong thing: it edits a file the governing document pins, wh
 the move the protocol exists to forbid. The blocks were verified read-only instead, and nothing
 was written.
 
-**The most useful thing you can do is attack that separation.**
-
-It was introduced to fix a
+**The most useful thing you can do is attack the separation of the two claims** — the security claim carried by the negative cases, and the liveness claim carried by the positive one. It was introduced to fix a
 counter conflation flagged at rounds 6, 7 and 8 and dismissed as cosmetic each time. It stopped
 being cosmetic when two correct repairs met and the build began refusing an honest tree while
 citing an attack that had not happened.
