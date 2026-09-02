@@ -1,4 +1,4 @@
-# Paper B (`reproduction`) — internal review packet, round 9
+# Paper B (`reproduction`) — internal review packet, round 10
 
 *Every figure below is read from the measurement files, and every claim is lifted from `PHASE-2-FINDINGS.md` rather than retyped. `build_review_packet.py` refuses to write if a figure it prints is absent from that document.*
 
@@ -6,24 +6,26 @@
 
 ```
 paper-b-review.zip     186 files
-  sha256 2dd8c5056a2670a99cf78e5e96955ba644a143a5a6de24163429b6544c453ec5
+  sha256 9df9f954e90101f51c0d87ac0f4e44380f0d451ab3975528123f296fffe5828d
 this file
 ```
 
-Repository `provenance-laboratory/reproduction`, commit `a567313`  ⚠️ TREE DIRTY.
+Repository `provenance-laboratory/reproduction`, commit `264381f`  ⚠️ TREE DIRTY.
 
 ---
 
 ## ★ THE COVERING NOTE — paste this verbatim
 
-> **This is round 9.** FOR THE FIRST TIME IN EIGHT ROUNDS NEITHER REVIEWER BROKE THE AUTHORITY LAYER. Both round-7 escalations are closed and both were re-run: the chained retirement is refused by name, the additive-block attack is caught by the set equality, and a synthetic anchored successor retiring `train.py` or the anchor file is refused. One reviewer states that section 14 is the first self-assessment in eight rounds where the prose and the code agree. WHAT THEY FOUND INSTEAD WAS THAT v9 DID NOT COMMIT THE BYTES IT SHIPS BESIDE: three scripts matched neither v8 nor pending v9, so v9 anchoring as shipped would have left the tree red and forced yet another version. `build_package.py` also CRASHED on an untouched tree -- my own `PUBKEY.asc` edit made a three-element tuple where every consumer unpacks two -- and the packet claimed v9 was signed when no signature shipped. AND THE EQUALITY CHECK IS DEFEATABLE, though not live: `heights()` derives the 'named' set from the .ots files PRESENT, so extending both sets in lockstep -- a block in the anchor file plus a forged proof beside any document -- makes them equal again. It is not exploitable only because the anchor file is itself digest-pinned, and that pin dominates completely, so the equality check catches nothing the pin does not while LOOKING like it does. That is a control nobody has watched fail, one turn inward.
+> **This is round 10.** NEITHER REVIEWER BROKE THE AUTHORITY LAYER FOR A SECOND ROUND, and the finding that mattered was one I had dismissed three times. test_controls.py folded a positive-control failure into the attack tally and printed the sum as 'N PASSED THAT SHOULD NOT HAVE' -- a sentence asserting that a control accepted an input it must refuse, when no negative case had passed at all. It was flagged at rounds 6, 7 and 8 and called cosmetic each time. It stopped being cosmetic when two CORRECT repairs met: wiring the suite into the build gate, and shipping runs/det-1/run.json so the builder reaches the suite. Together they made the build refuse on an honest tree, citing an attack that did not happen. Two right repairs making a third defect consequential is this project's recurring shape seen from the other side.
 >
-> - v9's table is refreshed so it pins what actually ships: all eight mismatches now match pending v9, and the tree goes green the moment it anchors rather than forcing another version.
-> - `build_package.py` runs again -- the tuple was mine, and I had not run it after the edit because the REVIEW PACKET built fine. A different tool passing is not this tool passing.
-> - THE ADJUDICATION IS ACCEPTED AND RECORDED: report the datum, do not anchor the file. Anchoring it does not terminate -- verifying the anchor file's own proof needs the block roots, which live in the anchor file, so it vouches for itself and is strictly worse for LOOKING verified. Reporting height and computed root as data, with a verdict that says unverified here, is the same move this project already makes with `admissible_for_causal_attribution: false`, with measurement 6's NOT MEASURABLE, and with measurement 4's rename. The anchor file is the last place still asserting a conclusion where it holds only a datum.
-> - The equality check is kept and DOCUMENTED AS REDUNDANT rather than left looking load-bearing: the digest pin is the real guard, and the reviewer is right that the equality becomes live only under the design being declined.
+> - The security claim and the liveness claim are counted separately. The negative cases carry the security claim, the positive case carries a liveness claim, and BOTH still fail the run because both are real -- a caller can now tell which. The fix was not to force the positive case green: while v9 pends the tree is genuinely red and the positive control genuinely cannot pass, and pretending otherwise would be the substitution this suite exists to catch. Now reads '31 attack(s) refused, 0 PASSED THAT SHOULD NOT HAVE' with the liveness failure reported on its own line.
+> - build_package.py reads that distinguishing line rather than the exit code, so a red tree no longer reports itself as a fooled control. Its refusal message said an attack had passed whenever the suite exited non-zero, and the suite exits non-zero for two unrelated reasons.
+> - A NAME USED ONLY ON AN ERROR PATH IS A NAME NOBODY EXECUTES UNTIL SOMETHING BREAKS, and four have now shipped -- W in a cleanup reporting a leak, D in a disk pre-flight, D in an audit's own count-fell warning, W in the counter split itself. Each would have raised NameError instead of reporting what it exists to report. symtable answers the question as a property of the code -- which names does a function read from module scope that module scope does not define -- rather than as a list of the symbols that have bitten so far. Its positive control was run by deleting a definition.
+> - package/RETIRED.md no longer carries a count nothing computes.
+> - RETRACTED, from round 8's own record: 'the tree goes green the moment it anchors' is false. Anchoring is necessary and not sufficient -- the liveness trap is that a table governs only once anchored, so the interval between stamping and anchoring is a window in which the tree is red for a reason no control can distinguish from tampering. check_commitments.py diagnoses that state by name instead of asserting the sentence.
+> - v9's table was re-verified against the tree after this round's edits: all 21 paths match the bytes on disk.
 >
-> ⚠️ **v9 is stamped, SIGNED and PENDING after the table refresh. The previous packet said signed while no signature shipped -- false of the artifact -- so the signature is in this one and check_signature.py --require exits 0 across all nine documents, from an empty keyring as well as the author's. The included `package/` remains the stale one: it cannot be rebuilt while v9 is pending because the gate correctly refuses, so it is labelled retired evidence rather than described as the artifact under test. THE ONE REMAINING GATE IS NOT A BREAK BUT A FORECLOSED MEASUREMENT: v6 condition 5 requires the runtime microkernel to be observed and identical, while section 7 puts divergence in the reduction shape, so the only configuration that would test vendor-independence -- two vendors, different kernels -- now fails a CONDITION instead of returning a RESULT. Measurement 4 can currently return agreement or a defect and nothing else. Two admissible verdicts, MATCHED-SHAPE and DIFFERING-SHAPE CROSS-MACHINE, would fix it, and that is a v10 change.**
+> ⚠️ **v9 is stamped and PENDING and is NOT SIGNED: its .asc was invalidated when the table was refreshed and has been removed rather than left in place over bytes it does not cover. The positive control fails until it is signed and anchored, and that failure is now reported as a liveness statement about the tree rather than as a security statement about the controls. Nothing here claims a signature that does not exist -- round 8's packet said 'signed' while no signature shipped, which is the error this wording exists to prevent.**
 
 ## ⭐ CHECK THE FINDINGS, NOT ONLY THE PACKAGING
 
