@@ -136,6 +136,19 @@
     "v9's table was re-verified against the tree after this round's edits: all 21 paths match the bytes on disk."
    ],
    "deadline": "v9 is stamped and PENDING and is NOT SIGNED: its .asc was invalidated when the table was refreshed and has been removed rather than left in place over bytes it does not cover. The positive control fails until it is signed and anchored, and that failure is now reported as a liveness statement about the tree rather than as a security statement about the controls. Nothing here claims a signature that does not exist -- round 8's packet said 'signed' while no signature shipped, which is the error this wording exists to prevent."
+  },
+  {
+   "round": 10,
+   "summary": "THE AUTHORITY LAYER WAS BROKEN FOR THE FIRST TIME IN THREE ROUNDS, and it is the break the prompt asked for: an anchor that governs a table it does not cover. `governing()` read the version that decides precedence from the FILENAME, and `compose()` resolves every per-path digest conflict by highest-version-wins. Every instrument is pinned at two to four distinct digests across the anchored history, so which digest governs turned entirely on an unauthenticated string. Two cp commands relabel a genuinely anchored v5 to v101 and its oldest train.py pin governs. The reviewer was careful about the boundary and so is this record: it is a DOWNGRADE, not a substitution, because the winning digest must be one some real anchored document committed.",
+   "changed": [
+    "Precedence comes from the H1 title line -- bytes the proof commits to and the signature covers -- and a filename disagreeing with the content is REJECTED by name. Forging a promotion now requires editing the body, which breaks the anchor. Verified against an isolated green fixture, because a reviewer correctly objected that attack counts measured against an already-red baseline overstate what was tested.",
+    "v9 IS NOW SIGNED AND ANCHORED -- Bitcoin blocks 965140, 965142, 965152, and all three merkle roots checked against the live chain. The tree is still red, and the reason has changed: it is now purely the ANCHORS.json circularity, where satisfying the protocol invalidates the document that demanded it. pin_anchors.py was deliberately NOT run.",
+    "ANCHORING v9 MADE THE CONTROL SUITE UNRUNNABLE, which nobody predicted. The blocking refusal lived inside `governing()` -- a question, not a verdict -- so every caller asking which document is authority was killed by it, including test_controls itself. While v9 was PENDING the raise was suppressed and the suite ran. governing() reports it now and main() still refuses on it; nothing is newly permitted.",
+    "The build gate no longer reads its decision out of prose. The suite writes CONTROL-SUITE-VERDICT.json and the gate consumes that, after a reviewer forged the substring the gate was matching. The gate also prints check_commitments' concrete changed-file list BEFORE any exit, because the same reviewer showed a real train.py substitution hiding behind the routine liveness message.",
+    "Three claims, three counters. The undefined-name control found a defect written an hour earlier -- `_sp` in build_package.py, where the module imports subprocess -- and then counted it as an attack that had passed. That is round 9's conflation reintroduced by a control added for a different defect. Security, liveness and hygiene are separate now.",
+    "A rejection path appended a 3-tuple where the consumer unpacks 4, so it raised ValueError instead of reporting. Found only because a second rejection was added beside it."
+   ],
+   "deadline": "The ANCHORS.json circularity is the one open item and it is v10's, adjudicated and deliberately unimplemented: report height and computed root as DATA, verdict unverified-here, and let a live re-fetch settle authority. Reviewers should see the trap in its live form rather than a description of it."
   }
  ]
 }
