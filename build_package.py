@@ -281,12 +281,43 @@ def main():
         # attack that did not happen. A reviewer flagged the counter conflation three rounds
         # running and it became consequential only when the suite reached the build gate.
         _out = (_tc.stdout or "") + (_tc.stderr or "")
-        if "0 PASSED THAT SHOULD NOT HAVE" in _out:
+        # ⛔ THIS CLASSIFIED BY SUBSTRING AND EXITED BEFORE REPORTING WHAT WAS ACTUALLY WRONG.
+        # A round-10 reviewer changed `train.py` in a copied tree: check_commitments.py correctly
+        # named it as a ninth changed committed file, and this gate exited with the routine
+        # liveness message and never surfaced the substitution. Tampering and an honest pending
+        # window ARE distinguishable -- check_commitments.py distinguishes them -- and the gate
+        # discarded the distinction. The same reviewer then forged the substring itself.
+        #
+        # ⚠ The verdict is read as DATA, and the concrete changed-file list is printed BEFORE
+        # any exit, so a red tree always says which files moved rather than only that it is red.
+        import json as _json
+        _vp = HERE / "CONTROL-SUITE-VERDICT.json"
+        try:
+            _v = _json.loads(_vp.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            raise SystemExit(D + " the control suite left no machine-readable verdict at %s, so "
+                             "this gate would have to classify its decision by reading English. "
+                             "That is how a forged summary line got past it." % _vp.name)
+        _cc = subprocess.run([sys.executable, "-X", "utf8", "check_commitments.py"],
+                      cwd=str(HERE), capture_output=True, text=True)
+        _changed = [l.strip() for l in (_cc.stdout or "").splitlines()
+                    if l.strip().endswith("changed")]
+        if _changed:
+            print()
+            print("  " + W + " %d committed file(s) differ from the governing table:" % len(_changed))
+            for _c in _changed[:12]:
+                print("      " + _c)
+            print("  A pending window explains a table that does not yet govern. It does not")
+            print("  explain a file whose bytes moved.")
+        if _v.get("security_ok") and _v.get("positive_control_failed"):
             raise SystemExit(
-                D + " the control suite's POSITIVE case failed and no attack passed. The real "
-                "tree does not currently satisfy check_commitments.py -- which is a liveness "
-                "statement about the tree, not a security statement about these controls -- so "
-                "this package is not built. Nothing here says a control was fooled.")
+                D + " the control suite's POSITIVE case failed and no attack passed (%d refused, "
+                "%d passed that should not have). The real tree does not currently satisfy "
+                "check_commitments.py -- a liveness statement about the tree, not a security "
+                "statement about these controls -- so this package is not built. The changed "
+                "files above, if any, are a SEPARATE matter and are not excused by the window."
+                % (_v.get("attacks_refused", -1),
+                   _v.get("attacks_passed_that_should_not_have", -1)))
         raise SystemExit(D + " a control this package depends on accepts an input it must refuse. "
                          "Round 4's reviewers broke both new controls because their positive "
                          "controls were PROSE; the suite runs in the gate now.")

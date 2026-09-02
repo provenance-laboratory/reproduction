@@ -326,7 +326,7 @@ def declared_version(text):
     return None
 
 
-def governing(here):
+def governing(here, _raise_on_blocking=True):
     """Every ANCHORED protocol version carrying a digest table, and every rejected candidate.
 
     ⛔ AN EARLIER VERSION NAMED v3 IN A CONSTANT -- the enumeration defect. Deriving the version
@@ -388,11 +388,20 @@ def governing(here):
     # between stamping a successor and its anchor, a legitimately pending document sits above the
     # authority. That is why `anchored()` returns a STATE. Pending is a transition; TAMPERED or
     # MISSING above the selected authority is someone removing the table that would have governed.
+    # ⛔ THIS RAISE LIVED INSIDE `governing()`, WHICH IS A QUESTION, NOT A VERDICT. Any caller
+    # asking "which document is authority here" was killed by it -- and one such caller is
+    # `test_controls.py:_governing`, so the whole control suite died after its first attack the
+    # moment v9 anchored. While v9 was PENDING the raise was suppressed and the suite ran; the
+    # act of anchoring, which is the thing the protocol wants, made the suite unrunnable.
+    #
+    # ⚠ The classification is unchanged and nothing is now permitted that was not permitted
+    # before: `governing()` REPORTS the blocking condition and `main()` still refuses on it. A
+    # library function that exits the process cannot be asked a question by a control.
     if found:
         top = max(v for v, _n, _p in found)
         blocking = [(v, n, w) for v, n, w, s in rejected
                     if v > top and s in ("TAMPERED", "MISSING")]
-        if blocking:
+        if blocking and _raise_on_blocking:
             raise SystemExit(
                 D + " %s is present, is a HIGHER version than the authority %s would select, and "
                 "its proof is not a proof (%s). Falling back to an older document would enforce a "

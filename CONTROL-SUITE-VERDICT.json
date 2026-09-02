@@ -1,0 +1,8 @@
+{
+ "attacks_refused": 31,
+ "hygiene_failed": false,
+ "attacks_passed_that_should_not_have": 0,
+ "positive_control_failed": true,
+ "security_ok": true,
+ "liveness_ok": false
+}

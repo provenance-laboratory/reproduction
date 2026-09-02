@@ -56,7 +56,13 @@ def _governing(root):
         if m in _s.modules:
             del _s.modules[m]
     cc = importlib.import_module("check_commitments")
-    found, _rej = cc.governing(root)
+    # ⚠ ASKING, NOT DECIDING. The suite must be able to identify the governing document
+    # even in a tree that check_commitments refuses -- otherwise anchoring a pre-registration,
+    # which is what the protocol asks for, stops the controls from running at all.
+    try:
+        found, _rej = cc.governing(root, _raise_on_blocking=False)
+    except TypeError:
+        found, _rej = cc.governing(root)
     return sorted(found)[-1][1] if found else "PRE-REGISTRATION-v3-CONFIRMATORY.md"
 
 
@@ -312,7 +318,13 @@ def main():
     print("=" * 78)
     print()
 
+    # ⚠ THREE CLAIMS, THREE COUNTERS. `missed` is a security claim (an attack was accepted),
+    # `positive_failed` is a liveness claim (the real tree is red), and `hygiene_failed` is a
+    # claim about this codebase's own error paths. Round 9 split the first two after a reviewer
+    # flagged the conflation three times; round 10 added a control that folded the third back
+    # into the first, and reported a crashing error path as an attack that had passed.
     caught = missed = 0
+    hygiene_failed = False
 
     print("  check_commitments.py")
     for label, build in COMMIT_ATTACKS:
@@ -470,12 +482,22 @@ def main():
             print("      " + _u)
         print("  Each raises NameError the first time its path runs -- and these paths run when")
         print("  something has already gone wrong, which is when a report matters most.")
-        missed += 1
+        # ⛔ THIS INCREMENTED THE ATTACK COUNTER, so a crashing error path was reported
+        # as "1 PASSED THAT SHOULD NOT HAVE" -- a sentence asserting a control accepted an input
+        # it must refuse, when none had. That is the exact conflation round 9 split apart, two
+        # sections further down the same file, reintroduced by the control added to catch a
+        # different defect. It found a real one immediately -- `_sp` in build_package.py, written
+        # an hour earlier -- and then mislabelled it.
+        hygiene_failed = True
     else:
         print("  ok      no function reads a module-scope name that does not exist")
 
     print()
     print("  %d attack(s) refused, %d PASSED THAT SHOULD NOT HAVE" % (caught, missed))
+    if hygiene_failed:
+        print("  " + D + " hygiene: an error path in this codebase cannot report -- see above.")
+        print("  That is neither an attack passing nor a red tree; it is a control that would")
+        print("  crash instead of speaking, and it is counted on its own line for that reason.")
     if positive_failed:
         print("  " + D + " positive control: FAILED -- the real tree does not currently pass")
         print("  check_commitments.py. That is a liveness statement about the tree, not a")
@@ -483,8 +505,27 @@ def main():
     else:
         print("  ok  positive control: the real tree still passes check_commitments.py")
     print("=" * 78)
-    # ⚠ Both still fail the run, because both are real -- but a caller can now tell which.
-    return 1 if (missed or positive_failed) else 0
+
+    # ⛔ A CALLER READ THIS SUITE'S DECISION OUT OF ITS PROSE. build_package.py searched the
+    # output for the substring "0 PASSED THAT SHOULD NOT HAVE", and a round-10 reviewer forged it
+    # by printing that line alongside a genuine failure -- the gate reported "no attack passed"
+    # while an attack had. That is the substring-for-a-token defect, in the gate that decides
+    # whether a package ships.
+    #
+    # ⚠ The verdict is DATA now, written where a caller can consume it without parsing English,
+    # and it carries the counts separately so a liveness failure can never be read as a security
+    # one. The prose above stays for a human; it is no longer load-bearing for a machine.
+    import json as _json
+    _verdict = {"attacks_refused": caught,
+                "hygiene_failed": bool(hygiene_failed),
+                "attacks_passed_that_should_not_have": missed,
+                "positive_control_failed": bool(positive_failed),
+                "security_ok": missed == 0,
+                "liveness_ok": not positive_failed}
+    (HERE / "CONTROL-SUITE-VERDICT.json").write_text(
+        _json.dumps(_verdict, indent=1) + NL, encoding="utf-8", newline=NL)
+    print("  verdict written to CONTROL-SUITE-VERDICT.json (a caller must read that, not this)")
+    return 1 if (missed or positive_failed or hygiene_failed) else 0
 
 
 if __name__ == "__main__":
