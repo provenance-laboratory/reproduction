@@ -1,31 +1,31 @@
-# Paper B (`reproduction`) — internal review packet, round 10
+# Paper B (`reproduction`) — internal review packet, round 11
 
 *Every figure below is read from the measurement files, and every claim is lifted from `PHASE-2-FINDINGS.md` rather than retyped. `build_review_packet.py` refuses to write if a figure it prints is absent from that document.*
 
 ## ⇒ SEND THESE TWO
 
 ```
-paper-b-review.zip     186 files
-  sha256 9df9f954e90101f51c0d87ac0f4e44380f0d451ab3975528123f296fffe5828d
+paper-b-review.zip     187 files
+  sha256 56460228d248bb7eebd921f8f5431ead070b0bd84035345d609800e89a97e987
 this file
 ```
 
-Repository `provenance-laboratory/reproduction`, commit `34e7252`.
+Repository `provenance-laboratory/reproduction`, commit `7f6be4d`  ⚠️ TREE DIRTY.
 
 ---
 
 ## ★ THE COVERING NOTE — paste this verbatim
 
-> **This is round 10.** NEITHER REVIEWER BROKE THE AUTHORITY LAYER FOR A SECOND ROUND, and the finding that mattered was one I had dismissed three times. test_controls.py folded a positive-control failure into the attack tally and printed the sum as 'N PASSED THAT SHOULD NOT HAVE' -- a sentence asserting that a control accepted an input it must refuse, when no negative case had passed at all. It was flagged at rounds 6, 7 and 8 and called cosmetic each time. It stopped being cosmetic when two CORRECT repairs met: wiring the suite into the build gate, and shipping runs/det-1/run.json so the builder reaches the suite. Together they made the build refuse on an honest tree, citing an attack that did not happen. Two right repairs making a third defect consequential is this project's recurring shape seen from the other side.
+> **This is round 11.** THE AUTHORITY LAYER WAS BROKEN FOR THE FIRST TIME IN THREE ROUNDS, and it is the break the prompt asked for: an anchor that governs a table it does not cover. `governing()` read the version that decides precedence from the FILENAME, and `compose()` resolves every per-path digest conflict by highest-version-wins. Every instrument is pinned at two to four distinct digests across the anchored history, so which digest governs turned entirely on an unauthenticated string. Two cp commands relabel a genuinely anchored v5 to v101 and its oldest train.py pin governs. The reviewer was careful about the boundary and so is this record: it is a DOWNGRADE, not a substitution, because the winning digest must be one some real anchored document committed.
 >
-> - The security claim and the liveness claim are counted separately. The negative cases carry the security claim, the positive case carries a liveness claim, and BOTH still fail the run because both are real -- a caller can now tell which. The fix was not to force the positive case green: while v9 pends the tree is genuinely red and the positive control genuinely cannot pass, and pretending otherwise would be the substitution this suite exists to catch. Now reads '31 attack(s) refused, 0 PASSED THAT SHOULD NOT HAVE' with the liveness failure reported on its own line.
-> - build_package.py reads that distinguishing line rather than the exit code, so a red tree no longer reports itself as a fooled control. Its refusal message said an attack had passed whenever the suite exited non-zero, and the suite exits non-zero for two unrelated reasons.
-> - A NAME USED ONLY ON AN ERROR PATH IS A NAME NOBODY EXECUTES UNTIL SOMETHING BREAKS, and four have now shipped -- W in a cleanup reporting a leak, D in a disk pre-flight, D in an audit's own count-fell warning, W in the counter split itself. Each would have raised NameError instead of reporting what it exists to report. symtable answers the question as a property of the code -- which names does a function read from module scope that module scope does not define -- rather than as a list of the symbols that have bitten so far. Its positive control was run by deleting a definition.
-> - package/RETIRED.md no longer carries a count nothing computes.
-> - RETRACTED, from round 8's own record: 'the tree goes green the moment it anchors' is false. Anchoring is necessary and not sufficient -- the liveness trap is that a table governs only once anchored, so the interval between stamping and anchoring is a window in which the tree is red for a reason no control can distinguish from tampering. check_commitments.py diagnoses that state by name instead of asserting the sentence.
-> - v9's table was re-verified against the tree after this round's edits: all 21 paths match the bytes on disk.
+> - Precedence comes from the H1 title line -- bytes the proof commits to and the signature covers -- and a filename disagreeing with the content is REJECTED by name. Forging a promotion now requires editing the body, which breaks the anchor. Verified against an isolated green fixture, because a reviewer correctly objected that attack counts measured against an already-red baseline overstate what was tested.
+> - v9 IS NOW SIGNED AND ANCHORED -- Bitcoin blocks 965140, 965142, 965152, and all three merkle roots checked against the live chain. The tree is still red, and the reason has changed: it is now purely the ANCHORS.json circularity, where satisfying the protocol invalidates the document that demanded it. pin_anchors.py was deliberately NOT run.
+> - ANCHORING v9 MADE THE CONTROL SUITE UNRUNNABLE, which nobody predicted. The blocking refusal lived inside `governing()` -- a question, not a verdict -- so every caller asking which document is authority was killed by it, including test_controls itself. While v9 was PENDING the raise was suppressed and the suite ran. governing() reports it now and main() still refuses on it; nothing is newly permitted.
+> - The build gate no longer reads its decision out of prose. The suite writes CONTROL-SUITE-VERDICT.json and the gate consumes that, after a reviewer forged the substring the gate was matching. The gate also prints check_commitments' concrete changed-file list BEFORE any exit, because the same reviewer showed a real train.py substitution hiding behind the routine liveness message.
+> - Three claims, three counters. The undefined-name control found a defect written an hour earlier -- `_sp` in build_package.py, where the module imports subprocess -- and then counted it as an attack that had passed. That is round 9's conflation reintroduced by a control added for a different defect. Security, liveness and hygiene are separate now.
+> - A rejection path appended a 3-tuple where the consumer unpacks 4, so it raised ValueError instead of reporting. Found only because a second rejection was added beside it.
 >
-> ⚠️ **v9 is stamped and PENDING and is NOT SIGNED: its .asc was invalidated when the table was refreshed and has been removed rather than left in place over bytes it does not cover. The positive control fails until it is signed and anchored, and that failure is now reported as a liveness statement about the tree rather than as a security statement about the controls. Nothing here claims a signature that does not exist -- round 8's packet said 'signed' while no signature shipped, which is the error this wording exists to prevent.**
+> ⚠️ **The ANCHORS.json circularity is the one open item and it is v10's, adjudicated and deliberately unimplemented: report height and computed root as DATA, verdict unverified-here, and let a live re-fetch settle authority. Reviewers should see the trap in its live form rather than a description of it.**
 
 ## ⭐ CHECK THE FINDINGS, NOT ONLY THE PACKAGING
 

@@ -158,6 +158,7 @@ SEND = _protocol_send() + (
 # ⇒ The descriptions stay curated, because they carry judgement a projection cannot. What is
 # PROJECTED is the coverage check: every candidate file must be named in SEND or excused by name.
 EXCLUDED = {
+    "CONTROL-SUITE-VERDICT.json": "a build OUTPUT of test_controls.py, not an input to anything. It exists so a caller can read the suite's verdict as DATA rather than grepping its prose, which is how a round-10 reviewer forged the gate's decision. A shipped copy would be a verdict not produced by the run the reader is looking at.",
     "REVIEW-ROUNDS.json": "listed above; kept here so the excuse list is exhaustive",
 }
 
