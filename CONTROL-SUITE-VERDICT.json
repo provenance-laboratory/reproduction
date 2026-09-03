@@ -1,8 +1,8 @@
 {
  "nonce": "",
- "tree_digest": "35db2635b156adc6",
+ "tree_digest": "f89b9acd91dfae71",
  "attacks_refused": 31,
- "hygiene_failed": false,
+ "hygiene_failed": true,
  "attacks_passed_that_should_not_have": 0,
  "positive_control_failed": true,
  "security_ok": true,
