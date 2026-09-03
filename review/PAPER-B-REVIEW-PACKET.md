@@ -6,11 +6,11 @@
 
 ```
 paper-b-review.zip     187 files
-  sha256 8785bba0b19da7dcc3dc74642335b23c2faea606d8c0ea43bdb32a9337c2ccd8
+  sha256 bbeef75f7bbcc050da0f1962b2d0ddbf38042559611384cda8a503b9d546e51a
 this file
 ```
 
-Repository `provenance-laboratory/reproduction`, commit `c7ba531`.
+Repository `provenance-laboratory/reproduction`, commit `d1cd629`.
 
 ---
 
