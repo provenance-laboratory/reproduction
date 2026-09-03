@@ -63,13 +63,26 @@ def _module_bindings(tree):
                 if isinstance(n, ast.Name):
                     yield n.id
 
+    # ⛔ TWO CONSTRUCTS MAKE THIS QUESTION UNDECIDABLE AND THE CHECK CALLED THEM DEFECTS. A
+    # round-12 reviewer of the sibling project showed `from math import *; sqrt(4)` and
+    # `globals()["DYNAMIC_NAME"] = ...` both reported as "reads a name nothing in scope defines".
+    # Neither lets bad code pass, so it is not a security failure -- it is a LIVENESS trap, and
+    # this project has written down twice that a checker which cries wolf gets switched off.
+    #
+    # ⇒ A wildcard import means the module's names cannot be enumerated, so findings for that
+    # module are suppressed and the wildcard is reported instead -- the undecidability is named
+    # rather than converted into a false accusation. A literal `globals()["X"] = ...` key IS a
+    # binding and is collected as one; a non-literal key remains the disclosed blind spot.
     def _walk(body, conditional):
         sink = maybe if conditional else always
         for st in body:
             if isinstance(st, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
                 sink.update(_targets(st))
             elif isinstance(st, (ast.Import, ast.ImportFrom)):
-                sink.update((a.asname or a.name).split(".")[0] for a in st.names)
+                if any(a.name == "*" for a in st.names):
+                    sink.add("*")
+                sink.update((a.asname or a.name).split(".")[0]
+                            for a in st.names if a.name != "*")
             elif isinstance(st, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
                 sink.add(st.name)
             elif isinstance(st, (ast.If, ast.While, ast.For, ast.Try, ast.With)):
@@ -157,6 +170,21 @@ def undefined_module_reads(where=None):
         except (SyntaxError, UnicodeDecodeError):
             continue
         always, maybe = _module_bindings(tree)
+        for _n in ast.walk(tree):
+            if (isinstance(_n, ast.Subscript) and isinstance(_n.value, ast.Call)
+                    and isinstance(_n.value.func, ast.Name)
+                    and _n.value.func.id == "globals"
+                    and isinstance(_n.slice, ast.Constant)
+                    and isinstance(_n.slice.value, str)):
+                always.add(_n.slice.value)
+        if "*" in always:
+            # ⚠ A wildcard import makes the module's name set unenumerable. Reporting every
+            # unresolved read as undefined would be a false accusation; the wildcard is the
+            # finding, once, and the module's other reads are not judged.
+            out.append("%s: `from ... import *` makes this module's names unenumerable, so "
+                       "undefined-name findings are SUPPRESSED here. Remove the wildcard to get "
+                       "the check back." % f.name)
+            continue
         known = always | set(dir(_b)) | {"__file__", "__name__", "__doc__", "__package__",
                                          "__spec__", "__loader__", "__builtins__", "__debug__"}
 
@@ -479,6 +507,37 @@ def subset_rule_cases():
     ]
 
 
+def tree_digest(root=None):
+    """A digest of the tree this suite examined. One implementation, imported by the gate.
+
+    ⛔ THE PREVIOUS VERSION COVERED `glob("*.py")` ON THE TOP DIRECTORY -- 16 files of 320. The
+    protocol documents, the .ots proofs, the signatures, ANCHORS.json, the corpus: none of it. A
+    verdict could faithfully describe a run over TAMPERED PROTOCOL DOCUMENTS and its tree digest
+    would be byte-identical. And it was written and never read: the field appeared once, where the
+    suite wrote it, and `build_package.py` never recomputed or compared it. A field that looks
+    like it binds the verdict to the tree and binds nothing -- the same shape as the anchor-file
+    check a reviewer found inert in round 8, in the repair written to close round 11.
+
+    ⇒ It covers every file the tree contains, excluding only caches and the verdict itself, and
+    the GATE RECOMPUTES IT. It is defined once here and imported there, because two copies of one
+    rule is how the undefined-name evasion survived a round.
+    """
+    import hashlib as _hl
+    _root = pathlib.Path(root) if root else HERE
+    _h = _hl.sha256()
+    for _f in sorted(_root.rglob("*")):
+        if not _f.is_file():
+            continue
+        _rel = _f.relative_to(_root).as_posix()
+        if "__pycache__" in _rel or _rel.startswith(".git/"):
+            continue
+        if _rel in ("CONTROL-SUITE-VERDICT.json",):
+            continue
+        _h.update(_rel.encode("utf-8"))
+        _h.update(_hl.sha256(_f.read_bytes()).digest())
+    return _h.hexdigest()[:16]
+
+
 def main():
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace",
                                   line_buffering=True)
@@ -631,6 +690,30 @@ def main():
     #
     # ⇒ The implementation is LIFTED from the census one rather than reimplemented, because two
     # copies of a rule is how this happened. It is pointed at HERE.
+    # ⛔ PORTING LEAVES TWO COPIES, AND A REVIEWER SAID SO: the durable fix is one shared
+    # implementation, and two independently distributed packages cannot share a module. What they
+    # CAN do is refuse to differ silently. The census copy is the origin; this one is a transcript
+    # of it, and its digest is pinned here. If either moves without the other, this says so where
+    # both exist -- and says nothing inside a distribution, where the origin is not present.
+    _PORTED_FROM_CENSUS = "fc827f9d128249cb"
+    _origin = HERE.parent / "census" / "stress_test.py"
+    if _origin.exists():
+        import hashlib as _hl2
+        _osrc = _origin.read_text(encoding="utf-8")
+        try:
+            _oi = _osrc.index("def _module_bindings(tree):")
+            _oj = _osrc.index("    return sorted(set(out))", _oi) + len("    return sorted(set(out))")
+            _od = _hl2.sha256(_osrc[_oi:_oj].encode("utf-8")).hexdigest()[:16]
+        except ValueError:
+            _od = "GONE"
+        if _od != _PORTED_FROM_CENSUS:
+            print()
+            print("  " + D + " THE PORTED CONTROL HAS DRIFTED FROM ITS ORIGIN: census says %s, "
+                  "this copy was taken at %s." % (_od, _PORTED_FROM_CENSUS))
+            print("  One of the two was repaired and the other was not, which is exactly how the")
+            print("  round-11 evasion survived here for a round after the census copy was fixed.")
+            hygiene_failed = True
+
     _undef = undefined_module_reads(HERE)
     print()
     if _undef:
@@ -681,14 +764,9 @@ def main():
     #
     # ⇒ The gate issues a nonce in the environment and the verdict carries it back, together
     # with the digest of the tree examined. A verdict without this run's nonce is somebody else's.
-    import hashlib as _hl
     import os as _os
-    _tree = _hl.sha256()
-    for _f in sorted(HERE.glob("*.py")):
-        _tree.update(_f.name.encode("utf-8"))
-        _tree.update(_hl.sha256(_f.read_bytes()).digest())
     _verdict = {"nonce": _os.environ.get("CONTROL_SUITE_NONCE", ""),
-                "tree_digest": _tree.hexdigest()[:16],
+                "tree_digest": tree_digest(),
                 "attacks_refused": caught,
                 "hygiene_failed": bool(hygiene_failed),
                 "attacks_passed_that_should_not_have": missed,

@@ -282,6 +282,42 @@ def main():
     _tc = subprocess.run([sys.executable, "-X", "utf8", "test_controls.py"], cwd=str(HERE),
                          capture_output=True, text=True, encoding="utf-8", errors="replace",
                          env=dict(_os2.environ, CONTROL_SUITE_NONCE=_NONCE))
+    # ⛔ EVERY PROTECTION BUILT LAST ROUND WAS INSIDE `if _tc.returncode != 0`. On the GREEN
+    # path -- the one a shipping build takes -- the gate never opened the verdict file, never
+    # checked the nonce, and never looked at the tree digest. The structured verdict was consulted
+    # to explain a failure and never to justify a pass. A reviewer put it exactly right: the
+    # round-11 repair was dead code on the path that matters, and it goes live the moment the
+    # circularity resolves, which is why it must be fixed in the bytes the next version pins.
+    #
+    # ⇒ The verdict is read and validated BEFORE the branch, on every path. A pass that cannot
+    # produce a verdict from this run over this tree is not a pass.
+    import json as _json0
+    _vp0 = HERE / "CONTROL-SUITE-VERDICT.json"
+    try:
+        _v0 = _json0.loads(_vp0.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        raise SystemExit(D + " the control suite produced no machine-readable verdict at %s. A "
+                         "run that leaves no verdict cannot justify a pass." % _vp0.name)
+    if _v0.get("nonce") != _NONCE:
+        raise SystemExit(
+            D + " the verdict does not carry this run's nonce (%r vs %r), so it was not produced "
+            "by the suite this gate just ran." % (_v0.get("nonce"), _NONCE))
+    import importlib.util as _ilu0
+    _spec0 = _ilu0.spec_from_file_location("_tc_mod", str(HERE / "test_controls.py"))
+    _tcm = _ilu0.module_from_spec(_spec0)
+    _spec0.loader.exec_module(_tcm)
+    _now_digest = _tcm.tree_digest()
+    if _v0.get("tree_digest") != _now_digest:
+        raise SystemExit(
+            D + " the verdict describes a tree digesting to %r and this tree digests to %r. The "
+            "verdict is about different bytes than the ones being packaged."
+            % (_v0.get("tree_digest"), _now_digest))
+    if _tc.returncode == 0 and not _v0.get("security_ok"):
+        raise SystemExit(
+            D + " the suite exited 0 and its verdict says an attack passed that should not have. "
+            "The exit code and the verdict disagree, and the verdict is the one that carries the "
+            "security claim.")
+
     if _tc.returncode != 0:
         print((_tc.stdout or "") + (_tc.stderr or ""))
         # ⛔ THIS SAID "A CONTROL ACCEPTS AN INPUT IT MUST REFUSE" WHENEVER THE SUITE EXITED

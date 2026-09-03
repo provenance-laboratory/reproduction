@@ -29,6 +29,13 @@ import sys
 import tempfile
 
 NL = chr(10)
+# ⛔ ELEVENTH INSTANCE OF THE CLASS, WRITTEN INTO THE ROUND-12 REPAIR ITSELF. This file used
+# chr(0x26D4) inline everywhere and never defined the glyph names, so the retirement notice added
+# above raised NameError on the path it exists to report. The undefined-name control now covers
+# this directory and would have caught it; it was found by running the tool instead, which is one
+# round too late and exactly the sequence this project keeps repeating.
+D = chr(0x26D4)
+W = chr(0x26A0)
 HERE = pathlib.Path(__file__).resolve().parent
 PKG = HERE / "package"
 
@@ -67,13 +74,34 @@ def main():
         _listed = {ln.split("  ", 1)[1] for ln in sums if "  " in ln}
         _present = {str(f.relative_to(work)).replace(chr(92), "/")
                     for f in work.rglob("*") if f.is_file()}
+        # ⛔ BYTECODE CACHES MADE AN UNTAMPERED PACKAGE LOOK TAMPERED. Running any tool inside the
+        # package writes `__pycache__/*.pyc`, and this reported each one as IS NOT LISTED -- so a
+        # reviewer who followed the instructions and ran something saw three tampering findings
+        # they had created by reading. A cache is a by-product of execution, not content: it is
+        # not in the manifest because it must not be, and its presence says nothing about whether
+        # the package was altered. The interpreter writes these; the author never does.
+        #
+        # ⚠ Narrow on purpose. Only `__pycache__/` and `.pyc`; every other unlisted file is still
+        # a finding, because "ignore what is not in the list" is how an addition becomes invisible.
         _extra = sorted(_present - _listed - {"SHA256SUMS"}
-                        - {f for f in _present if f.startswith("my-run/")})
+                        - {f for f in _present if f.startswith("my-run/")}
+                        - {f for f in _present
+                           if "__pycache__/" in f or f.endswith((".pyc", ".pyo"))})
         if _extra:
             # ⚠ THIS TRUNCATED TO FIVE BEFORE COUNTING, so a reviewer who counted eight unlisted
             # files read a report saying five problems. A cap on what is PRINTED is fine; a cap on
             # what is COUNTED misreports the size of the fault.
             bad += ["%s IS NOT LISTED in SHA256SUMS" % e for e in _extra]
+        # ⛔ A RETIRED PACKAGE FAILING AND A TAMPERED PACKAGE FAILING PRINTED THE SAME THING. A
+        # round-12 reviewer ran this on a fresh extraction, got eight refusals, and had to read
+        # RETIRED.md to learn that this package is deliberately stale evidence rather than a
+        # substitution. Two of those refusals are honest consequences of retirement -- a proof
+        # upgraded to anchored after SHA256SUMS was written, and the retirement notice itself
+        # added afterwards -- and reporting them in the vocabulary of tampering is how a genuine
+        # tampering finding would later be ignored.
+        #
+        # ⇒ The exit stays non-zero, because the package genuinely does not verify. What
+        # changes is that the reader is told WHICH KIND of failure this is, in the same breath.
         # ⛔ AND EXACTLY ONE STAGE. The input package carries NO-TARGET.md and no
         # EXPECTED.json; the target package carries EXPECTED.json and no NO-TARGET.md. Both, or
         # neither, means the package does not know which stage of the protocol it is.
@@ -85,6 +113,14 @@ def main():
         print("  SHA256SUMS   %d entries, %d problem(s)" % (len(sums), len(bad)))
         for b in bad[:5]:
             print("      " + chr(0x26D4) + " " + b)
+        if (work / "RETIRED.md").exists() and bad:
+            print()
+            print("  " + W + " THIS PACKAGE DECLARES ITSELF RETIRED (see RETIRED.md), and the")
+            print("  problems above are what a retired package looks like: bytes that moved on")
+            print("  after it was sealed. That is NOT a claim that it is untampered -- this tool")
+            print("  cannot tell the two apart once the manifest is stale, which is exactly why")
+            print("  a retired package must not be run as the artifact under test.")
+
         if bad:
             return 1
 

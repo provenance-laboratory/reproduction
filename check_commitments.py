@@ -327,7 +327,11 @@ def declared_version(text):
     #
     # ⚠ Both forms are read out of the H1, which is inside the bytes the proof commits to. The
     # rule is "a version stated in the title", not "stated the way v4 onward states it".
-    _h1 = next((ln for ln in text.splitlines() if ln.strip().startswith("#")), "")
+    # ⚠ A UTF-8 BOM MADE A VERSIONED DOCUMENT READ AS UNVERSIONED. The first line
+    # begins \ufeff# and does not start with a hash, so the title was never found and a real
+    # protocol document would be refused for having no version. Windows tools write BOMs by
+    # default; the parser strips it rather than blaming the author.
+    _h1 = next((ln for ln in text.splitlines() if ln.lstrip(chr(65279)).strip().startswith("#")), "")
     m = re.search(r"\bv(\d+)\b", _h1) or re.search(r"\bversion\s+(\d+)\b", _h1, re.I)
     if m:
         return int(m.group(1))
@@ -377,6 +381,35 @@ def governing(here, _raise_on_blocking=True):
             continue
         pinned = commitments(_body)
         if not pinned:
+            # ⛔ A SILENT `continue` WAS THE WHOLE HOLE. `DIGEST_LINE` matches only
+            # `path<whitespace>64hex` on its own line, so a document whose table is written as a
+            # markdown pipe-table, or `path: hash`, or digest-first, parses as ZERO commitments
+            # and fell out here -- not in `found`, not in `rejected`, no output whatsoever. Both
+            # round-12 reviewers built a "Pre-registration v101/v50" with a pipe-table and
+            # `governing()` never mentioned it. The fatal-rejection scope added last round fires
+            # on 1 <= pinned < MIN_EXPECTED; zero pins escaped it entirely, because the scope test
+            # was `bool(pinned)` and `pinned` is the output of the parser under test.
+            #
+            # ⇒ THIS IS THE v2/v3 DEFECT ONE LEVEL OVER -- title-form then, table-form now, and
+            # the same consequence: a legitimate higher version silently stops governing and
+            # nobody notices, because silence is what it produces. A document that CARRIES
+            # digests the parser could not read is a broken check, not litter, and says so.
+            # ⚠ ANY 64-hex WAS TOO BROAD AND REFUSED A LEGITIMATE DOCUMENT. v2 mentions one
+            # digest in prose and pins nothing -- it names files, which is the whole reason v3
+            # exists -- and v4 amends a measurement with no table at all. Both were refused by the
+            # first version of this rule, which is the v2/v3 title defect repeating inside the fix
+            # for the v2/v3 title defect. MIN_EXPECTED is already this project threshold for
+            # what counts as a table, so it is what distinguishes a table the parser cannot read
+            # from a document that legitimately has none.
+            _digests = re.findall(r"[0-9a-f]{64}", _body)
+            _has_digests = len(_digests) >= MIN_EXPECTED
+            if _has_digests:
+                rejected.append(
+                    (_named, f.name,
+                     "carries %d 64-hex digest(s) and this parser reads NONE of them, so its table " % len(_digests) + 
+                     "is in a layout `DIGEST_LINE` does not match. An empty parse of a document "
+                     "that plainly has a table is a broken check, not an absent one.",
+                     "NO-TABLE", True))
             continue
         if len(pinned) < MIN_EXPECTED:
             # ⛔ A THREE-TUPLE WHERE THE CONSUMER UNPACKS FOUR. This rejection path
@@ -423,7 +456,7 @@ def governing(here, _raise_on_blocking=True):
     # ⚠ Scoped to candidates that CARRY A COMMITMENT TABLE. A stray file with a version-shaped
     # name and no table is litter and must not fail a build.
     _presenting = [(v, n, w, s) for v, n, w, s, _tbl in rejected
-                   if _tbl and s in ("RELABELLED", "UNVERSIONED", "UNPARSEABLE")]
+                   if _tbl and s in ("RELABELLED", "UNVERSIONED", "UNPARSEABLE", "NO-TABLE")]
     if _presenting:
         raise SystemExit(
             D + " %d document(s) present a commitment table under a version this tree cannot "
@@ -449,7 +482,14 @@ def governing(here, _raise_on_blocking=True):
 def main():
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
     found, rejected = governing(HERE)
-    for _v, _name, _why, _state in sorted(rejected, reverse=True):
+    # ⛔ SECOND ARITY CRASH ON A REJECTION PATH IN THREE ROUNDS. Round 10's rejection appended a
+    # 3-tuple where the consumer unpacked 4; round 12 added the table flag and this reporter still
+    # unpacked 4 of 5. Both were found only because a case was added beside them -- the shape a
+    # round-11 reviewer asked us to confirm the tooling covers, and it does not. Named fields
+    # would end the class; until then this unpacks by length so a reporter cannot be the thing
+    # that crashes while reporting.
+    for _rej in sorted(rejected, reverse=True):
+        _v, _name, _why, _state = _rej[0], _rej[1], _rej[2], _rej[3]
         print("  " + W + " %-46s NOT AUTHORITY [%s]: %s" % (_name, _state, _why))
     if rejected:
         print()
