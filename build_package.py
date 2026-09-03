@@ -270,8 +270,18 @@ def main():
     _cc = subprocess.run([sys.executable, "-X", "utf8", "check_commitments.py"] + _pub,
                          cwd=str(HERE),
                          capture_output=True, text=True, encoding="utf-8", errors="replace")
+    # ⇒ ISSUE A NONCE AND CLEAR ANY EXISTING VERDICT BEFORE THE SUITE RUNS. A file that cannot
+    # survive this deletion cannot afterwards be mistaken for this run's output, and a verdict
+    # without this nonce was produced by something else.
+    import os as _os2
+    import secrets as _sec
+    _NONCE = _sec.token_hex(8)
+    _stale_verdict = HERE / "CONTROL-SUITE-VERDICT.json"
+    if _stale_verdict.exists():
+        _stale_verdict.unlink()
     _tc = subprocess.run([sys.executable, "-X", "utf8", "test_controls.py"], cwd=str(HERE),
-                         capture_output=True, text=True, encoding="utf-8", errors="replace")
+                         capture_output=True, text=True, encoding="utf-8", errors="replace",
+                         env=dict(_os2.environ, CONTROL_SUITE_NONCE=_NONCE))
     if _tc.returncode != 0:
         print((_tc.stdout or "") + (_tc.stderr or ""))
         # ⛔ THIS SAID "A CONTROL ACCEPTS AN INPUT IT MUST REFUSE" WHENEVER THE SUITE EXITED
@@ -298,6 +308,18 @@ def main():
             raise SystemExit(D + " the control suite left no machine-readable verdict at %s, so "
                              "this gate would have to classify its decision by reading English. "
                              "That is how a forged summary line got past it." % _vp.name)
+        # ⛔ THIS READ WHATEVER FILE WAS ON DISK. A round-11 reviewer pre-wrote a green verdict,
+        # made the suite crash before its own write, and this gate consumed the stale one. The
+        # structured verdict correctly killed round 10's substring forgery and replaced it with a
+        # fresher problem: a decision read from an artifact not bound to what produced it, which
+        # is the same disease one layer down from the one just fixed.
+        #
+        # ⇒ The gate issues a nonce in the environment and the verdict must carry it back.
+        if _v.get("nonce") != _NONCE:
+            raise SystemExit(
+                D + " the control suite's verdict does not carry this run's nonce (%r vs %r), so "
+                "it was not produced by the suite this gate just ran. A stale verdict is how a "
+                "crashed suite reports a clean tree." % (_v.get("nonce"), _NONCE))
         _cc = subprocess.run([sys.executable, "-X", "utf8", "check_commitments.py"],
                       cwd=str(HERE), capture_output=True, text=True)
         _changed = [l.strip() for l in (_cc.stdout or "").splitlines()

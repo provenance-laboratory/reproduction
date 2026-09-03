@@ -318,10 +318,20 @@ def declared_version(text):
     return 101 an attacker must edit the document body, and the proof commits to those bytes,
     so `anchored()` refuses. The ordering key is now covered by the same anchor as the table.
     """
-    m = re.search(r"^#\s*Pre-registration\s+v(\d+)\b", text, re.M)
+    # ⛔ THIS KNEW ONE TITLE FORM AND THE CORPUS HAS TWO. v2 and v3 are headed "Confirmatory
+    # pre-registration, version N", not "Pre-registration vN", so this returned None for both --
+    # and since round 10 made an unversioned candidate a REJECTION, two legitimate historical
+    # documents silently stopped contributing to the composed table. Nobody noticed because they
+    # are superseded and their pins are subsets of later ones. A repair that recognises one
+    # spelling of a thing is the substring-for-a-token defect wearing a title.
+    #
+    # ⚠ Both forms are read out of the H1, which is inside the bytes the proof commits to. The
+    # rule is "a version stated in the title", not "stated the way v4 onward states it".
+    _h1 = next((ln for ln in text.splitlines() if ln.strip().startswith("#")), "")
+    m = re.search(r"\bv(\d+)\b", _h1) or re.search(r"\bversion\s+(\d+)\b", _h1, re.I)
     if m:
         return int(m.group(1))
-    if re.search(r"^#\s*Pre-registration\b", text, re.M):
+    if re.search(r"pre-registration", _h1, re.I):
         return 1
     return None
 
@@ -343,6 +353,10 @@ def governing(here, _raise_on_blocking=True):
     found, rejected = [], []
     for f in sorted(here.glob("PRE-REGISTRATION*.md")):
         _body = f.read_text(encoding="utf-8")
+        # ⇒ THE TABLE IS PARSED FIRST so a version rejection can say whether the document it
+        # refuses carries commitments. A relabelled file with no table is litter; a relabelled
+        # file WITH a table is someone presenting an authority, and the two must not exit alike.
+        _pinned_probe = commitments(_body)
         m = re.search(r"-v(\d+)-", f.name)
         _named = int(m.group(1)) if m else 1
         version = declared_version(_body)
@@ -350,14 +364,16 @@ def governing(here, _raise_on_blocking=True):
             rejected.append((_named, f.name,
                              "no version in the document's own title line, so its precedence "
                              "would have to come from the filename, which no proof or signature "
-                             "covers", "UNVERSIONED"))
+                             "covers", "UNVERSIONED",
+                             bool(_pinned_probe)))
             continue
         if version != _named:
             rejected.append((_named, f.name,
                              "the FILENAME says v%d and the signed, anchored CONTENT says v%d. "
                              "Precedence is decided by the content. A relabelled copy of a real "
                              "anchored document is how an old table is promoted over a new one."
-                             % (_named, version), "RELABELLED"))
+                             % (_named, version), "RELABELLED",
+                             bool(_pinned_probe)))
             continue
         pinned = commitments(_body)
         if not pinned:
@@ -369,11 +385,12 @@ def governing(here, _raise_on_blocking=True):
             # and then destroys its own message. Found by adding a second rejection beside it.
             rejected.append((version, f.name,
                              "parses only %d commitment(s); the table's format has changed and "
-                             "this parser no longer reads it" % len(pinned), "UNPARSEABLE"))
+                             "this parser no longer reads it" % len(pinned), "UNPARSEABLE",
+                             True))
             continue
         ok, why, state = anchored(f)
         if not ok:
-            rejected.append((version, f.name, why, state))
+            rejected.append((version, f.name, why, state, bool(pinned)))
             continue
         found.append((version, f.name, pinned))
 
@@ -397,9 +414,26 @@ def governing(here, _raise_on_blocking=True):
     # ⚠ The classification is unchanged and nothing is now permitted that was not permitted
     # before: `governing()` REPORTS the blocking condition and `main()` still refuses on it. A
     # library function that exits the process cannot be asked a question by a control.
+    # ⛔ A REFUSAL THAT EXITS 0 IS A WARNING. Round 10 closed the version spoof -- a relabelled
+    # v5 no longer GOVERNS -- and a round-11 reviewer showed the checker printed
+    # "NOT AUTHORITY [RELABELLED]" and then exited 0, so a relabelled higher protocol can sit in a
+    # green tree indefinitely. Not letting it govern is not the same as refusing it, and a tree
+    # containing a document that presents itself as a higher authority is not a clean tree.
+    #
+    # ⚠ Scoped to candidates that CARRY A COMMITMENT TABLE. A stray file with a version-shaped
+    # name and no table is litter and must not fail a build.
+    _presenting = [(v, n, w, s) for v, n, w, s, _tbl in rejected
+                   if _tbl and s in ("RELABELLED", "UNVERSIONED", "UNPARSEABLE")]
+    if _presenting:
+        raise SystemExit(
+            D + " %d document(s) present a commitment table under a version this tree cannot "
+            "accept: %s. Not letting them govern is not the same as refusing them; a tree that "
+            "contains an unacceptable authority is not clean."
+            % (len(_presenting), [(n, s) for _v, n, _w, s in _presenting[:3]]))
+
     if found:
         top = max(v for v, _n, _p in found)
-        blocking = [(v, n, w) for v, n, w, s in rejected
+        blocking = [(v, n, w) for v, n, w, s, _tbl in rejected
                     if v > top and s in ("TAMPERED", "MISSING")]
         if blocking and _raise_on_blocking:
             raise SystemExit(

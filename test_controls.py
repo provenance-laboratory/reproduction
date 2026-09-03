@@ -25,6 +25,7 @@ the package and in the publication gate, so the descriptions cannot drift from t
 """
 import copy
 import hashlib
+import ast
 import io
 import json
 import pathlib
@@ -39,6 +40,174 @@ D = chr(0x26D4)
 W = chr(0x26A0)
 HERE = pathlib.Path(__file__).resolve().parent
 IGNORE = shutil.ignore_patterns("runs", "package", "reference", ".git", "review", "__pycache__")
+
+
+# ⇒ PORTED FROM census/stress_test.py, NOT REIMPLEMENTED. Two copies of this rule
+# is exactly how the round-11 evasion survived here after the census copy was fixed.
+def _module_bindings(tree):
+    """Names module scope binds, split by whether the binding is UNCONDITIONAL.
+
+    ⛔ A NAME BOUND ONLY INSIDE `if False:` IS ASSIGNED TO symtable AND ABSENT AT RUNTIME. A
+    round-10 reviewer defeated the first version of this control with exactly that, four lines
+    long, and the suite reported "ok". Reading the module body as a SEQUENCE separates a binding
+    that always happens from one that might not.
+    """
+    always, maybe = set(), set()
+
+    def _targets(node):
+        tgts = list(getattr(node, "targets", []) or [])
+        if getattr(node, "target", None) is not None:
+            tgts.append(node.target)
+        for tgt in tgts:
+            for n in ast.walk(tgt):
+                if isinstance(n, ast.Name):
+                    yield n.id
+
+    def _walk(body, conditional):
+        sink = maybe if conditional else always
+        for st in body:
+            if isinstance(st, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
+                sink.update(_targets(st))
+            elif isinstance(st, (ast.Import, ast.ImportFrom)):
+                sink.update((a.asname or a.name).split(".")[0] for a in st.names)
+            elif isinstance(st, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                sink.add(st.name)
+            elif isinstance(st, (ast.If, ast.While, ast.For, ast.Try, ast.With)):
+                for attr in ("body", "orelse", "finalbody"):
+                    _walk(getattr(st, attr, []) or [], True)
+                for h in getattr(st, "handlers", []) or []:
+                    _walk(h.body, True)
+    _walk(tree.body, False)
+    return always, maybe - always
+
+
+def _own_nodes(fn):
+    """Every node belonging to `fn` itself, not to a function nested inside it.
+
+    ⛔ THE PREVIOUS VERSION WALKED EVERY FunctionDef INDEPENDENTLY and reported 141 findings on
+    a clean census -- every closure variable, because a name bound in an enclosing function is
+    neither module-scope nor local to the nested one. symtable had handled nesting; rewriting on
+    raw AST to get statement ORDER silently dropped it. Two correct requirements, one lost while
+    satisfying the other, which is this project's recurring shape.
+    """
+    out, stack = [], list(ast.iter_child_nodes(fn))
+    while stack:
+        n = stack.pop()
+        out.append(n)
+        # ⛔ A NESTED DEF INSIDE AN `if` WAS NEVER BOUND. Skipping these nodes entirely
+        # meant a helper defined in a conditional branch -- control_audit.py's `_ident` -- read as
+        # undefined in the function that calls it. The node is COLLECTED (so its name binds) and
+        # its BODY is not descended into (so its locals stay its own).
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda, ast.ClassDef)):
+            continue
+        stack.extend(ast.iter_child_nodes(n))
+    return out
+
+
+def _bound_in(fn):
+    # ⛔ `global x` MAKES AN ASSIGNMENT NOT A LOCAL BINDING, and ignoring that reported
+    # three false UnboundLocalErrors -- replay.py's `_LEDGER_CACHE` and filter_diff.py's `_IDX`,
+    # both declared global and both correct. A control that cannot read a `global` statement is
+    # reading the wrong language.
+    declared_global = set()
+    for n in _own_nodes(fn):
+        if isinstance(n, (ast.Global, ast.Nonlocal)):
+            declared_global.update(n.names)
+    names = {a.arg for a in fn.args.args + fn.args.kwonlyargs}
+    if fn.args.vararg:
+        names.add(fn.args.vararg.arg)
+    if fn.args.kwarg:
+        names.add(fn.args.kwarg.arg)
+    for n in _own_nodes(fn):
+        if isinstance(n, ast.Name) and isinstance(n.ctx, (ast.Store, ast.Del)):
+            names.add(n.id)
+        elif isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            names.add(n.name)
+        elif isinstance(n, (ast.Import, ast.ImportFrom)):
+            names.update((a.asname or a.name).split(".")[0] for a in n.names)
+        elif isinstance(n, ast.ExceptHandler) and n.name:
+            names.add(n.name)
+    return names - declared_global
+
+
+def undefined_module_reads(where=None):
+    """Names a function cannot read when its line runs -- in each of the ways that happens.
+
+    ⛔ NINE OF THESE HAVE SHIPPED ACROSS THE TWO PROJECTS, and the ninth shipped INSIDE the
+    controls added to catch the eighth. Every one sits on an error path, so it raises instead of
+    reporting, and only once something has already gone wrong. Three shapes:
+
+      UNDEFINED   -- nothing in scope binds the name at all.
+      SHADOWED    -- an outer scope binds it AND this function assigns it later, so every read
+      above that line raises UnboundLocalError. `build_paper.py` bound `D` at 1198 as a dict of
+      deposit digests while eight defect-reporting paths above spelled `D` as the refusal glyph,
+      among them the prose-arithmetic control and the convergence gate.
+      CONDITIONAL -- module scope binds it only inside `if`/`try`/`while`.
+
+    ⚠ KNOWN BLIND SPOT, DISCLOSED RATHER THAN FIXED: `globals()["x"] = ...` is not statically
+    decidable and is not detected. A reviewer identified it and recommended disclosure over a
+    fix, because a check that pretends to decide an undecidable question is worse than one that
+    states its edge.
+    """
+    import builtins as _b
+    out = []
+    for f in sorted((where or HERE).glob("*.py")):
+        try:
+            tree = ast.parse(f.read_text(encoding="utf-8"))
+        except (SyntaxError, UnicodeDecodeError):
+            continue
+        always, maybe = _module_bindings(tree)
+        known = always | set(dir(_b)) | {"__file__", "__name__", "__doc__", "__package__",
+                                         "__spec__", "__loader__", "__builtins__", "__debug__"}
+
+        def _scan(fn, enclosing):
+            local = _bound_in(fn)
+            visible = known | enclosing | local
+            # ⛔ `local` HONOURED `global` AND THIS MAP DID NOT, so the three false
+            # UnboundLocalErrors survived the fix aimed at them: the exclusion was applied in one
+            # of the two places that needed it. A `global x` assignment is a write to module
+            # scope, not a local binding, so it cannot shadow anything.
+            _glob = set()
+            for n in _own_nodes(fn):
+                if isinstance(n, (ast.Global, ast.Nonlocal)):
+                    _glob.update(n.names)
+            first, reads = {}, []
+            for n in _own_nodes(fn):
+                if not isinstance(n, ast.Name):
+                    continue
+                if isinstance(n.ctx, (ast.Store, ast.Del)):
+                    if n.id in _glob:
+                        continue
+                    if n.id not in first or n.lineno < first[n.id]:
+                        first[n.id] = n.lineno
+                elif isinstance(n.ctx, ast.Load):
+                    reads.append((n.id, n.lineno))
+            for nm, ln in reads:
+                if nm not in visible:
+                    if nm in maybe:
+                        out.append("%s:%s reads %r, which module scope binds only inside a "
+                                   "conditional -- it may not exist when this line runs"
+                                   % (f.name, fn.name, nm))
+                    else:
+                        out.append("%s:%s reads %r, which nothing in scope defines"
+                                   % (f.name, fn.name, nm))
+                elif (nm in first and ln < first[nm]
+                        and (nm in known or nm in enclosing)):
+                    out.append("%s:%s reads %r above the line it assigns it, while an outer "
+                               "scope also defines it -- that read raises UnboundLocalError"
+                               % (f.name, fn.name, nm))
+            for sub in ast.iter_child_nodes(fn):
+                if isinstance(sub, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    _scan(sub, enclosing | local)
+
+        for node in tree.body:
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                _scan(node, set())
+            elif isinstance(node, ast.ClassDef):
+                for sub in node.body:
+                    if isinstance(sub, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                        _scan(sub, set())
+    return sorted(set(out))
 
 
 def _governing(root):
@@ -452,29 +621,17 @@ def main():
     # ⚠ `symtable` answers the question directly -- which names does a function read from module
     # scope that module scope does not define -- so this is a property of the code rather than a
     # list of the symbols that have bitten so far.
-    import symtable as _st
-    _undef = []
-    for _f in sorted(HERE.glob("*.py")):
-        try:
-            _src = _f.read_text(encoding="utf-8")
-            _tab = _st.symtable(_src, _f.name, "exec")
-        except (SyntaxError, UnicodeDecodeError):
-            continue
-        _mod = {s.get_name() for s in _tab.get_symbols() if s.is_assigned() or s.is_imported()}
-        import builtins as _b
-        # ⚠ MODULE DUNDERS ARE PROVIDED, NOT ASSIGNED, so symtable does not see them and
-        # the first version of this check reported __file__ as undefined in two modules. A
-        # checker that cries wolf gets switched off, which is the outcome it exists to prevent.
-        _dunders = {"__file__", "__name__", "__doc__", "__package__", "__spec__",
-                    "__loader__", "__builtins__", "__debug__"}
-        _known = _mod | set(dir(_b)) | _dunders
-        for _fn in _tab.get_children():
-            if _fn.get_type() != "function":
-                continue
-            for _s in _fn.get_symbols():
-                if _s.is_global() and not _s.is_assigned() and _s.get_name() not in _known:
-                    _undef.append("%s:%s reads %r, which module scope never defines"
-                                  % (_f.name, _fn.get_name(), _s.get_name()))
+    # ⛔ THIS FILE KEPT THE SINGLE-SHAPE VERSION AND BOTH ROUND-11 REVIEWERS DEFEATED IT with
+    # four lines: `if False: REPORT_NAME = ...` binds the name for symtable and not at runtime, so
+    # the suite printed "ok" over a function that raises NameError when called. The census copy of
+    # this control was rewritten to catch three shapes -- undefined, shadowed-by-a-later-local, and
+    # bound only inside a conditional -- and that rewrite was never ported here. A fix is not
+    # finished until you grep for the other call sites, which is the sibling corollary this project
+    # has now recorded five times and committed a sixth.
+    #
+    # ⇒ The implementation is LIFTED from the census one rather than reimplemented, because two
+    # copies of a rule is how this happened. It is pointed at HERE.
+    _undef = undefined_module_reads(HERE)
     print()
     if _undef:
         print("  " + D + " %d name(s) read from module scope that do not exist:" % len(_undef))
@@ -516,7 +673,23 @@ def main():
     # and it carries the counts separately so a liveness failure can never be read as a security
     # one. The prose above stays for a human; it is no longer load-bearing for a machine.
     import json as _json
-    _verdict = {"attacks_refused": caught,
+    # ⛔ THE VERDICT WAS NOT BOUND TO THE RUN THAT PRODUCED IT. A round-11 reviewer pre-wrote a
+    # green verdict, made this suite crash before its own write, and build_package.py consumed the
+    # stale file. The structured verdict correctly killed the round-10 substring forgery and
+    # replaced it with a fresher one: a decision read from an artifact that is not tied to what
+    # produced it, which is the same disease one layer down.
+    #
+    # ⇒ The gate issues a nonce in the environment and the verdict carries it back, together
+    # with the digest of the tree examined. A verdict without this run's nonce is somebody else's.
+    import hashlib as _hl
+    import os as _os
+    _tree = _hl.sha256()
+    for _f in sorted(HERE.glob("*.py")):
+        _tree.update(_f.name.encode("utf-8"))
+        _tree.update(_hl.sha256(_f.read_bytes()).digest())
+    _verdict = {"nonce": _os.environ.get("CONTROL_SUITE_NONCE", ""),
+                "tree_digest": _tree.hexdigest()[:16],
+                "attacks_refused": caught,
                 "hygiene_failed": bool(hygiene_failed),
                 "attacks_passed_that_should_not_have": missed,
                 "positive_control_failed": bool(positive_failed),

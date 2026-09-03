@@ -1,4 +1,4 @@
-# Paper B (`reproduction`) — internal review packet, round 11
+# Paper B (`reproduction`) — internal review packet, round 12
 
 *Every figure below is read from the measurement files, and every claim is lifted from `PHASE-2-FINDINGS.md` rather than retyped. `build_review_packet.py` refuses to write if a figure it prints is absent from that document.*
 
@@ -6,26 +6,25 @@
 
 ```
 paper-b-review.zip     187 files
-  sha256 56460228d248bb7eebd921f8f5431ead070b0bd84035345d609800e89a97e987
+  sha256 074b51f0699c138dc1679573541775380d590988c6fb54811c4ca87569f5f19b
 this file
 ```
 
-Repository `provenance-laboratory/reproduction`, commit `7142cdf`.
+Repository `provenance-laboratory/reproduction`, commit `b7af331`  ⚠️ TREE DIRTY.
 
 ---
 
 ## ★ THE COVERING NOTE — paste this verbatim
 
-> **This is round 11.** THE AUTHORITY LAYER WAS BROKEN FOR THE FIRST TIME IN THREE ROUNDS, and it is the break the prompt asked for: an anchor that governs a table it does not cover. `governing()` read the version that decides precedence from the FILENAME, and `compose()` resolves every per-path digest conflict by highest-version-wins. Every instrument is pinned at two to four distinct digests across the anchored history, so which digest governs turned entirely on an unauthenticated string. Two cp commands relabel a genuinely anchored v5 to v101 and its oldest train.py pin governs. The reviewer was careful about the boundary and so is this record: it is a DOWNGRADE, not a substitution, because the winning digest must be one some real anchored document committed.
+> **This is round 12.** BOTH REVIEWERS INDEPENDENTLY DEFEATED THE UNDEFINED-NAME CONTROL WITH FOUR LINES -- `if False: REPORT_NAME = ...` binds the name for symtable and not at runtime, so the suite printed 'ok' over a function that raises NameError when called. The correction for exactly that evasion had been written in the sibling project's stress_test.py a day earlier and never carried across. A fix is not finished until you grep for the other call sites; that is the fifth time this project has recorded that sentence and the first time it has cost an evasion in the layer under review. Both reviewers also showed that the round-10 relabel repair REPORTED and did not REFUSE, and that the structured verdict introduced in round 10 was not bound to the run that produced it.
 >
-> - Precedence comes from the H1 title line -- bytes the proof commits to and the signature covers -- and a filename disagreeing with the content is REJECTED by name. Forging a promotion now requires editing the body, which breaks the anchor. Verified against an isolated green fixture, because a reviewer correctly objected that attack counts measured against an already-red baseline overstate what was tested.
-> - v9 IS NOW SIGNED AND ANCHORED -- Bitcoin blocks 965140, 965142, 965152, and all three merkle roots checked against the live chain. The tree is still red, and the reason has changed: it is now purely the ANCHORS.json circularity, where satisfying the protocol invalidates the document that demanded it. pin_anchors.py was deliberately NOT run.
-> - ANCHORING v9 MADE THE CONTROL SUITE UNRUNNABLE, which nobody predicted. The blocking refusal lived inside `governing()` -- a question, not a verdict -- so every caller asking which document is authority was killed by it, including test_controls itself. While v9 was PENDING the raise was suppressed and the suite ran. governing() reports it now and main() still refuses on it; nothing is newly permitted.
-> - The build gate no longer reads its decision out of prose. The suite writes CONTROL-SUITE-VERDICT.json and the gate consumes that, after a reviewer forged the substring the gate was matching. The gate also prints check_commitments' concrete changed-file list BEFORE any exit, because the same reviewer showed a real train.py substitution hiding behind the routine liveness message.
-> - Three claims, three counters. The undefined-name control found a defect written an hour earlier -- `_sp` in build_package.py, where the module imports subprocess -- and then counted it as an attack that had passed. That is round 9's conflation reintroduced by a control added for a different defect. Security, liveness and hygiene are separate now.
-> - A rejection path appended a 3-tuple where the consumer unpacks 4, so it raised ValueError instead of reporting. Found only because a second rejection was added beside it.
+> - RETRACTED, from round 10's own record and from the round-11 packet: 'v9 IS NOW SIGNED AND ANCHORED' is too strong for the shipped artifact. v9 is SIGNED, and its OpenTimestamps proof carries Bitcoin attestations in blocks 965140, 965142 and 965152 whose merkle roots were checked against the live chain -- but the artifact's OWN offline verifier reports STRUCTURAL only, because those blocks are not pinned in ANCHORS.json. A claim that is true of the world and false of the shipped verifier must be stated as the second. Both reviewers reached this independently and both were right.
+> - The undefined-name control is now PORTED from the census implementation rather than reimplemented, because two copies of one rule is how the evasion survived here after the other copy was fixed. It detects three shapes -- undefined, shadowed by a later local, and bound only inside a conditional -- and the reviewers' exact four-line evasion is caught by name: 'binds only inside a conditional, it may not exist when this line runs'.
+> - A relabelled document carrying a commitment table is now FATAL rather than reported. Not letting it govern is not the same as refusing it, and a tree containing a document presenting itself as a higher authority is not a clean tree. Scoped to candidates that carry a table, so a stray version-shaped filename does not fail a build. Verified against an isolated green fixture: the round-10 two-cp attack now exits 1.
+> - THAT FIX IMMEDIATELY FOUND A DEFECT ROUND 10 HAD INTRODUCED. `declared_version` knew one title form and the corpus has two: v2 and v3 are headed 'Confirmatory pre-registration, version N' rather than 'Pre-registration vN', so both returned None and -- since round 10 made an unversioned candidate a rejection -- two legitimate historical documents had silently stopped contributing to the composed table. Nobody noticed because they are superseded and their pins are subsets of later ones. Making the refusal fatal is what surfaced it. Both title forms are read out of the H1 now.
+> - The control-suite verdict is bound to its run. The gate issues a nonce in the environment, DELETES any existing verdict before running the suite, and refuses a verdict that does not carry this run's nonce; the verdict also records a digest of the tree it examined. A reviewer pre-wrote a green verdict, crashed the suite before its own write, and the gate consumed the stale one -- the round-10 substring forgery closed and replaced by a fresher instance of the same disease, a decision read from an artifact not bound to what produced it.
 >
-> ⚠️ **The ANCHORS.json circularity is the one open item and it is v10's, adjudicated and deliberately unimplemented: report height and computed root as DATA, verdict unverified-here, and let a live re-fetch settle authority. Reviewers should see the trap in its live form rather than a description of it.**
+> ⚠️ **The ANCHORS.json circularity remains the one open item and a reviewer sharpened WHY it must be closed rather than named: ots_verify returns STRUCTURAL for v9's honest not-yet-pinned blocks and for round 6's fabricated block 999999 IDENTICALLY. The tool cannot distinguish them, so the 'circularity' label is a human assertion that this instance of that verdict is the benign one -- which is the judgement the mechanism was supposed to make. The adjudicated v10 design closes it for the right reason, and the live re-fetch must compare the block's real MERKLE ROOT to the computed root; a height check alone is the same trap with a network call attached. Two further items stand: v9 does not pin the current gate bytes, so a new anchored version is needed rather than waiting; and the publishing-precondition surface is downstream of the circularity and has therefore never executed against a live tree.**
 
 ## ⭐ CHECK THE FINDINGS, NOT ONLY THE PACKAGING
 

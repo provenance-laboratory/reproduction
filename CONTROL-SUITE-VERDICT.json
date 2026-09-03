@@ -1,4 +1,6 @@
 {
+ "nonce": "",
+ "tree_digest": "e98881841e081bbf",
  "attacks_refused": 31,
  "hygiene_failed": false,
  "attacks_passed_that_should_not_have": 0,
