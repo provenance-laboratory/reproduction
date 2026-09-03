@@ -33,21 +33,120 @@ import pathlib
 import re
 import ots_verify as _OTS
 import sys
+import typing
 
 NL = chr(10)
 D = chr(0x26D4)
 W = chr(0x26A0)
 HERE = pathlib.Path(__file__).resolve().parent
 MIN_EXPECTED = 4
-DIGEST_LINE = re.compile(r"^([A-Za-z0-9_./-]+)\s+([0-9a-f]{64})\s*$", re.M)
+# ⚠ HEX IS CASE-INSENSITIVE. This matched `[0-9a-f]{64}` only, so a table written with uppercase
+# digests parsed as zero commitments and the document was filed as "present and not authority"
+# rather than as a table the parser cannot read. The digest is lower-cased on the way out, because
+# everything it is compared against comes from `hexdigest()`.
+DIGEST_LINE = re.compile(r"^([A-Za-z0-9_./-]+)\s+([0-9a-fA-F]{64})\s*$", re.M)
+
+# ⛔ "IS THIS A TABLE?" WAS INFERRED FROM A DIGEST COUNT, AND ONE INTEGER CANNOT CARRY TWO
+# QUESTIONS. MIN_EXPECTED meant both "how many pins make a table" and "how many loose digests make
+# an empty parse suspicious", and it was wrong from both sides. A reviewer demonstrated both:
+#
+#   * a REAL three-entry table in an unreadable layout carries fewer than MIN_EXPECTED raw
+#     digests, so it escaped the NO-TABLE rule and fell into the silent skip the rule exists to
+#     close -- the hole was only ever closed for tables of four or more; and
+#   * a document quoting four digests IN PROSE and pinning nothing was fatally rejected as a
+#     broken table. That is the v2/v4 defect reappearing inside the fix for the v2/v4 defect: the
+#     comment congratulated the threshold for handling v2's single prose digest while the same
+#     mechanism fatally rejected a v2-shaped amendment that happened to cite four.
+#
+# ⇒ Detect the table STRUCTURALLY. A commitment row is a path beside a digest inside a fenced
+# block or a pipe-table row -- something with table shape. Prose is not table shape however many
+# digests it quotes, and a three-row table is a table.
+_FENCE = re.compile(r"^```[^\n]*\n(.*?)^```", re.M | re.S)
+_ROW = re.compile(r"^\s*\|?\s*([A-Za-z0-9_./-]+\.[A-Za-z0-9]+)\s*\|?\s+([0-9a-fA-F]{64})\b", re.M)
+
+
+def presents_table(text):
+    """Does this document lay out commitment rows, whether or not this parser can read them?
+
+    Counts rows with TABLE SHAPE: inside a fenced block, or written as a pipe-table row. The
+    question is deliberately independent of how many rows there are and of whether DIGEST_LINE
+    matches any of them -- those are the two things the old digest-count conflated.
+    """
+    n = 0
+    for block in _FENCE.findall(text):
+        n += len(_ROW.findall(block))
+    for line in text.split(NL):
+        if line.lstrip().startswith("|") and _ROW.match(line):
+            n += 1
+    return n
+
+
+def _without_anchor_facts(text):
+    """The document with its §2d anchor-fact block removed.
+
+    ⛔ AN ANCHOR FACT LOOKS EXACTLY LIKE A COMMITMENT. `964534  <64 hex>` matches the path+digest
+    pattern, because a block height is a legal path. Introducing §2d therefore silently doubled
+    the parsed commitment table -- 21 real pins plus 21 heights read as files -- and the first
+    generated v10 reported 42. Caught by parsing the document back immediately after writing it,
+    which is the only reason it did not ship.
+    """
+    if ANCHOR_FACTS_HEADING not in text:
+        return text
+    head, tail = text.split(ANCHOR_FACTS_HEADING, 1)
+    block = re.search(r"```" + NL + r".*?```", tail, re.S)
+    return head + (tail[:block.start()] + tail[block.end():] if block else tail)
 
 
 def commitments(text):
     """(path, digest) for every file a protocol version pins. Read out, never retyped."""
-    return [(m.group(1), m.group(2)) for m in DIGEST_LINE.finditer(text)]
+    return [(m.group(1), m.group(2).lower())
+            for m in DIGEST_LINE.finditer(_without_anchor_facts(text))]
 
 
 BITCOIN_TAG = bytes([0x05, 0x88, 0x96, 0x0d, 0x73, 0xd7, 0x19, 0x01])
+
+ANCHOR_FACTS_HEADING = "### 2d."
+ANCHOR_FACT_LINE = re.compile(r"^\s*(\d{6,9})\s+([0-9a-fA-F]{64})\s*$", re.M)
+
+
+def anchor_facts(text):
+    """(height -> merkle root) a version commits to, as FACTS rather than as file bytes.
+
+    ⛔ WHY THIS SHAPE. ANCHORS.json was pinned by digest, and anchoring a new version rewrites it
+    -- so every version was void the instant it became authoritative. The commitment being wrong
+    was not carelessness; a byte pin cannot express "this file may grow but never lie".
+
+    ⇒ A fact pin is MONOTONIC: each listed height must still carry the listed merkle root, and new
+    heights are permitted. Later anchoring adds; it never contradicts. Anyone can re-derive every
+    line from the chain, which is the property a digest of the file never had.
+    """
+    if ANCHOR_FACTS_HEADING not in text:
+        return {}
+    tail = text.split(ANCHOR_FACTS_HEADING, 1)[1]
+    block = re.search(r"```" + NL + r"(.*?)```", tail, re.S)
+    if not block:
+        return {}
+    return {int(m.group(1)): m.group(2).lower()
+            for m in ANCHOR_FACT_LINE.finditer(block.group(1))}
+
+
+def anchor_facts_hold(facts, here=None):
+    """Every committed (height, root) still present and identical. Returns a list of failures."""
+    here = here or HERE
+    try:
+        blocks = json.loads((here / ANCHOR_FILE).read_text(encoding="utf-8"))["blocks"]
+    except (OSError, ValueError, KeyError) as e:
+        return ["%s cannot be read (%s), so no anchor fact can be checked" % (ANCHOR_FILE, e)]
+    out = []
+    for h, root in sorted(facts.items()):
+        got = (blocks.get(str(h)) or {}).get("merkle_root", "")
+        if not got:
+            out.append("height %d is committed and is ABSENT from %s -- a fact pin may grow, "
+                       "never shrink" % (h, ANCHOR_FILE))
+        elif got.lower() != root:
+            out.append("height %d committed root %s and %s now says %s"
+                       % (h, root[:16], ANCHOR_FILE, got[:16]))
+    return out
 
 
 DISTRIBUTION_HEADING = "### 2c."
@@ -132,8 +231,27 @@ def _retirement_is_permitted(name, path, text):
                 "can never be legitimate for the pipeline or the corpus: retiring one is how a "
                 "substitution stops being visible." % (name, path))
     if path == ANCHOR_FILE:
-        return ("%s retires %r -- the file whose contents decided that %s is anchored. A document "
-                "may not remove the root that authenticated it." % (name, path, name))
+        # ⛔ THE CIRCULARITY, AND WHY BYTE-PINNING CANNOT RESOLVE IT. Anchoring a new protocol
+        # version stamps it, which produces new Bitcoin attestations, which `pin_anchors.py` must
+        # record in ANCHORS.json -- so the act of anchoring version N rewrites the very file
+        # version N pins, and N is void the moment it becomes authoritative. No amount of care
+        # fixes that; the commitment is the wrong SHAPE for the thing being committed.
+        #
+        # ⇒ A version may move the anchor file from a BYTE pin to a FACT pin: section 2d lists
+        # (height, merkle root) pairs that must remain present and unchanged, while the file is
+        # free to GROW. That is monotonic, so a later anchoring cannot invalidate an earlier
+        # commitment, and it is strictly stronger than the byte pin in the way that matters --
+        # reformatting the file cannot launder a changed root, and adding a fabricated block
+        # cannot remove a real one.
+        #
+        # ⚠ The round-7 guard stands otherwise: retiring the anchor file while declaring NOTHING
+        # in its place is still a version removing the root that authenticated it, and is refused.
+        if anchor_facts(text):
+            return None
+        return ("%s retires %r -- the file whose contents decided that %s is anchored -- without "
+                "declaring anchor facts in their place. A document may not remove the root that "
+                "authenticated it; it may only replace a byte pin with a monotonic fact pin."
+                % (name, path, name))
     return None
 
 
@@ -340,6 +458,33 @@ def declared_version(text):
     return None
 
 
+class Rejection(typing.NamedTuple):
+    """One rejected protocol candidate, as a NAMED record rather than a bare tuple.
+
+    ⛔ WHY THIS IS NOT A TUPLE. The rejection grew a fifth field (`has_table`) when the NO-TABLE
+    state was added. `check_commitments.py` was updated; `build_package.py` line 258 still wrote
+    `for _v, _n, _why, _state in _rejected:` and died with
+
+        ValueError: too many values to unpack (expected 4)
+
+    the first time a legitimate PENDING successor existed -- i.e. the shipping build path was
+    broken by the next ordinary protocol round, and nothing failed until then. A reviewer found it
+    by minting a synthetic v10.
+
+    ⇒ Widening a positional tuple silently breaks every call site that unpacks it, and the breakage
+    is invisible until the new shape actually occurs. A NamedTuple is still a tuple, so existing
+    index and iteration code keeps working, but callers that read `.state` and `.has_table` by name
+    keep working across the NEXT widening too. This is the sibling of the rule this project already
+    states about hand-kept lists: a fix is not finished until you have grepped for the other call
+    sites -- and better than grepping is a shape that does not need it.
+    """
+    version: object
+    name: str
+    why: str
+    state: str
+    has_table: bool
+
+
 def governing(here, _raise_on_blocking=True):
     """Every ANCHORED protocol version carrying a digest table, and every rejected candidate.
 
@@ -365,14 +510,14 @@ def governing(here, _raise_on_blocking=True):
         _named = int(m.group(1)) if m else 1
         version = declared_version(_body)
         if version is None:
-            rejected.append((_named, f.name,
+            rejected.append(Rejection(_named, f.name,
                              "no version in the document's own title line, so its precedence "
                              "would have to come from the filename, which no proof or signature "
                              "covers", "UNVERSIONED",
                              bool(_pinned_probe)))
             continue
         if version != _named:
-            rejected.append((_named, f.name,
+            rejected.append(Rejection(_named, f.name,
                              "the FILENAME says v%d and the signed, anchored CONTENT says v%d. "
                              "Precedence is decided by the content. A relabelled copy of a real "
                              "anchored document is how an old table is promoted over a new one."
@@ -401,14 +546,14 @@ def governing(here, _raise_on_blocking=True):
             # for the v2/v3 title defect. MIN_EXPECTED is already this project threshold for
             # what counts as a table, so it is what distinguishes a table the parser cannot read
             # from a document that legitimately has none.
-            _digests = re.findall(r"[0-9a-f]{64}", _body)
-            _has_digests = len(_digests) >= MIN_EXPECTED
-            if _has_digests:
+            _rows = presents_table(_body)
+            if _rows:
                 rejected.append(
-                    (_named, f.name,
-                     "carries %d 64-hex digest(s) and this parser reads NONE of them, so its table " % len(_digests) + 
-                     "is in a layout `DIGEST_LINE` does not match. An empty parse of a document "
-                     "that plainly has a table is a broken check, not an absent one.",
+                    Rejection(_named, f.name,
+                     "lays out %d commitment row(s) -- a path beside a digest, in table shape -- " % _rows +
+                     "and this parser reads NONE of them, so the table is in a layout "
+                     "`DIGEST_LINE` does not match. An empty parse of a document that plainly "
+                     "has a table is a broken check, not an absent one.",
                      "NO-TABLE", True))
             continue
         if len(pinned) < MIN_EXPECTED:
@@ -416,14 +561,14 @@ def governing(here, _raise_on_blocking=True):
             # raised ValueError instead of reporting, which is the same class as the eight
             # crashing error paths the sibling project found this round: a control that fires
             # and then destroys its own message. Found by adding a second rejection beside it.
-            rejected.append((version, f.name,
+            rejected.append(Rejection(version, f.name,
                              "parses only %d commitment(s); the table's format has changed and "
                              "this parser no longer reads it" % len(pinned), "UNPARSEABLE",
                              True))
             continue
         ok, why, state = anchored(f)
         if not ok:
-            rejected.append((version, f.name, why, state, bool(pinned)))
+            rejected.append(Rejection(version, f.name, why, state, bool(pinned)))
             continue
         found.append((version, f.name, pinned))
 
@@ -488,9 +633,11 @@ def main():
     # round-11 reviewer asked us to confirm the tooling covers, and it does not. Named fields
     # would end the class; until then this unpacks by length so a reporter cannot be the thing
     # that crashes while reporting.
+    # ⚠ Reading by NAME now that a rejection is a `Rejection` record. Unpacking by length was the
+    # right defensive move while it was a bare tuple; a named field ends the class, which is what
+    # the comment above asked for.
     for _rej in sorted(rejected, reverse=True):
-        _v, _name, _why, _state = _rej[0], _rej[1], _rej[2], _rej[3]
-        print("  " + W + " %-46s NOT AUTHORITY [%s]: %s" % (_name, _state, _why))
+        print("  " + W + " %-46s NOT AUTHORITY [%s]: %s" % (_rej.name, _rej.state, _rej.why))
     if rejected:
         print()
     if not found:
@@ -558,6 +705,26 @@ def main():
         return 1
 
     # the subset a distribution is allowed to be, read from the ANCHORED document
+    # ⛔ A FACT PIN THAT NOTHING CHECKS IS A NOTE. Section 2d is the mechanism that resolves the
+    # anchor-file circularity, so it is verified on every run, over every ANCHORED version's
+    # facts rather than only the newest -- an older version's committed root does not stop being
+    # committed because a newer document exists. Monotonic: absent or changed is a failure,
+    # additional heights are not.
+    _facts = {}
+    for _v, _name, _p in found:
+        _facts.update(anchor_facts((HERE / _name).read_text(encoding="utf-8")))
+    if _facts:
+        _bad_facts = anchor_facts_hold(_facts)
+        if _bad_facts:
+            print()
+            print("  " + D + " %d ANCHOR FACT(S) NO LONGER HOLD:" % len(_bad_facts))
+            for _b in _bad_facts[:6]:
+                print("      " + _b)
+            raise SystemExit(D + " a committed anchor fact changed or vanished. The chain does "
+                             "not move; this file did.")
+        print("  ok  %d anchor fact(s) still hold in %s (monotonic: growth is permitted)"
+              % (len(_facts), ANCHOR_FILE))
+
     _subset = distribution_subset((HERE / PROTOCOL).read_text(encoding="utf-8"))
     _absent = {rel for rel, _w in pinned if not (HERE / rel).exists()}
     _complement = {rel for rel, _w in pinned if rel not in _subset}

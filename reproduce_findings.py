@@ -31,15 +31,26 @@ COUNTS = (1, 2, 4, 8, 16)
 
 
 def main():
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    # ⚠ `line_buffering` SO PROGRESS IS PROGRESS. Without it the per-run lines sat in a buffer
+    # until the script ended, so a machine taking three minutes looked hung for three minutes.
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace",
+                                  line_buffering=True)
     print("=" * 78)
-    print("  RE-DERIVING THE FINDINGS  (five training runs, no timing)")
+    print("  RE-DERIVING THE FINDINGS  (%d training runs, no timing)" % len(COUNTS))
     print("=" * 78)
+    # ⛔ THE INSTRUCTIONS QUOTED A SINGLE DURATION, in an experiment whose subject is that machines
+    # differ. Reviewers measured 26 s and over 180 s for this same script -- a single-core host
+    # collapses every thread request into one run, a many-core host executes all of them. Saying
+    # "~2 minutes" was the paper contradicting its own thesis in its own instructions.
+    print("  Runtime varies by an ORDER OF MAGNITUDE across machines (26 s to 180 s+ measured),")
+    print("  because the thread counts below are requests your hardware may collapse. Nothing")
+    print("  here is timed; this is a re-derivation, not a measurement.")
     print()
 
     got = {}
-    for n in COUNTS:
+    for i, n in enumerate(COUNTS, 1):
         out = HERE / "runs" / ("check-thr-%d" % n)
+        print("  [%d/%d] training with threads=%d ..." % (i, len(COUNTS), n))
         r = subprocess.run([sys.executable, "-X", "utf8", "train.py", "--out", str(out),
                             "--threads", str(n)], cwd=str(HERE), capture_output=True,
                            text=True, encoding="utf-8", errors="replace")

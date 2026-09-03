@@ -255,9 +255,14 @@ def main():
                          "built against an unanchored draft has no protocol.")
     GOVERNING = sorted(_anchored)[-1][1]
     GOVERNING_M4 = "PRE-REGISTRATION-v4-CONFIRMATORY.md"
-    for _v, _n, _why, _state in _rejected:
+    # ⛔ THIS UNPACKED FOUR FIELDS FROM A FIVE-FIELD REJECTION and died with "too many values to
+    # unpack" the first time a legitimate PENDING successor existed -- so the next ordinary
+    # protocol round would have broken the shipping build path, and nothing would have said so
+    # until it did. A reviewer minted a synthetic v10 with a calendar-only proof and found it.
+    # Reading by NAME survives the next widening; the fixture below makes sure of it.
+    for _r in _rejected:
         print("  " + chr(0x26A0) + " %s is present and is NOT authority [%s]: %s"
-              % (_n, _state, _why))
+              % (_r.name, _r.state, _r.why))
     # ⛔ v3 §2 SAID A CHANGED DIGEST VOIDS THE PRE-REGISTRATION, AND NOTHING CHECKED IT. train.py
     # was edited the next day and every tool here reported success for a day, SHA256SUMS included
     # -- a checksum regenerated from the bytes it polices cannot notice a substitution. The

@@ -33,8 +33,29 @@ D = chr(0x26D4)
 W = chr(0x26A0)
 HERE = pathlib.Path(__file__).resolve().parent
 OUT = HERE / "ANCHORS.json"
-API = "https://blockstream.info/api"
 UA = "pqbitcoin-reproduction-anchor-pin (mailto:parthms.id@gmail.com)"
+
+# ⛔ ONE EXPLORER IS ONE TRUST ROOT. A round-13 reviewer put it exactly right: settling authority
+# by live re-fetch "moves the trust root from a file you write to a block explorer you query -- a
+# network source that can be MITM'd, stale, or wrong", so a single API replaces one single point
+# of trust with a different one and calls it an improvement. The pin is only worth more than the
+# proof if more than one independent party had to agree to forge it.
+#
+# ⇒ Every block is fetched from SEVERAL operators and pinned only on agreement about the hash AND
+# the merkle root. Disagreement is a refusal, never a majority vote: two explorers differing about
+# a block that is 100+ deep is not a tie to be broken, it is a reason to stop.
+#
+# ⚠ AND THE INDEPENDENCE IS PARTIAL, WHICH IS STATED RATHER THAN IMPLIED. blockstream.info and
+# mempool.space are different operators running the SAME Esplora codebase, so they are independent
+# in operation and correlated in software; blockchain.info is a different codebase. The recorded
+# `sources` names who agreed so a reader can discount them appropriately instead of trusting a
+# count. This is a pin, not a node, and it never becomes one.
+SOURCES = (
+    ("blockstream", "https://blockstream.info/api", "esplora"),
+    ("mempool", "https://mempool.space/api", "esplora"),
+    ("blockchain.info", "https://blockchain.info", "blockchain.info"),
+)
+MIN_AGREE = 2
 
 
 def _get(url):
@@ -43,13 +64,61 @@ def _get(url):
         return r.read().decode("utf-8", "replace").strip()
 
 
-def block(height):
-    h = _get("%s/block-height/%d" % (API, height))
-    time.sleep(1.0)
-    d = json.loads(_get("%s/block/%s" % (API, h)))
+def _from_esplora(base, height):
+    h = _get("%s/block-height/%d" % (base, height))
+    time.sleep(0.5)
+    d = json.loads(_get("%s/block/%s" % (base, h)))
     if d.get("height") != height:
-        raise SystemExit(D + " the explorer returned height %s for %d" % (d.get("height"), height))
+        raise ValueError("returned height %s for %d" % (d.get("height"), height))
     return {"hash": h, "merkle_root": d["merkle_root"], "timestamp": d.get("timestamp")}
+
+
+def _from_blockchain_info(base, height):
+    d = json.loads(_get("%s/block-height/%d?format=json" % (base, height)))
+    blocks = [b for b in d.get("blocks", []) if b.get("main_chain")]
+    if not blocks:
+        raise ValueError("no main-chain block at %d" % height)
+    b = blocks[0]
+    if b.get("height") != height:
+        raise ValueError("returned height %s for %d" % (b.get("height"), height))
+    return {"hash": b["hash"], "merkle_root": b["mrkl_root"], "timestamp": b.get("time")}
+
+
+def block(height):
+    """The block at `height`, agreed by at least MIN_AGREE independent operators.
+
+    Returns the agreed record with a `sources` list naming who agreed. Raises if fewer than
+    MIN_AGREE could be reached, or if any two that were reached disagree.
+    """
+    got, errs = {}, []
+    for name, base, kind in SOURCES:
+        try:
+            b = (_from_esplora(base, height) if kind == "esplora"
+                 else _from_blockchain_info(base, height))
+            got[name] = b
+        except Exception as e:                                               # noqa: BLE001
+            errs.append("%s: %s" % (name, str(e)[:40]))
+        time.sleep(0.4)
+
+    # ⚠ Timestamp is NOT part of the agreement key: explorers report it consistently, but it is
+    # the block header's own claim and nothing here depends on it. Hash and merkle root are what
+    # a proof is checked against, so they are what must agree.
+    keyed = {}
+    for name, b in got.items():
+        keyed.setdefault((b["hash"], b["merkle_root"]), []).append(name)
+    if len(keyed) > 1:
+        raise ValueError("EXPLORERS DISAGREE about block %d: %s. This is not a tie to break; a "
+                         "settled block has one answer." % (height, {k[1][:16]: v
+                                                                     for k, v in keyed.items()}))
+    if not keyed:
+        raise ValueError("no source answered for %d (%s)" % (height, "; ".join(errs)))
+    (bhash, root), names = next(iter(keyed.items()))
+    if len(names) < MIN_AGREE:
+        raise ValueError("only %d source(s) answered for %d (%s); %d must agree"
+                         % (len(names), height, ", ".join(names), MIN_AGREE))
+    any_b = got[names[0]]
+    return {"hash": bhash, "merkle_root": root, "timestamp": any_b.get("timestamp"),
+            "sources": sorted(names)}
 
 
 def heights():
@@ -122,9 +191,18 @@ def main():
                  "matches our proof" if match else "DOES NOT MATCH OUR PROOF"))
         if not match:
             bad.append(h)
-        if verify and str(h) in old and old[str(h)] != b:
-            print("     " + D + " the pin has MOVED since it was recorded")
-            bad.append(h)
+        # ⚠ COMPARE THE FACTS, NOT THE PROVENANCE OF THE FETCH. `sources` records which operators
+        # answered, and which answered legitimately varies with reachability and rate limits, so
+        # comparing the whole record would report "the pin has MOVED" every time an explorer was
+        # briefly down. What must never move is the hash, the merkle root and the timestamp.
+        _FACTS = ("hash", "merkle_root", "timestamp")
+        if verify and str(h) in old:
+            _was = {k: old[str(h)].get(k) for k in _FACTS}
+            _now = {k: b.get(k) for k in _FACTS}
+            if _was != _now:
+                print("     " + D + " the pin has MOVED since it was recorded: %s -> %s"
+                      % (_was, _now))
+                bad.append(h)
         time.sleep(1.0)
 
     # ⛔ A SUBSET TEST WHERE IT SHOULD BE AN EQUALITY. This walked the blocks OUR PROOFS NAME and
@@ -159,11 +237,18 @@ def main():
                     "each one really has. ots_verify.py grants ANCHORED only when a proof's "
                     "computed root equals the root pinned here; a proof naming a block absent "
                     "from this file is STRUCTURAL and is never authority."),
-        "source": API,
+        "sources": [{"name": n, "api": b, "software": k} for n, b, k in SOURCES],
+        "agreement_required": MIN_AGREE,
         "fetched_utc": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "caveat": (W + " A pin is an explorer's word on a date, not a node. It is recorded so a "
                    "reader can recompute it against the chain, which is the only thing that "
-                   "settles it."),
+                   "settles it. Each block below names the operators that AGREED on its hash and "
+                   "merkle root; at least %d must agree or nothing is pinned, and any "
+                   "disagreement is a refusal rather than a vote. Note the independence is "
+                   "partial and deliberately stated: blockstream and mempool are different "
+                   "operators running the same Esplora software, blockchain.info is a different "
+                   "codebase. Agreement across them is harder to forge than one API and is not "
+                   "the same thing as running your own node." % MIN_AGREE),
         "blocks": rec,
     }, indent=1) + NL, encoding="utf-8")
     print()

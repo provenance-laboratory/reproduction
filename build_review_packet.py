@@ -326,8 +326,20 @@ def main():
     A("## ⭐ CHECK THE FINDINGS, NOT ONLY THE PACKAGING")
     A("")
     A("```")
-    A("python reproduce_findings.py     five training runs, ~2 minutes, nothing timed")
+    A("python reproduce_findings.py     up to five training runs, nothing timed")
     A("```")
+    A("")
+    # ⛔ "~2 MINUTES" WAS A CLAIM ABOUT ONE MACHINE, in a paper whose subject is that machines
+    # differ. One round-13 reviewer measured 26 s (a single core, so all five thread requests
+    # collapse to one run) and another overran 180 s on their stack -- an order of magnitude
+    # across exactly the hardware axis this experiment is about. Quoting a single duration here
+    # was the paper contradicting itself in its own instructions.
+    A("**Runtime spans an order of magnitude, and that is the finding rather than a caveat.** "
+      "Measured between 26 s and over 180 s on reviewers' machines: a single-core host collapses "
+      "all five thread requests into one run, a many-core host executes five. The script prints "
+      "progress per run so a long one is visibly working rather than apparently hung. Do not "
+      "treat any duration here as a timing measurement -- **nothing in this experiment is timed**, "
+      "and the cost figures come from `measure_cost.py` under its own quiet-machine precondition.")
     A("")
     A("It re-derives the thread partition and the divergence table **on YOUR stack**, from "
       "nothing but the corpus and `train.py`.")
