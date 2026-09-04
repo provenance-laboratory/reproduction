@@ -392,12 +392,20 @@ def compose(found):
             table[path] = digest
             whence[path] = (version, name)
             retired.pop(path, None)
-        for path in retires((HERE / name).read_text(encoding="utf-8")):
+        # ⛔ THIS PASSED "" AS THE DOCUMENT TEXT. `_retirement_is_permitted` took a `text`
+        # parameter that its only caller had never supplied -- harmless while nothing read it,
+        # and a false refusal the moment something did: the anchor-file rule asks whether the
+        # retiring version declares anchor facts IN PLACE of the byte pin, and against an empty
+        # string the answer is always no. v10 declares 21 facts and was refused for declaring
+        # none. Exactly the shape a reviewer found in `undefined_module_reads(where=)` -- a
+        # parameter with one caller that never passes it is untested by construction.
+        _doc_text = (HERE / name).read_text(encoding="utf-8")
+        for path in retires(_doc_text):
             if path not in table:
                 raise SystemExit(
                     D + " %s RETIRES %r, which no lower anchored version pins. A retirement that "
                     "removes nothing reads like an action and is not one." % (name, path))
-            _why = _retirement_is_permitted(name, path, "")
+            _why = _retirement_is_permitted(name, path, _doc_text)
             if _why:
                 raise SystemExit(D + " " + _why)
             del table[path]
