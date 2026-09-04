@@ -1,10 +1,10 @@
 {
  "nonce": "",
- "tree_digest": "f34b023b0386a690",
+ "tree_digest": "b83211683a74b5f4",
  "attacks_refused": 31,
  "hygiene_failed": false,
  "attacks_passed_that_should_not_have": 0,
- "positive_control_failed": true,
+ "positive_control_failed": false,
  "security_ok": true,
- "liveness_ok": false
+ "liveness_ok": true
 }

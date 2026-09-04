@@ -18,7 +18,7 @@
   }
  ],
  "agreement_required": 2,
- "fetched_utc": "2026-09-04T02:25:46Z",
+ "fetched_utc": "2026-09-04T14:05:41Z",
  "caveat": "\u26a0 A pin is an explorer's word on a date, not a node. It is recorded so a reader can recompute it against the chain, which is the only thing that settles it. Each block below names the operators that AGREED on its hash and merkle root; at least 2 must agree or nothing is pinned, and any disagreement is a refusal rather than a vote. Note the independence is partial and deliberately stated: blockstream and mempool are different operators running the same Esplora software, blockchain.info is a different codebase. Agreement across them is harder to forge than one API and is not the same thing as running your own node.",
  "blocks": {
   "964534": {
@@ -245,6 +245,16 @@
    "hash": "00000000000000000001c151cd6666245a329e0dcab84321e7dc325bff92bef1",
    "merkle_root": "3d4a2b7fe40ea918d1496985dce09db8395a9559f99c80b7be61b9c259b32266",
    "timestamp": 1788446830,
+   "sources": [
+    "blockchain.info",
+    "blockstream",
+    "mempool"
+   ]
+  },
+  "965458": {
+   "hash": "0000000000000000000048ad704c9d3dfd251db75a2610c11dc79a678027a6a8",
+   "merkle_root": "f4cb09e6fc3350c3ddcf0b4d64d124d1504d94a8b148f92298cf0465fc1513c9",
+   "timestamp": 1788516596,
    "sources": [
     "blockchain.info",
     "blockstream",
