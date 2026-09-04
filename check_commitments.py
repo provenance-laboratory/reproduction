@@ -40,6 +40,10 @@ D = chr(0x26D4)
 W = chr(0x26A0)
 HERE = pathlib.Path(__file__).resolve().parent
 MIN_EXPECTED = 4
+# ⚠ How long a stamped-but-unanchored successor may sit before it is a violation rather than a
+# wait. Calendars aggregate on their own schedule and a few days is ordinary; a week during which
+# OTHER proofs in this tree reached blocks is not.
+STALE_PENDING_DAYS = 7
 # ⚠ HEX IS CASE-INSENSITIVE. This matched `[0-9a-f]{64}` only, so a table written with uppercase
 # digests parsed as zero commitments and the document was filed as "present and not authority"
 # rather than as a table the parser cannot read. The digest is lower-cased on the way out, because
@@ -715,6 +719,41 @@ def main():
         print("  hours. Building against v%d is fine and is what is happening. PUBLISHING while a"
               % version)
         print("  newer version is pending is not, and --publishing refuses it.")
+        # ⛔ "IT BECOMES A VIOLATION IF v11 NEVER ANCHORS" WAS PRINTED AND NEVER DETERMINED. PENDING
+        # is not in the blocking set, so a proof that parses, commits to the right bytes and
+        # carries a calendar attestation but never receives a Bitcoin block stays PENDING FOREVER:
+        # a round-14 reviewer observed that one hour, one month and one year produced identical
+        # output and an identical exit code. An abandoned successor would then block publishing
+        # indefinitely without ever being a violation -- absorbed rather than reported.
+        #
+        # ⇒ THE CHAIN IS THE CLOCK. If this tree holds proofs anchored in blocks mined well after
+        # the pending document was written, that document has had ample opportunity to anchor and
+        # has not. No new trust root: the block timestamps are already pinned in ANCHORS.json and
+        # already agreed by independent operators.
+        #
+        # ⚠ The comparison uses the pending file's mtime, which is the weakest part and is stated
+        # as such: mtime is not evidence, and a tree copied without timestamps will read as young
+        # rather than old. It fails SAFE in that direction -- it can only under-report staleness.
+        try:
+            _newest = max(int(b.get("timestamp") or 0) for b in json.loads(
+                (HERE / ANCHOR_FILE).read_text(encoding="utf-8"))["blocks"].values())
+        except Exception:                                                    # noqa: BLE001
+            _newest = 0
+        _pend_doc = next((f for f in HERE.glob("PRE-REGISTRATION*.md")
+                          if declared_version(f.read_text(encoding="utf-8")) == _pending), None)
+        if _newest and _pend_doc:
+            _age_days = (_newest - _pend_doc.stat().st_mtime) / 86400.0
+            if _age_days > STALE_PENDING_DAYS:
+                print()
+                raise SystemExit(
+                    D + " v%d has been PENDING while this tree anchored proofs in blocks mined "
+                    "%.1f days after it was written, and %d days is the bound. A proof that "
+                    "cannot get into a block that others are getting into is not waiting; it is "
+                    "not going to anchor. Re-stamp it or withdraw it -- an abandoned successor "
+                    "blocks publishing forever without ever being a violation."
+                    % (_pending, _age_days, STALE_PENDING_DAYS))
+            print("  v%d has been pending for at most %.1f day(s) against a bound of %d."
+                  % (_pending, max(0.0, _age_days), STALE_PENDING_DAYS))
         if "--publishing" in sys.argv:
             raise SystemExit(
                 D + " v%d is pending and this is a PUBLISHING run. Publish under an anchored "

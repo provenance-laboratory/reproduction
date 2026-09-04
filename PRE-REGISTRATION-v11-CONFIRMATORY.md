@@ -22,7 +22,10 @@ it is the one nobody writes for an argument that is always the same value.
 
 So exactly one pinned file moved:
 
-- `check_commitments.py` — the composed authority records `61b8bfbfd9e447ed`, it now hashes to `7a3a598250108a2f`
+- `build_review_packet.py` — the composed authority records `800e79d9a4ea9351`, it now hashes to `db18eba091a22927`
+- `check_commitments.py` — the composed authority records `61b8bfbfd9e447ed`, it now hashes to `c93d86852537e2f9`
+- `pin_anchors.py` — the composed authority records `ba41da49785bba06`, it now hashes to `86cdac895b60b74d`
+- `test_controls.py` — the composed authority records `6fa3341c5941cdad`, it now hashes to `4b69f2493beef6b1`
 
 ## 2. ⛔ What is committed, by DIGEST — replacing v10 §2a and §2b
 
@@ -41,8 +44,8 @@ train.py                   ebd61532782573a04aca8ab5d526ab6d233c450963ac111460f2d
 PUBKEY.asc                 88f9a69659c87a898c6a4408d28e69520306b6916744642f60519469cbb24273
 anchor_status.py           6a25887d9758fdc629c96b2e84f4380bb6fe7abf8581c7e63b7507cd3958206a
 build_package.py           7087ec4aeaf6b0bcb7e96523f8f92b3ba47d8fa302f9db3940300dedc42d9519
-build_review_packet.py     800e79d9a4ea93518d96f4bd121feb5859258cba708f8d565ec254d49569c7b6
-check_commitments.py       7a3a598250108a2f87691dba625fdb01a77fc1a06f8534e3b2e471b5ef3c3d50
+build_review_packet.py     db18eba091a229271e3219950cc59650bb7c5a8c2e0efe0e9a11f39019098dde
+check_commitments.py       c93d86852537e2f968898fc8d314a2a741eca5d481922df791b0df041234e601
 check_signature.py         76923dcbcf0d6b4b36af0cc0057dacba39194baab5ff9babf05f350b24f49fe5
 corpus/verify_shipped.py   943ebf0f6051a6b7c822378430a5e482b9e02b11de799a420b1bf9c838748749
 measure_cost.py            4b8bdd95c6fcbc37fd557ff81041e0af28202bf4816ef34e5e458e9e8bdedba9
@@ -50,10 +53,10 @@ measure_divergence.py      d1dc9c7630e4b5c36231dd1a8ff7c044355463349ab6f674e390f
 measure_hardware.py        9686200fc21b08e1ef0cfeb14f7ecda9733bc34296e0318b7e63c4f390b6effc
 measure_storage.py         1254e4049813bd28ef2064f2252bcc5983e6d2bbac22825bf445ff1f4e0895c5
 ots_verify.py              15ca911511c6c8aff0eee0c2821203cc201d689788f4687bee63e00c8a7c2ca9
-pin_anchors.py             ba41da49785bba069a6bfbfe341d003547d661b79e5561c9a946352ca87da318
+pin_anchors.py             86cdac895b60b74d1ac7316097df7df306b66b30f3867bfef6732386d50ae162
 reproduce_findings.py      d9c6be8882464a59e054d525b6e9970c02bb4f4b34be584cc403826cd0b39f25
 seed_sensitivity.py        1012eb90d895146cac6d5f212ec18bc3012bc1e12176cb8918b83ea4563c24f5
-test_controls.py           6fa3341c5941cdadfe3a64a9063d346e4a497b0360b73d4c0d368eba79e59991
+test_controls.py           4b69f2493beef6b1ec2190b07aaece748617026747d139561268e9e4733a1a97
 verify_package.py          2f80ff99f8c92baef0a89e9f797e69611597f9698458e8653d91550d259ee748
 ```
 

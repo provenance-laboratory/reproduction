@@ -673,9 +673,71 @@ def _shape_fixtures():
     import check_commitments as _CC
     out = []
     _d, _u, _F = "e" * 64, "E" * 64, "```"
+    _other = "f" * 64
 
     def _doc(*lines):
         return NL.join(lines) + NL
+
+    def _facts_doc(*rows):
+        return NL.join(["# t", "", "### 2d.", "", _F] + list(rows) + [_F, ""])
+
+    def _refused(fn):
+        """True if the rule REFUSES. A rule that cannot refuse has not been shown to work."""
+        try:
+            fn()
+            return False
+        except SystemExit:
+            return True
+
+    # ⛔ THE MECHANISM v10 EXISTS TO INTRODUCE HAD NO CONTROLS AT ALL. A round-14 reviewer found
+    # that `anchor_facts`, `anchor_facts_hold`, `_retirement_is_permitted` and `retires` -- the
+    # four functions implementing the monotonic fact pin -- were never called by this suite. They
+    # worked when called; the suite that is supposed to demonstrate they work did not call them.
+    # v10 §5 requires a positive control that makes each rule FAIL and a negative control one step
+    # outside its trigger, and neither existed for any of them. The rule was violated by the
+    # document that introduced it.
+    out.append(("a repeated height is REFUSED (the monotonic lie)",
+                _refused(lambda: _CC.anchor_facts(
+                    _facts_doc("964534    " + _d, "964534    " + _other))), True))
+    out.append(("two heights, one each, is accepted",
+                len(_CC.anchor_facts(_facts_doc("964534    " + _d, "964535    " + _other))), 2))
+
+    # anchor_facts_hold(): the `here=` parameter existed so a test could point it at a synthetic
+    # tree, and no test ever passed it -- the THIRD instance of that shape, after
+    # _retirement_is_permitted(text="") and undefined_module_reads(where=).
+    _w = pathlib.Path(tempfile.mkdtemp(prefix="af-"))
+    try:
+        _facts = {964534: _d, 964535: _other}
+
+        def _write(blocks):
+            (_w / "ANCHORS.json").write_text(json.dumps({"blocks": blocks}), encoding="utf-8")
+
+        _write({"964534": {"merkle_root": _d}, "964535": {"merkle_root": _other}})
+        out.append(("intact facts hold", _CC.anchor_facts_hold(_facts, _w), []))
+        _write({"964534": {"merkle_root": _d}, "964535": {"merkle_root": _other},
+                "999999": {"merkle_root": "a" * 64}})
+        out.append(("GROWTH is permitted (the whole point of a fact pin)",
+                    _CC.anchor_facts_hold(_facts, _w), []))
+        _write({"964534": {"merkle_root": "0" * 64}, "964535": {"merkle_root": _other}})
+        out.append(("a SUBSTITUTED root is detected",
+                    bool(_CC.anchor_facts_hold(_facts, _w)), True))
+        _write({"964535": {"merkle_root": _other}})
+        out.append(("a REMOVED height is detected",
+                    bool(_CC.anchor_facts_hold(_facts, _w)), True))
+    finally:
+        shutil.rmtree(_w, ignore_errors=True)
+
+    # _retirement_is_permitted(): the anchor file may move from a byte pin to a fact pin, and may
+    # not simply be dropped. This is the parameter that was passed "" by its only caller.
+    _with = _facts_doc("964534    " + _d) + NL + "### RETIRES" + NL + NL + _F + NL \
+        + "ANCHORS.json" + NL + _F + NL
+    out.append(("retiring the anchor file WITH facts is permitted",
+                _CC._retirement_is_permitted("v10", "ANCHORS.json", _with), None))
+    out.append(("retiring it with NO facts is refused",
+                bool(_CC._retirement_is_permitted("v10", "ANCHORS.json", "# t" + NL)), True))
+    out.append(("retiring an experimental input is always refused",
+                bool(_CC._retirement_is_permitted("v10", "train.py", _with)), True))
+    out.append(("retires() reads the declaration", sorted(_CC.retires(_with)), ["ANCHORS.json"]))
 
     # --- presents_table(): "is this a table" must not be inferred from a digest COUNT.
     # A real three-row table in pipe layout: 3 raw digests escaped the >= MIN_EXPECTED rule and
