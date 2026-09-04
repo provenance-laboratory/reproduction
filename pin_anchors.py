@@ -56,6 +56,9 @@ SOURCES = (
     ("blockchain.info", "https://blockchain.info", "blockchain.info"),
 )
 MIN_AGREE = 2
+# ⚠ AND AT LEAST THIS MANY DISTINCT SOFTWARE FAMILIES. Counting operators alone let two Esplora
+# instances stand in for independent implementations whenever the third source was unreachable.
+MIN_FAMILIES = 2
 
 
 def _get(url):
@@ -116,6 +119,24 @@ def block(height):
     if len(names) < MIN_AGREE:
         raise ValueError("only %d source(s) answered for %d (%s); %d must agree"
                          % (len(names), height, ", ".join(names), MIN_AGREE))
+    # ⛔ TWO OPERATORS RUNNING ONE CODEBASE ARE ONE IMPLEMENTATION. Both round-14 reviewers made
+    # the same point from opposite directions: with blockchain.info unreachable -- rate-limited,
+    # down, or blocked at the network edge -- blockstream and mempool satisfy MIN_AGREE while
+    # sharing every line of Esplora, so a bug or a poisoned upstream in that codebase is agreed
+    # upon rather than caught. The comment said this honestly and the comment was the ONLY
+    # enforcement, which is the defect this project has recorded as "a note inside a file is not
+    # a control".
+    #
+    # ⇒ Quorum requires agreement across at least two distinct SOFTWARE families, not two URLs.
+    # Partial reachability now refuses rather than silently degrading, and the refusal names what
+    # was missing so it can be retried rather than worked around.
+    _fams = {k for n, _b, k in SOURCES if n in names}
+    if len(_fams) < MIN_FAMILIES:
+        raise ValueError(
+            "only %d software famil(y/ies) answered for %d (%s via %s); %d distinct "
+            "implementations must agree, because operators sharing a codebase share its bugs"
+            % (len(_fams), height, ", ".join(sorted(names)), ", ".join(sorted(_fams)),
+               MIN_FAMILIES))
     any_b = got[names[0]]
     return {"hash": bhash, "merkle_root": root, "timestamp": any_b.get("timestamp"),
             "sources": sorted(names)}

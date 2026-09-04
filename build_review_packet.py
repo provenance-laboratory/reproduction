@@ -316,9 +316,30 @@ def main():
     A("")
     A("## ★ THE COVERING NOTE — paste this verbatim")
     A("")
+    # ⛔ A STRING IS ITERABLE, SO THIS RENDERED ONE BULLET PER CHARACTER. Round 13's record was
+    # written with `changed` as a prose string where every earlier round used a list of bullets,
+    # and the packet emitted three hundred single-letter bullets under a heading that says PASTE
+    # THIS VERBATIM. A round-14 reviewer regenerated the packet and reproduced it. Python's
+    # willingness to iterate a string is exactly the shape this project keeps recording: the
+    # wrong type produced plausible-looking output instead of an error.
+    #
+    # ⇒ The shape is checked before it is rendered. A record that cannot be rendered is a refusal,
+    # not four hundred lines of noise in the document a reviewer is told to trust verbatim.
+    for _fld in ("summary", "deadline"):
+        if not isinstance(_last.get(_fld), str):
+            raise SystemExit(D + " round %d's %r must be a string, not %s."
+                             % (_last["round"], _fld, type(_last.get(_fld)).__name__))
+    if not isinstance(_last.get("changed"), list) or not _last["changed"]:
+        raise SystemExit(
+            D + " round %d's 'changed' must be a NON-EMPTY LIST of bullets, not %s. A string is "
+            "iterable, so rendering it produces one bullet per character in the covering note a "
+            "reviewer is told to paste verbatim."
+            % (_last["round"], type(_last.get("changed")).__name__))
     A("> **This is round %d.** %s" % (_last["round"] + 1, _last["summary"]))
     A(">")
     for _line in _last["changed"]:
+        if not isinstance(_line, str):
+            raise SystemExit(D + " a 'changed' bullet is %s, not a string." % type(_line).__name__)
         A("> - %s" % _line)
     A(">")
     A("> ⚠️ **%s**" % _last["deadline"])

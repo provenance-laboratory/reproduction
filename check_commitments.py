@@ -44,7 +44,7 @@ MIN_EXPECTED = 4
 # digests parsed as zero commitments and the document was filed as "present and not authority"
 # rather than as a table the parser cannot read. The digest is lower-cased on the way out, because
 # everything it is compared against comes from `hexdigest()`.
-DIGEST_LINE = re.compile(r"^([A-Za-z0-9_./-]+)\s+([0-9a-fA-F]{64})\s*$", re.M)
+DIGEST_LINE = re.compile(r"^([A-Za-z0-9_./-]+)\s+([0-9a-fA-F]{64})\s*(?:#.*)?$", re.M)
 
 # ⛔ "IS THIS A TABLE?" WAS INFERRED FROM A DIGEST COUNT, AND ONE INTEGER CANNOT CARRY TWO
 # QUESTIONS. MIN_EXPECTED meant both "how many pins make a table" and "how many loose digests make
@@ -62,7 +62,26 @@ DIGEST_LINE = re.compile(r"^([A-Za-z0-9_./-]+)\s+([0-9a-fA-F]{64})\s*$", re.M)
 # block or a pipe-table row -- something with table shape. Prose is not table shape however many
 # digests it quotes, and a three-row table is a table.
 _FENCE = re.compile(r"^```[^\n]*\n(.*?)^```", re.M | re.S)
-_ROW = re.compile(r"^\s*\|?\s*([A-Za-z0-9_./-]+\.[A-Za-z0-9]+)\s*\|?\s+([0-9a-fA-F]{64})\b", re.M)
+# ⛔ THE TWO PATTERNS DISAGREED ABOUT THE LINE'S TAIL, AND THE DISAGREEMENT WAS FATAL. `_ROW`
+# ended at a word boundary and `DIGEST_LINE` at end-of-line, so a fenced block whose rows carry
+# trailing annotations -- `train.py  <64hex>  # unchanged` -- is SEEN as four commitment rows and
+# PARSED as zero, which lands in NO-TABLE and exits. A legitimate document that annotates its own
+# examples was refused outright. A round-14 reviewer built it and confirmed the exit.
+#
+# ⇒ Both ends agree now: a commitment row may carry a trailing comment, and both the detector and
+# the parser accept exactly the same shape. Where they must differ they differ deliberately, not
+# by one having a stricter tail than the other.
+#
+# ⚠ The detector also accepts the layouts a human reads as a table but the parser cannot: pipe
+# cells with backticks, a colon separator, and a digest-first column. Those are STILL not parsed
+# as commitments -- deliberately, one syntax is enough -- but they are now recognised as a table
+# the parser cannot read, which is a loud NO-TABLE rather than a silent skip. That was the whole
+# point of detecting tables structurally, and it only covered one spelling.
+_ROW = re.compile(
+    r"^\s*\|?\s*[`\"']?([A-Za-z0-9_./-]+)[`\"']?\s*[|:]?\s+[`\"']?([0-9a-fA-F]{64})[`\"']?"
+    r"\s*(?:\|)?\s*(?:#.*)?$"
+    r"|^\s*\|?\s*[`\"']?([0-9a-fA-F]{64})[`\"']?\s*[|:]?\s+[`\"']?([A-Za-z0-9_./-]+)[`\"']?"
+    r"\s*(?:\|)?\s*(?:#.*)?$", re.M)
 
 
 def presents_table(text):
@@ -126,8 +145,28 @@ def anchor_facts(text):
     block = re.search(r"```" + NL + r"(.*?)```", tail, re.S)
     if not block:
         return {}
-    return {int(m.group(1)): m.group(2).lower()
-            for m in ANCHOR_FACT_LINE.finditer(block.group(1))}
+    # ⛔ THE DICT COLLAPSE WAS THE LIE. A fact pin promises "every committed height keeps its
+    # merkle root", and a comprehension keyed on height silently kept the LAST line for a
+    # repeated height. So a document could commit 964534 twice -- once truthfully, once with a
+    # fabricated root -- and the fabricated one would be the only fact ever checked. The older
+    # commitment stops being checked without ever being contradicted: monotonic in shape, a lie
+    # in substance. A round-14 reviewer built it and watched the real fact's failure vanish.
+    #
+    # ⇒ A repeated height is refused before any collapse, whatever the roots say. Two lines for
+    # one height is never a legitimate document: the block is a set of commitments, and a set
+    # cannot name the same thing twice.
+    _pairs = [(int(m.group(1)), m.group(2).lower())
+              for m in ANCHOR_FACT_LINE.finditer(block.group(1))]
+    _seen = {}
+    for _h, _r in _pairs:
+        if _h in _seen:
+            raise SystemExit(
+                D + " an anchor-fact block commits height %d TWICE (%s then %s). A repeated "
+                "height silently replaces the earlier commitment when the block is read as a "
+                "mapping, which is how a fact pin lies while still looking monotonic."
+                % (_h, _seen[_h][:16], _r[:16]))
+        _seen[_h] = _r
+    return _seen
 
 
 def anchor_facts_hold(facts, here=None):
@@ -608,19 +647,26 @@ def governing(here, _raise_on_blocking=True):
     #
     # ⚠ Scoped to candidates that CARRY A COMMITMENT TABLE. A stray file with a version-shaped
     # name and no table is litter and must not fail a build.
-    _presenting = [(v, n, w, s) for v, n, w, s, _tbl in rejected
-                   if _tbl and s in ("RELABELLED", "UNVERSIONED", "UNPARSEABLE", "NO-TABLE")]
+    # ⛔ THE NAMED RECORD PROTECTED EVERY CALLER EXCEPT ITS OWN MODULE. `build_package.py` and
+    # `main()` were converted to named fields last round and the claim was made that widening a
+    # Rejection can no longer break a caller -- while these two comprehensions inside
+    # `governing()` still unpacked five positionally. BOTH round-14 reviewers found it by adding
+    # a sixth field and watching `ValueError: too many values to unpack` fire on the governing
+    # path itself. The repair's claim was false where it mattered most.
+    _presenting = [r for r in rejected
+                   if r.has_table
+                   and r.state in ("RELABELLED", "UNVERSIONED", "UNPARSEABLE", "NO-TABLE")]
     if _presenting:
         raise SystemExit(
             D + " %d document(s) present a commitment table under a version this tree cannot "
             "accept: %s. Not letting them govern is not the same as refusing them; a tree that "
             "contains an unacceptable authority is not clean."
-            % (len(_presenting), [(n, s) for _v, n, _w, s in _presenting[:3]]))
+            % (len(_presenting), [(r.name, r.state) for r in _presenting[:3]]))
 
     if found:
         top = max(v for v, _n, _p in found)
-        blocking = [(v, n, w) for v, n, w, s, _tbl in rejected
-                    if v > top and s in ("TAMPERED", "MISSING")]
+        blocking = [r for r in rejected
+                    if r.version > top and r.state in ("TAMPERED", "MISSING")]
         if blocking and _raise_on_blocking:
             raise SystemExit(
                 D + " %s is present, is a HIGHER version than the authority %s would select, and "
@@ -628,7 +674,7 @@ def governing(here, _raise_on_blocking=True):
                 "SMALLER table -- v5 pins 4 files where v6 pins 16 -- so destroying a proof would "
                 "make this check weaker and still pass. A protocol document whose proof has been "
                 "destroyed is a tampered tree, not an older one."
-                % (blocking[-1][1], "the next version down", blocking[-1][2][:60]))
+                % (blocking[-1].name, "the next version down", blocking[-1].why[:60]))
     return found, rejected
 
 
@@ -718,9 +764,22 @@ def main():
     # facts rather than only the newest -- an older version's committed root does not stop being
     # committed because a newer document exists. Monotonic: absent or changed is a failure,
     # additional heights are not.
-    _facts = {}
+    # ⛔ AND `dict.update()` LET A NEWER VERSION OVERWRITE AN OLDER VERSION'S COMMITTED ROOT --
+    # the same lie one level up. The comment above says an older version's committed root does not
+    # stop being committed because a newer document exists, and `update` did exactly that
+    # silently. A contradiction between two anchored versions about the same height is not a
+    # precedence question: both are signed, both are anchored, and the chain has one answer, so
+    # the tree is broken and says so.
+    _facts, _whence = {}, {}
     for _v, _name, _p in found:
-        _facts.update(anchor_facts((HERE / _name).read_text(encoding="utf-8")))
+        for _h, _r in anchor_facts((HERE / _name).read_text(encoding="utf-8")).items():
+            if _h in _facts and _facts[_h] != _r:
+                raise SystemExit(
+                    D + " %s and %s COMMIT DIFFERENT ROOTS for height %d (%s vs %s). Two anchored "
+                    "versions cannot disagree about a settled block; one of them is not describing "
+                    "the chain." % (_whence[_h], _name, _h, _facts[_h][:16], _r[:16]))
+            _facts[_h] = _r
+            _whence.setdefault(_h, _name)
     if _facts:
         _bad_facts = anchor_facts_hold(_facts)
         if _bad_facts:
