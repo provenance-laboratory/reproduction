@@ -1,38 +1,956 @@
-# Paper B (`reproduction`) — internal review packet, round 13
+# Paper B (`reproduction`) — internal review packet, round 14
 
 *Every figure below is read from the measurement files, and every claim is lifted from `PHASE-2-FINDINGS.md` rather than retyped. `build_review_packet.py` refuses to write if a figure it prints is absent from that document.*
 
 ## ⇒ SEND THESE TWO
 
 ```
-paper-b-review.zip     187 files
-  sha256 bbeef75f7bbcc050da0f1962b2d0ddbf38042559611384cda8a503b9d546e51a
+paper-b-review.zip     193 files
+  sha256 b667f1aec1228a21204613007910fa8d7d6d88b73e177c94915b3bc67f55e8f3
 this file
 ```
 
-Repository `provenance-laboratory/reproduction`, commit `d1cd629`.
+Repository `provenance-laboratory/reproduction`, commit `f456d62`  ⚠️ TREE DIRTY.
 
 ---
 
 ## ★ THE COVERING NOTE — paste this verbatim
 
-> **This is round 13.** EVERY PROTECTION BUILT LAST ROUND WAS DEAD ON THE PATH A SHIPPING BUILD TAKES. The whole verdict-consumption block -- the nonce check included -- sat inside `if _tc.returncode != 0`, so on the GREEN path the gate never opened the verdict file. The structured verdict was consulted to explain a failure and never to justify a pass. A reviewer put it exactly: the round-11 repair was dead code on the path that matters, and it goes live the moment the circularity resolves. The `tree_digest` beside it was written and never READ -- it appears once, where the suite writes it, and the gate never recomputed or compared it -- and even as written it covered 16 files of 320, excluding the protocol documents, the proofs, the signatures and the corpus. A field that looks like it binds the verdict to the tree and binds nothing.
+> **This is round 14.** THE NEXT ORDINARY PROTOCOL ROUND WOULD HAVE BROKEN THE SHIPPING BUILD. `build_package.py` unpacked four fields from a five-field rejection, so the first legitimate PENDING successor crashed it with ValueError -- a reviewer found it by minting a synthetic v10, and nothing would have said so until it happened. NO-TABLE inferred 'is this a table' from a COUNT of raw digests, and one integer cannot carry two questions: a real three-row table in an unreadable layout escaped the threshold and was silently skipped, while a document quoting four digests in prose with no table at all was fatally rejected -- the v2/v4 shape refused by the fix for refusing the v2/v4 shape. `tree_digest` excluded caches by SUBSTRING, so any path merely containing `__pycache__` was invisible to the digest that certifies 'the verdict describes this tree'. And a reviewer objected that settling authority by live re-fetch moves the trust root from a file you write to a block explorer you query.
 >
-> - The verdict is read and validated BEFORE the branch, on every path: nonce, tree digest recomputed and compared, and a disagreement between the exit code and the verdict's security claim is refused. `tree_digest` is one named function covering every file, defined in the suite and imported by the gate rather than reimplemented.
-> - A VERSIONED DOCUMENT WHOSE TABLE THE PARSER CANNOT READ IS NOW A LOUD REJECTION. Both reviewers built a higher-version document with a markdown pipe-table: `DIGEST_LINE` matches only `path<space>64hex`, so it parsed as zero commitments, hit a silent `continue`, and appeared in neither `found` nor `rejected` -- no output at all. The fatal scope added in round 11 fires on 1 <= pinned < MIN_EXPECTED, and zero pins escaped it, because the scope test was the output of the parser under test. This is the v2/v3 defect one level over: title-form then, table-form now, same silent consequence.
-> - THE FIRST VERSION OF THAT FIX REFUSED TWO LEGITIMATE DOCUMENTS. Flagging any 64-hex digest caught v2, which mentions one digest in prose and pins nothing -- it names files, which is the whole reason v3 exists. MIN_EXPECTED is the project's own threshold for what counts as a table, so it is what distinguishes an unreadable table from a document that legitimately has none. The v2/v3 defect repeating inside the fix for the v2/v3 defect, caught by running it.
-> - The undefined-name control no longer accuses two undecidable constructs. `from math import *` makes a module's names unenumerable, so findings there are SUPPRESSED and the wildcard is reported instead; a literal `globals()["X"] = ...` key is collected as the binding it is. Neither let bad code pass, so this was liveness, not security -- and this project has twice written down that a checker which cries wolf gets switched off. Six fixtures, zero false positives on the real tree.
-> - PORTING LEAVES TWO COPIES AND A REVIEWER SAID SO. Two independently distributed packages cannot share a module, but they can refuse to differ silently: the ported region's digest is pinned here and checked against the census original wherever both exist. Positive-controlled by mutating the origin and watching the suite report the drift.
-> - verify_package.py reported three bytecode caches as tampering, so a reviewer who followed the instructions and ran something saw findings they had created by reading. A cache is a by-product of execution, not content. Eight problems became two -- and those two are honest staleness in a package that declares itself retired, which the tool now says in the same breath rather than in the vocabulary of substitution. A UTF-8 BOM also made a versioned document read as UNVERSIONED; the parser strips it.
-> - ELEVENTH INSTANCE OF THE UNDEFINED-NAME CLASS, in the round-12 repair itself: the retirement notice used `W` in a file that never defined it, and raised NameError on the path it exists to report. Found by running the tool. The control now covers that directory and would have caught it, one round too late.
+> - R
+> - e
+> - j
+> - e
+> - c
+> - t
+> - i
+> - o
+> - n
+> - s
+> -  
+> - a
+> - r
+> - e
+> -  
+> - a
+> -  
+> - N
+> - A
+> - M
+> - E
+> - D
+> -  
+> - r
+> - e
+> - c
+> - o
+> - r
+> - d
+> - ,
+> -  
+> - s
+> - o
+> -  
+> - w
+> - i
+> - d
+> - e
+> - n
+> - i
+> - n
+> - g
+> -  
+> - o
+> - n
+> - e
+> -  
+> - c
+> - a
+> - n
+> - n
+> - o
+> - t
+> -  
+> - s
+> - i
+> - l
+> - e
+> - n
+> - t
+> - l
+> - y
+> -  
+> - b
+> - r
+> - e
+> - a
+> - k
+> -  
+> - a
+> -  
+> - c
+> - a
+> - l
+> - l
+> - e
+> - r
+> - ,
+> -  
+> - a
+> - n
+> - d
+> -  
+> - a
+> -  
+> - f
+> - i
+> - x
+> - t
+> - u
+> - r
+> - e
+> -  
+> - d
+> - r
+> - i
+> - v
+> - e
+> - s
+> -  
+> - t
+> - h
+> - e
+> -  
+> - e
+> - x
+> - a
+> - c
+> - t
+> -  
+> - l
+> - o
+> - o
+> - p
+> -  
+> - t
+> - h
+> - a
+> - t
+> -  
+> - c
+> - r
+> - a
+> - s
+> - h
+> - e
+> - d
+> - .
+> -  
+> - T
+> - a
+> - b
+> - l
+> - e
+> - s
+> -  
+> - a
+> - r
+> - e
+> -  
+> - d
+> - e
+> - t
+> - e
+> - c
+> - t
+> - e
+> - d
+> -  
+> - S
+> - T
+> - R
+> - U
+> - C
+> - T
+> - U
+> - R
+> - A
+> - L
+> - L
+> - Y
+> -  
+> - -
+> - -
+> -  
+> - a
+> -  
+> - p
+> - a
+> - t
+> - h
+> -  
+> - b
+> - e
+> - s
+> - i
+> - d
+> - e
+> -  
+> - a
+> -  
+> - d
+> - i
+> - g
+> - e
+> - s
+> - t
+> -  
+> - i
+> - n
+> -  
+> - t
+> - a
+> - b
+> - l
+> - e
+> -  
+> - s
+> - h
+> - a
+> - p
+> - e
+> -  
+> - -
+> - -
+> -  
+> - s
+> - o
+> -  
+> - a
+> -  
+> - t
+> - h
+> - r
+> - e
+> - e
+> - -
+> - r
+> - o
+> - w
+> -  
+> - t
+> - a
+> - b
+> - l
+> - e
+> -  
+> - i
+> - s
+> -  
+> - a
+> -  
+> - t
+> - a
+> - b
+> - l
+> - e
+> -  
+> - a
+> - n
+> - d
+> -  
+> - p
+> - r
+> - o
+> - s
+> - e
+> -  
+> - i
+> - s
+> -  
+> - n
+> - o
+> - t
+> - ,
+> -  
+> - h
+> - o
+> - w
+> - e
+> - v
+> - e
+> - r
+> -  
+> - m
+> - a
+> - n
+> - y
+> -  
+> - d
+> - i
+> - g
+> - e
+> - s
+> - t
+> - s
+> -  
+> - i
+> - t
+> -  
+> - q
+> - u
+> - o
+> - t
+> - e
+> - s
+> - ;
+> -  
+> - u
+> - p
+> - p
+> - e
+> - r
+> - c
+> - a
+> - s
+> - e
+> -  
+> - d
+> - i
+> - g
+> - e
+> - s
+> - t
+> - s
+> -  
+> - p
+> - a
+> - r
+> - s
+> - e
+> - ,
+> -  
+> - b
+> - e
+> - c
+> - a
+> - u
+> - s
+> - e
+> -  
+> - h
+> - e
+> - x
+> -  
+> - i
+> - s
+> -  
+> - c
+> - a
+> - s
+> - e
+> - -
+> - i
+> - n
+> - s
+> - e
+> - n
+> - s
+> - i
+> - t
+> - i
+> - v
+> - e
+> - .
+> -  
+> - T
+> - h
+> - e
+> -  
+> - c
+> - a
+> - c
+> - h
+> - e
+> -  
+> - e
+> - x
+> - c
+> - l
+> - u
+> - s
+> - i
+> - o
+> - n
+> -  
+> - i
+> - s
+> -  
+> - a
+> -  
+> - p
+> - a
+> - t
+> - h
+> -  
+> - C
+> - O
+> - M
+> - P
+> - O
+> - N
+> - E
+> - N
+> - T
+> - ,
+> -  
+> - w
+> - i
+> - t
+> - h
+> -  
+> - f
+> - i
+> - x
+> - t
+> - u
+> - r
+> - e
+> - s
+> -  
+> - t
+> - h
+> - a
+> - t
+> -  
+> - p
+> - l
+> - a
+> - n
+> - t
+> -  
+> - a
+> -  
+> - d
+> - e
+> - c
+> - o
+> - y
+> -  
+> - a
+> - n
+> - d
+> -  
+> - a
+> - s
+> - s
+> - e
+> - r
+> - t
+> -  
+> - t
+> - h
+> - e
+> -  
+> - d
+> - i
+> - g
+> - e
+> - s
+> - t
+> -  
+> - m
+> - o
+> - v
+> - e
+> - s
+> - .
+> -  
+> - `
+> - p
+> - i
+> - n
+> - _
+> - a
+> - n
+> - c
+> - h
+> - o
+> - r
+> - s
+> - .
+> - p
+> - y
+> - `
+> -  
+> - r
+> - e
+> - q
+> - u
+> - i
+> - r
+> - e
+> - s
+> -  
+> - a
+> - g
+> - r
+> - e
+> - e
+> - m
+> - e
+> - n
+> - t
+> -  
+> - b
+> - e
+> - t
+> - w
+> - e
+> - e
+> - n
+> -  
+> - a
+> - t
+> -  
+> - l
+> - e
+> - a
+> - s
+> - t
+> -  
+> - t
+> - w
+> - o
+> -  
+> - i
+> - n
+> - d
+> - e
+> - p
+> - e
+> - n
+> - d
+> - e
+> - n
+> - t
+> -  
+> - o
+> - p
+> - e
+> - r
+> - a
+> - t
+> - o
+> - r
+> - s
+> -  
+> - o
+> - n
+> -  
+> - b
+> - o
+> - t
+> - h
+> -  
+> - h
+> - a
+> - s
+> - h
+> -  
+> - a
+> - n
+> - d
+> -  
+> - m
+> - e
+> - r
+> - k
+> - l
+> - e
+> -  
+> - r
+> - o
+> - o
+> - t
+> - ,
+> -  
+> - r
+> - e
+> - c
+> - o
+> - r
+> - d
+> - s
+> -  
+> - w
+> - h
+> - i
+> - c
+> - h
+> -  
+> - a
+> - g
+> - r
+> - e
+> - e
+> - d
+> - ,
+> -  
+> - a
+> - n
+> - d
+> -  
+> - R
+> - E
+> - F
+> - U
+> - S
+> - E
+> - S
+> -  
+> - o
+> - n
+> -  
+> - d
+> - i
+> - s
+> - a
+> - g
+> - r
+> - e
+> - e
+> - m
+> - e
+> - n
+> - t
+> -  
+> - r
+> - a
+> - t
+> - h
+> - e
+> - r
+> -  
+> - t
+> - h
+> - a
+> - n
+> -  
+> - t
+> - a
+> - k
+> - i
+> - n
+> - g
+> -  
+> - a
+> -  
+> - m
+> - a
+> - j
+> - o
+> - r
+> - i
+> - t
+> - y
+> -  
+> - -
+> - -
+> -  
+> - t
+> - w
+> - o
+> -  
+> - o
+> - f
+> -  
+> - t
+> - h
+> - e
+> -  
+> - t
+> - h
+> - r
+> - e
+> - e
+> -  
+> - s
+> - h
+> - a
+> - r
+> - e
+> -  
+> - t
+> - h
+> - e
+> -  
+> - E
+> - s
+> - p
+> - l
+> - o
+> - r
+> - a
+> -  
+> - c
+> - o
+> - d
+> - e
+> - b
+> - a
+> - s
+> - e
+> -  
+> - a
+> - n
+> - d
+> -  
+> - o
+> - n
+> - e
+> -  
+> - d
+> - o
+> - e
+> - s
+> -  
+> - n
+> - o
+> - t
+> - ,
+> -  
+> - a
+> - n
+> - d
+> -  
+> - t
+> - h
+> - e
+> -  
+> - r
+> - e
+> - c
+> - o
+> - r
+> - d
+> -  
+> - s
+> - a
+> - y
+> - s
+> -  
+> - s
+> - o
+> - .
+> -  
+> - T
+> - h
+> - e
+> -  
+> - f
+> - i
+> - x
+> - t
+> - u
+> - r
+> - e
+> - s
+> -  
+> - s
+> - h
+> - i
+> - p
+> -  
+> - a
+> - n
+> - d
+> -  
+> - r
+> - u
+> - n
+> -  
+> - i
+> - n
+> -  
+> - t
+> - h
+> - e
+> -  
+> - s
+> - u
+> - i
+> - t
+> - e
+> - :
+> -  
+> - t
+> - h
+> - e
+> -  
+> - p
+> - r
+> - e
+> - v
+> - i
+> - o
+> - u
+> - s
+> -  
+> - r
+> - o
+> - u
+> - n
+> - d
+> - '
+> - s
+> -  
+> - '
+> - 8
+> -  
+> - f
+> - i
+> - x
+> - t
+> - u
+> - r
+> - e
+> - s
+> -  
+> - /
+> -  
+> - 0
+> -  
+> - f
+> - i
+> - n
+> - d
+> - i
+> - n
+> - g
+> - s
+> - '
+> -  
+> - r
+> - e
+> - s
+> - t
+> - e
+> - d
+> -  
+> - o
+> - n
+> -  
+> - f
+> - i
+> - x
+> - t
+> - u
+> - r
+> - e
+> - s
+> -  
+> - t
+> - h
+> - a
+> - t
+> -  
+> - w
+> - e
+> - r
+> - e
+> -  
+> - n
+> - o
+> - t
+> -  
+> - i
+> - n
+> -  
+> - t
+> - h
+> - e
+> -  
+> - a
+> - r
+> - c
+> - h
+> - i
+> - v
+> - e
+> - ,
+> -  
+> - a
+> - n
+> - d
+> -  
+> - t
+> - h
+> - e
+> -  
+> - r
+> - e
+> - v
+> - i
+> - e
+> - w
+> - e
+> - r
+> -  
+> - w
+> - a
+> - s
+> -  
+> - t
+> - h
+> - e
+> -  
+> - f
+> - i
+> - r
+> - s
+> - t
+> -  
+> - p
+> - e
+> - r
+> - s
+> - o
+> - n
+> -  
+> - e
+> - v
+> - e
+> - r
+> -  
+> - t
+> - o
+> -  
+> - p
+> - a
+> - s
+> - s
+> -  
+> - `
+> - w
+> - h
+> - e
+> - r
+> - e
+> - =
+> - `
+> - .
 >
-> ⚠️ **Unchanged and now sharper. ots_verify returns STRUCTURAL for v9's honest not-yet-pinned blocks and for round 6's fabricated block 999999 IDENTICALLY, so the 'circularity' label is a human asserting which instance of that verdict is benign -- the judgement the mechanism was supposed to make. The v10 live re-fetch must compare the block's real MERKLE ROOT to the computed root. Two further items stand: v9 does not pin the current gate bytes, so this resolves by anchoring a NEW version rather than waiting; and the publishing-precondition surface is downstream of `governing()` and has therefore never executed against a live tree -- it must be re-reviewed in anger the moment the circularity resolves, because that is the first time it will ever run.**
+> ⚠️ **v10 IS ANCHORED IN BITCOIN BLOCKS 965332 AND 965333 and governs, composed over seven anchored versions. It retires ANCHORS.json from the byte-pinned table and commits it as MONOTONIC ANCHOR FACTS instead: each height must keep its merkle root, growth is permitted. That resolves a circularity nobody could have fixed by care -- anchoring a version rewrites the file that version pins, so every version since v8 was void in that entry from the moment it took effect. v10's own anchoring added two heights and broke nothing, which is the property the digest could never have. Anchoring it also exposed `_retirement_is_permitted` reading anchor facts from a `text` parameter its only caller passed as the empty string: v10 declares 21 facts and was refused for declaring none, and it surfaced only when the retirement path first ran. v11 pins the corrected checker and is signed and PENDING; v10 governs until a calendar anchors it.**
 
 ## ⭐ CHECK THE FINDINGS, NOT ONLY THE PACKAGING
 
 ```
-python reproduce_findings.py     five training runs, ~2 minutes, nothing timed
+python reproduce_findings.py     up to five training runs, nothing timed
 ```
+
+**Runtime spans an order of magnitude, and that is the finding rather than a caveat.** Measured between 26 s and over 180 s on reviewers' machines: a single-core host collapses all five thread requests into one run, a many-core host executes five. The script prints progress per run so a long one is visibly working rather than apparently hung. Do not treat any duration here as a timing measurement -- **nothing in this experiment is timed**, and the cost figures come from `measure_cost.py` under its own quiet-machine precondition.
 
 It re-derives the thread partition and the divergence table **on YOUR stack**, from nothing but the corpus and `train.py`.
 
