@@ -331,8 +331,46 @@ def retires(text):
     return out
 
 
-def anchor_file_is_exact():
+def attested_heights(found):
+    """Every height any ANCHORED version commits in its own §2d anchor-fact block.
+
+    ⇒ v12. This is the set that makes the monotonic rule and the pin rule compatible. A height
+      here was committed as a FACT by a document that is signed and anchored, so it cannot be
+      introduced by anyone editing the tree -- which is the whole property the pin rule defends.
+    """
+    out = set()
+    for _v, _name, _pins in found or ():
+        try:
+            out |= set(anchor_facts((HERE / _name).read_text(encoding="utf-8")))
+        except (OSError, SystemExit):
+            continue
+    return out
+
+
+def anchor_file_is_exact(attested=None):
     """Does ANCHORS.json pin EXACTLY the blocks our proofs name? (ok, why)
+
+    ⛔ v12 — THE RULE WAS SET EQUALITY AND IT MADE THE TREE UNSATISFIABLE. §2d commits anchor
+    facts MONOTONICALLY: "Every line must remain present and unchanged." This function required
+    the pinned set to EQUAL the set the proofs currently name. The moment a proof was superseded,
+    the heights it used to name stayed pinned -- because §2d forbids removing them -- and were
+    reported as roots somebody added. On 5 September the tree failed on exactly that, with
+    964878 and 964881, and NO edit to the anchor file could satisfy both rules: removing the
+    lines violates an anchored document, keeping them failed here.
+
+    Each rule was right when it was written. Neither was written knowing the other would outlive a
+    superseded proof.
+
+    ⇒ CONTAINMENT, NOT EQUALITY -- against what an ANCHORED VERSION COMMITTED, not against a list
+      anyone can extend. A pinned height with no current proof is permitted only when some
+      anchored version's §2d block commits it as a fact. That keeps the property this check
+      exists for: the round-7 reviewer's fabricated block still fails, because getting a height
+      into an anchored document's fact table needs the signing key and a Bitcoin block, not a text
+      editor. And it stops punishing the tree for obeying §2d.
+
+    ⚠ `attested` defaults to EMPTY, which is the strict old behaviour. A caller that forgets to
+      pass it gets a check that is too harsh, never one that is too lenient -- the failure
+      direction is the safe one.
 
     ⛔ A PIN NOBODY NEEDS IS A ROOT SOMEBODY ADDED. The file was checked block-by-block against
     the proofs, which never looks at a block no proof names -- so a round-7 reviewer added a
@@ -354,14 +392,21 @@ def anchor_file_is_exact():
     sys.path.insert(0, str(HERE))
     import pin_anchors as _PA
     named = set(_PA.heights())
-    extra = sorted(pinned - named)
+    attested = set(attested or ())
+    extra = sorted(pinned - named - attested)
     if extra:
-        return False, ("%d block(s) are pinned that NO PROOF NAMES: %s. A pin nobody needs is a "
-                       "root somebody added." % (len(extra), extra[:4]))
+        return False, ("%d block(s) are pinned that NO PROOF NAMES and NO ANCHORED VERSION "
+                       "COMMITS: %s. A pin nobody needs is a root somebody added."
+                       % (len(extra), extra[:4]))
     missing = sorted(named - pinned)
     if missing:
         return False, ("%d block(s) our proofs name are NOT pinned: %s, so those proofs are "
                        "STRUCTURAL only." % (len(missing), missing[:4]))
+    carried = sorted((pinned - named) & attested)
+    if carried:
+        return True, ("%d pinned block(s): %d named by a current proof, %d carried as anchor "
+                      "facts by an anchored version after their proof was superseded (%s)"
+                      % (len(pinned), len(pinned & named), len(carried), carried[:4]))
     return True, "%d pinned block(s), exactly the set our proofs name" % len(pinned)
 
 
@@ -765,7 +810,7 @@ def main():
     _inherited = sorted(k for k, (v, _n) in _whence.items() if v != version)
     pinned = sorted(_composed.items())
 
-    _aok, _awhy = anchor_file_is_exact()
+    _aok, _awhy = anchor_file_is_exact(attested_heights(found))
     if not _aok:
         raise SystemExit(D + " the anchor file is not exactly what the proofs require: " + _awhy)
 

@@ -558,6 +558,52 @@ def main():
             + "published separately, signed and timestamped, and you will be able to compare then."
             + NL, encoding="utf-8", newline=NL)
         shipped.append("NO-TARGET.md")
+
+    # ⛔ AND THE TARGET SHIPPED ANYWAY, THREE TIMES, WHILE NO-TARGET.md SAT BESIDE IT SAYING IT
+    # HAD NOT. The rule above guards ONE FILE -- EXPECTED.json -- because that is where the target
+    # was the day the rule was written. It never asked the question the rule is actually about:
+    # *is the answer anywhere in what we are about to hand a reproducer?* It is. v5 quotes the
+    # weights digest to show a pipeline edit was numerically inert; v8 and v9 quote it to show a
+    # provenance change altered no result. All three are correct, signed, anchored documents, and
+    # all three were added to the package after v3 made it target-free. Each was added by asking
+    # "is this part of the protocol chain?" and never "does this contain the answer?"
+    #
+    # ⇒ PROJECT OVER THE PACKAGE, DO NOT ENUMERATE THE PLACES A TARGET HAS BEEN SEEN. This scans
+    #   every byte of every shipped file and fails closed. A note in a file is not a control;
+    #   NO-TARGET.md was a note, and it was wrong for as long as it existed.
+    _target = run["weights_sha256"]
+    _leaks = []
+    for _p in sorted(OUT.rglob("*")):
+        if not _p.is_file():
+            continue
+        if _p.name == "EXPECTED.json":
+            continue      # its whole purpose is to carry the target, under --with-target
+        try:
+            _blob = _p.read_bytes()
+        except OSError:
+            _leaks.append((_p, "unreadable"))     # cannot clear it => do not clear it
+            continue
+        if _target.encode() in _blob or _target.encode().upper() in _blob:
+            _leaks.append((_p.relative_to(OUT).as_posix(), "carries the reference digest"))
+    if _leaks and "--with-target" not in sys.argv:
+        print()
+        print("  " + D + " THE PACKAGE IS NOT TARGET-FREE. %d shipped file(s) contain the "
+              "reference" % len(_leaks))
+        print("  weights digest %s..., which a reproducer is supposed to" % _target[:24])
+        print("  arrive at without having seen:")
+        for _rel, _why in _leaks:
+            print("      %-46s %s" % (_rel, _why))
+        print()
+        print("  This is the ordering v3 section 3 exists to establish: the commitment comes")
+        print("  first, the target after. A reproducer holding the digest can self-select, and")
+        print("  the run stops being blind whether or not they meant it to.")
+        print()
+        print("  ⚠ These documents are SIGNED AND ANCHORED and cannot be edited to remove it.")
+        print("  The disposition is an author decision, not a build flag: exclude them from the")
+        print("  package (the public repository keeps the audit trail), or ship them and report")
+        print("  in the paper that the target was public before the window opened.")
+        raise SystemExit("  Stopping rather than handing out the answer.")
+
     (OUT / "ANCHOR-STATUS.txt").write_text(
         (_st.stdout or "") + NL
         + ("" if _anchor_ok else

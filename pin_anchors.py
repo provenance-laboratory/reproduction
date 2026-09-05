@@ -33,6 +33,12 @@ D = chr(0x26D4)
 W = chr(0x26A0)
 HERE = pathlib.Path(__file__).resolve().parent
 OUT = HERE / "ANCHORS.json"
+
+# Directories this project GENERATES. Nothing under them may feed a gate: they are outputs, they
+# are git-ignored, and a rebuild is a routine action that must never change a verdict.
+# ⚠ Add a directory here the moment something starts writing one. The cost of a missing name is
+#   a gate that silently depends on a build artifact, which is how v12 came to be needed.
+GENERATED_DIRS = {"package", "reference", "runs", "__pycache__", "review"}
 UA = "pqbitcoin-reproduction-anchor-pin (mailto:parthms.id@gmail.com)"
 
 # ⛔ ONE EXPLORER IS ONE TRUST ROOT. A round-13 reviewer put it exactly right: settling authority
@@ -162,8 +168,22 @@ def heights():
         _d = HERE / _rel
         if _d.exists() and _d not in docs:
             docs.append(_d)
+    # ⛔ v12 -- THE RECURSION SWEPT IN A BUILD OUTPUT. `rglob` is recursive, and `package/` is a
+    # GENERATED directory holding a copy of every protocol document and proof. So the set of
+    # proofs that decides which Bitcoin heights the anchor file may pin depended on the contents
+    # of something `build_package.py` rewrites. On 5 September `check_commitments.py` returned
+    # exit 0 in the morning and refused in the afternoon on the same commit, with the only change
+    # outside version control being a package rebuild -- step 1 of the measurement-4 runbook, a
+    # routine and correct action. The old bytes are gone, because the directory is git-ignored,
+    # so the exact path cannot now be demonstrated; that it COULD happen is the finding.
+    #
+    # ⇒ A build output is never an input to a gate. Generated trees are excluded by name, and the
+    #   exclusion is a projection over path parts rather than a check on the top-level directory,
+    #   so a nested copy is excluded too.
     for _o in sorted(HERE.rglob("*.ots")):
         if ".superseded-" in _o.name:
+            continue
+        if set(_o.relative_to(HERE).parts) & GENERATED_DIRS:
             continue
         _d = _o.with_suffix("")
         if _d.exists() and _d not in docs:
