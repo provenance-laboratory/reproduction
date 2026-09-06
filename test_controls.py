@@ -357,13 +357,32 @@ def _governing(root):
     document's proof" deleted a SUPERSEDED document's proof and the check correctly passed -- so
     the control stopped testing anything and reported success. The enumeration defect, in the file
     written to catch enumeration defects, found by the suite one minute after v6 anchored.
+
+    ⛔ AND IT CAME BACK, 6 SEP 2026, THROUGH MODULE CACHING INSTEAD OF HARDCODING. This evicted
+    only `check_commitments` from sys.modules. Its dependencies -- ots_verify, pin_anchors,
+    anchor_status -- stayed cached, bound to the FIRST attack's temp tree, which had already been
+    deleted. From the second attack onward every document failed verification, `found` came back
+    empty, and the silent fallback below returned v3. Five attacks then vandalised a SUPERSEDED
+    document's proof, check_commitments correctly ignored it, and the suite reported those correct
+    passes as SECURITY FAILURES. The defences were sound the whole time; the harness was lying in
+    both directions at once.
+
+    ⇒ Two changes. Evict every locally-importable module, not one by name -- a dependency list
+      written by hand is the same enumeration defect one layer down. And REFUSE rather than guess:
+      a fallback that silently names a version is how a control stops testing without saying so.
     """
     import importlib
     import sys as _s
-    _s.path.insert(0, str(root))
-    for m in ("check_commitments",):
-        if m in _s.modules:
+    root = pathlib.Path(root)
+    # Drop stale copies of THIS tree's modules and any sys.path entry pointing at a tree that has
+    # been removed; both make a later import resolve against a directory that no longer exists.
+    _local = {p.stem for p in root.glob("*.py")}
+    for m in list(_s.modules):
+        if m in _local:
             del _s.modules[m]
+    _s.path[:] = [p for p in _s.path if p == str(root) or pathlib.Path(p).exists()]
+    _s.path.insert(0, str(root))
+
     cc = importlib.import_module("check_commitments")
     # ⚠ ASKING, NOT DECIDING. The suite must be able to identify the governing document
     # even in a tree that check_commitments refuses -- otherwise anchoring a pre-registration,
@@ -372,7 +391,12 @@ def _governing(root):
         found, _rej = cc.governing(root, _raise_on_blocking=False)
     except TypeError:
         found, _rej = cc.governing(root)
-    return sorted(found)[-1][1] if found else "PRE-REGISTRATION-v3-CONFIRMATORY.md"
+    if not found:
+        raise SystemExit(
+            D + " _governing() found NO anchored protocol document in %s. Every attack below "
+            "would target a document chosen by guesswork, so the whole commit-attack section "
+            "would report on nothing. Refusing to guess." % root)
+    return sorted(found)[-1][1]
 
 
 def run(root, tool, *args):

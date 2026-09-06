@@ -290,11 +290,46 @@ def main():
                    "operators running the same Esplora software, blockchain.info is a different "
                    "codebase. Agreement across them is harder to forge than one API and is not "
                    "the same thing as running your own node." % MIN_AGREE),
-        "blocks": rec,
+        "blocks": _merged(rec),
     }, indent=1) + NL, encoding="utf-8")
     print()
-    print("  wrote %s -- %d block(s)" % (OUT.name, len(rec)))
+    print("  wrote %s -- %d block(s)" % (OUT.name, len(_merged(rec))))
     return 0
+
+
+def _merged(rec):
+    """Existing pins, plus the newly fetched ones. NEVER fewer.
+
+    ⛔ THIS TOOL DELETED TWO ANCHOR FACTS ON 6 SEP 2026. It wrote "exactly the set our proofs
+    name", which was right under the old equality rule and became wrong the moment v12 replaced
+    that rule with containment. Section 2d says the opposite and always did: *every line must
+    remain present and unchanged; new heights may be added*. Running the tool therefore destroyed
+    the history it exists to preserve -- heights 964878 and 964881, whose proofs had been
+    superseded -- and `check_commitments` then refused the tree for a violation the tool itself
+    had just committed.
+
+    ⇒ v12 fixed the READER and left the WRITER. That is what an incomplete amendment looks like:
+      the rule changed in one place and the other place kept enforcing the old one, silently, by
+      deleting data. A fact pin may grow; it may never shrink, and it may never contradict.
+    """
+    try:
+        old = json.loads(OUT.read_text(encoding="utf-8-sig")).get("blocks", {})
+    except (OSError, ValueError):
+        return rec
+    out = dict(old)
+    for h, v in rec.items():
+        prev = out.get(h)
+        if prev and prev.get("merkle_root", "").lower() != v.get("merkle_root", "").lower():
+            raise SystemExit(
+                D + " height %s already pinned with merkle root %s and this run fetched %s. A "
+                "fact pin may grow but never contradict; refusing to overwrite."
+                % (h, prev.get("merkle_root", "")[:16], v.get("merkle_root", "")[:16]))
+        out[h] = v
+    kept = sorted(set(out) - set(rec), key=int)
+    if kept:
+        print("  %s %d height(s) kept that no current proof names, as section 2d requires: %s"
+              % (W, len(kept), ", ".join(kept)))
+    return {k: out[k] for k in sorted(out, key=int)}
 
 
 if __name__ == "__main__":
