@@ -119,9 +119,42 @@ def _with_dependencies(contents):
     return tuple(out)
 
 
+def _target_digest():
+    """The weights digest a reproducer is supposed to arrive at, read from our reference run."""
+    try:
+        return json.loads((HERE / "runs" / "tpc-thr-1" / "run.json")
+                          .read_text(encoding="utf-8"))["weights_sha256"]
+    except (OSError, ValueError, KeyError):
+        return ""
+
+
+WITHHELD = []
+
+
 def _protocol_contents():
+    """Every protocol document and its proof -- EXCEPT any that quotes the target.
+
+    ⛔ THREE OF THEM DO. v5 quotes the reference weights digest to show a pipeline edit was
+    numerically inert; v8 and v9 quote it to show a provenance change altered no result. All three
+    are correct, signed and anchored, and all three were added to the package AFTER v3 made it
+    target-free. A reproducer receiving them holds the answer before starting, and the run stops
+    being blind whether or not they meant it to.
+
+    ⇒ They are WITHHELD FROM THE PACKAGE and named in NO-TARGET.md, with where to read them. The
+      audit trail is not lost -- the public repository carries every version -- but a reproducer is
+      no longer handed the number.
+
+    ⚠️ THIS DOES NOT MAKE THE ORDERING TRUE AGAIN. Those documents are public, so the digest has
+      been readable since v5 was published and no packaging choice can unpublish it. Withholding
+      changes "handed the answer" to "could go and look", which is a materially better test and
+      is not the same as a blind one. The paper reports that distinction rather than papering it.
+    """
+    target = _target_digest()
     out = []
     for doc in sorted(HERE.glob("PRE-REGISTRATION*.md")):
+        if target and target.encode() in doc.read_bytes():
+            WITHHELD.append(doc.name)
+            continue
         why = ("THE PROTOCOL THIS STUDY RUNS UNDER"
                if doc.name == "PRE-REGISTRATION-v3-CONFIRMATORY.md"
                else "a protocol document, retained as part of the record")
@@ -131,6 +164,10 @@ def _protocol_contents():
                 D + " %s has no .ots proof. Shipping a protocol document a reader cannot check "
                 "the provenance of is worse than not shipping it." % doc.name)
         out.append((doc.name + ".ots", "its OpenTimestamps proof"))
+    if not target:
+        raise SystemExit(
+            D + " cannot read the reference weights digest, so 'is this package target-free' "
+            "cannot be answered. Refusing to build a package whose central property is unchecked.")
     return tuple(out)
 
 
@@ -556,7 +593,22 @@ def main():
             + "was rewritten to establish." + NL + NL
             + "**Train it, record your `run.json`, and file it.** The reference bundle will be "
             + "published separately, signed and timestamped, and you will be able to compare then."
-            + NL, encoding="utf-8", newline=NL)
+            + NL
+            # ⇒ A READER LEARNS OF THE OMISSION FROM THE PACKAGE, NOT FROM US. A package that is
+            #   quietly incomplete is worse than one that says what it left out and why: the
+            #   second can be argued with.
+            + (("" if not WITHHELD else
+                NL + "## What this package deliberately does NOT contain" + NL + NL
+                + "These protocol documents are **withheld from this package because each one "
+                + "quotes the reference weights digest** — correctly, in the course of showing "
+                + "that some change altered no result:" + NL + NL
+                + NL.join("- `%s`" % w for w in WITHHELD) + NL + NL
+                + "Withholding them keeps this package blind. It does **not** make the ordering "
+                + "true again: they are public in the project's repository, so the digest has "
+                + "been readable since the first of them was published. **If you want to audit "
+                + "the full protocol chain, read them there — but do so after you have run the "
+                + "training, or you lose the property this omission exists to protect.**" + NL))
+            , encoding="utf-8", newline=NL)
         shipped.append("NO-TARGET.md")
 
     # ⛔ AND THE TARGET SHIPPED ANYWAY, THREE TIMES, WHILE NO-TARGET.md SAT BESIDE IT SAYING IT
