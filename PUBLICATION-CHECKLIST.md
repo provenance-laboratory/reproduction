@@ -24,6 +24,31 @@ THE WINDOW       its close date. Section 2c says the null outcome is a RESULT, a
 artifact and the window is then extended, the silence stops being a measurement and becomes a
 schedule. The date is cheap to choose now and impossible to choose honestly later.
 
+## ✅ BOTH VALUES DECIDED, 7 September 2026 — before publication, as required
+
+```
+THE ADDRESS   github.com/provenance-laboratory/reproduction/issues
+              commitment.yml            a one-line commitment, filed BEFORE downloading
+              reproduction-report.yml   the full report, no field required
+
+THE WINDOW    closes 7 DECEMBER 2026
+```
+
+Both are now written into `REPRODUCTION-CALL.md`, which ships **inside** the package — so
+`_ots_stamp.py package/SHA256SUMS` in §2 timestamps the close date along with everything else, and
+the date is anchored rather than merely asserted.
+
+⚠️ **90 days was chosen against the temptation to pick 11.** A short window costs nothing when
+somebody reproduces the artifact quickly — you report the success when it arrives and the date never
+mattered. It costs everything in the only outcome that cannot be repaired: silence inside a window
+so short that the silence is a fact about the window. ⇒ **The asymmetry is the whole argument, and
+there is no case in which the shorter date was better.**
+
+⛔ **The commitment template did not exist until today**, while the report template did. The
+protocol's most distinctive instrument — commit before you see the target — had no intake form, so
+commitments would have arrived as free text and the count the paper reports would have been a
+judgement call. *The mechanism a study is built around is the one most worth checking has a door.*
+
 ## 2. Before the bytes leave
 
 ```
@@ -46,9 +71,17 @@ package rebuilt, `verify_package.py` passed, and `SHA256SUMS` was regenerated ov
 bytes — a checksum derived from what it polices cannot notice a substitution. A checklist that does
 not run its own gates is the same object as a pre-registration nothing enforces.
 
-⚠ **`anchor_status.py` covers v1 through v5 and the corpus manifest.** Adding a protocol version
-means adding it to that list; that is deliberate, and it is the reason a missing governing document
-fails loudly instead of passing as an empty success.
+⚠ **`anchor_status.py` requires every protocol document PRESENT ON DISK, plus the corpus manifest.**
+It discovers them by projection, so a new version is required the moment it exists and there is no
+list to remember to update. A document that exists without a proof is a **failure**, not an
+omission, and a governing version missing from the disk entirely is caught by
+`check_commitments.governing()`, which selects authority rather than trusting any list.
+
+⛔ **This paragraph used to say the opposite** — that the tool "covers v1 through v5" and that
+adding a version "means adding it to that list". The code was repaired as instance thirteen of the
+enumeration defect and the prose was not, so the checklist went on instructing a reader to hand-keep
+a list the tool no longer has. **A stale instruction to enumerate is how instance N+1 gets made**,
+and it survived here precisely because prose is not executed.
 
 ⚠️ **Stamp last, and only once the package is final.** A proof over bytes that then change is not
 wrong, it is irrelevant — and an irrelevant proof sitting beside a real one is worse than none,

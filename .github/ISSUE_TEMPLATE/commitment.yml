@@ -1,0 +1,51 @@
+name: Commitment to attempt
+description: One line, before you download. Says you intend to try — nothing more.
+title: "[commitment] "
+labels: ["commitment"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **This costs you nothing and binds you to nothing.**
+
+        You can stop at any point, you never have to file a report, and "I gave up" is a result we
+        want. There is no wrong answer here because you are not answering anything yet.
+
+        Why we ask for it *before* you download: a reference digest published before anyone has
+        committed is a target that reproducers self-select against — people who try it, see a
+        mismatch, and quietly decide they must have done something wrong. A commitment made
+        before you have seen the target cannot be that.
+
+        ⚠️ We are also measuring whether anyone commits at all. If nobody does, that is a reported
+        result, and it was written down before this call went out so that it cannot later look
+        like a consolation prize.
+
+  - type: checkboxes
+    id: intent
+    attributes:
+      label: Intent
+      options:
+        - label: I intend to attempt a reproduction.
+          required: true
+
+  - type: input
+    id: machine
+    attributes:
+      label: Roughly what machine? (optional)
+      description: >-
+        A few words is plenty — "M2 MacBook", "Ryzen 7950X on Arch", "some cloud VM". It helps us
+        report the spread of who tried. Leave it blank if you would rather not say.
+      placeholder: optional
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        That is the whole form. Close it and go get the package.
+
+        When you have a result — matching, differing, or "it would not run" — open a
+        **Reproduction report**. ⛔ Note that we do not assist: if you get stuck, we would rather
+        you filed the report saying so than that we helped you past it. Any assistance we do give
+        is logged and reported in the paper, and a run that received it is reported separately.

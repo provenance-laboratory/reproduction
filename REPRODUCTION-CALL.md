@@ -6,6 +6,19 @@ to re-run it and report whether the weights come out bit-for-bit identical.**
 You do not need permission, you do not need to succeed, and a failed attempt is the same kind of
 result as a successful one.
 
+```
+WHERE       github.com/provenance-laboratory/reproduction/issues
+            Two templates: a one-line commitment, and a full report
+
+THE WINDOW  closes 7 DECEMBER 2026
+```
+
+⛔ **The close date does not move.** It was chosen before the window opened and it is stated here so
+that it cannot be chosen afterwards. If nobody reproduces this artifact by 7 December 2026, that
+silence is the result we report — and a window extended until a reproduction arrives would not be a
+measurement, it would be a schedule. **Reports filed after the close are welcome and will be
+reported, but separately, and they do not reopen the window.**
+
 ---
 
 ## ⛔ First, if you are willing: say so BEFORE you see the target
@@ -17,8 +30,9 @@ ceremony:
 > A reference digest published before anyone has committed is a target that reproducers
 > self-select against. A commitment made before the target exists cannot be.
 
-So if you intend to try, **file a one-line commitment issue first.** It costs you nothing, binds
-you to nothing, and you may still report whatever you get — including that you gave up.
+So if you intend to try, **file a one-line commitment issue first**, at
+`github.com/provenance-laboratory/reproduction/issues`. It costs you nothing, binds you to nothing,
+and you may still report whatever you get — including that you gave up.
 
 ⚠️ **We are also measuring whether anyone commits.** If nobody does, that is a reported result
 about how hard it is to get a deliberately trivial artifact reproduced, and it was written down
@@ -51,9 +65,9 @@ python train.py --out my-run
 
 ## What to report
 
-File a report at the address published with these artifacts. Fill in whatever you have; **a partial
-report is worth more than no report**, and the fields that matter most are the CPU, the thread
-count and the digest you got.
+File a report at `github.com/provenance-laboratory/reproduction/issues` using the **Reproduction
+report** template. Fill in whatever you have; **a partial report is worth more than no report**, and
+the fields that matter most are the CPU, the thread count and the digest you got.
 
 ```
 CPU model                       exactly as your OS reports it
