@@ -18,7 +18,7 @@
   }
  ],
  "agreement_required": 2,
- "fetched_utc": "2026-09-06T16:56:19Z",
+ "fetched_utc": "2026-09-27T21:09:25Z",
  "caveat": "\u26a0 A pin is an explorer's word on a date, not a node. It is recorded so a reader can recompute it against the chain, which is the only thing that settles it. Each block below names the operators that AGREED on its hash and merkle root; at least 2 must agree or nothing is pinned, and any disagreement is a refusal rather than a vote. Note the independence is partial and deliberately stated: blockstream and mempool are different operators running the same Esplora software, blockchain.info is a different codebase. Agreement across them is harder to forge than one API and is not the same thing as running your own node.",
  "blocks": {
   "964534": {
@@ -27,8 +27,7 @@
    "timestamp": 1787981780,
    "sources": [
     "blockchain.info",
-    "blockstream",
-    "mempool"
+    "blockstream"
    ]
   },
   "964535": {
@@ -37,8 +36,7 @@
    "timestamp": 1787982051,
    "sources": [
     "blockchain.info",
-    "blockstream",
-    "mempool"
+    "blockstream"
    ]
   },
   "964549": {
@@ -47,8 +45,7 @@
    "timestamp": 1787995444,
    "sources": [
     "blockchain.info",
-    "blockstream",
-    "mempool"
+    "blockstream"
    ]
   },
   "964747": {
@@ -57,8 +54,7 @@
    "timestamp": 1788103948,
    "sources": [
     "blockchain.info",
-    "blockstream",
-    "mempool"
+    "blockstream"
    ]
   },
   "964761": {
@@ -67,8 +63,7 @@
    "timestamp": 1788110851,
    "sources": [
     "blockchain.info",
-    "blockstream",
-    "mempool"
+    "blockstream"
    ]
   },
   "964762": {
@@ -77,8 +72,7 @@
    "timestamp": 1788110997,
    "sources": [
     "blockchain.info",
-    "blockstream",
-    "mempool"
+    "blockstream"
    ]
   },
   "964775": {
@@ -87,8 +81,7 @@
    "timestamp": 1788118331,
    "sources": [
     "blockchain.info",
-    "blockstream",
-    "mempool"
+    "blockstream"
    ]
   },
   "964785": {
@@ -97,8 +90,7 @@
    "timestamp": 1788122967,
    "sources": [
     "blockchain.info",
-    "blockstream",
-    "mempool"
+    "blockstream"
    ]
   },
   "964789": {
@@ -107,8 +99,7 @@
    "timestamp": 1788125713,
    "sources": [
     "blockchain.info",
-    "blockstream",
-    "mempool"
+    "blockstream"
    ]
   },
   "964812": {
@@ -117,8 +108,7 @@
    "timestamp": 1788141604,
    "sources": [
     "blockchain.info",
-    "blockstream",
-    "mempool"
+    "blockstream"
    ]
   },
   "964815": {
@@ -127,8 +117,7 @@
    "timestamp": 1788144491,
    "sources": [
     "blockchain.info",
-    "blockstream",
-    "mempool"
+    "blockstream"
    ]
   },
   "964848": {
@@ -137,8 +126,7 @@
    "timestamp": 1788163811,
    "sources": [
     "blockchain.info",
-    "blockstream",
-    "mempool"
+    "blockstream"
    ]
   },
   "964856": {
@@ -147,8 +135,7 @@
    "timestamp": 1788166826,
    "sources": [
     "blockchain.info",
-    "blockstream",
-    "mempool"
+    "blockstream"
    ]
   },
   "964878": {
@@ -177,8 +164,7 @@
    "timestamp": 1788201643,
    "sources": [
     "blockchain.info",
-    "blockstream",
-    "mempool"
+    "blockstream"
    ]
   },
   "964922": {
@@ -187,8 +173,7 @@
    "timestamp": 1788202663,
    "sources": [
     "blockchain.info",
-    "blockstream",
-    "mempool"
+    "blockstream"
    ]
   },
   "964923": {
@@ -197,8 +182,7 @@
    "timestamp": 1788202908,
    "sources": [
     "blockchain.info",
-    "blockstream",
-    "mempool"
+    "blockstream"
    ]
   },
   "965140": {
@@ -207,8 +191,7 @@
    "timestamp": 1788335500,
    "sources": [
     "blockchain.info",
-    "blockstream",
-    "mempool"
+    "blockstream"
    ]
   },
   "965142": {
@@ -217,8 +200,7 @@
    "timestamp": 1788336913,
    "sources": [
     "blockchain.info",
-    "blockstream",
-    "mempool"
+    "blockstream"
    ]
   },
   "965152": {
@@ -227,8 +209,7 @@
    "timestamp": 1788344305,
    "sources": [
     "blockchain.info",
-    "blockstream",
-    "mempool"
+    "blockstream"
    ]
   },
   "965332": {
@@ -237,8 +218,7 @@
    "timestamp": 1788446866,
    "sources": [
     "blockchain.info",
-    "blockstream",
-    "mempool"
+    "blockstream"
    ]
   },
   "965333": {
@@ -247,8 +227,7 @@
    "timestamp": 1788446830,
    "sources": [
     "blockchain.info",
-    "blockstream",
-    "mempool"
+    "blockstream"
    ]
   },
   "965458": {
@@ -257,8 +236,7 @@
    "timestamp": 1788516596,
    "sources": [
     "blockchain.info",
-    "blockstream",
-    "mempool"
+    "blockstream"
    ]
   },
   "965750": {
@@ -267,8 +245,7 @@
    "timestamp": 1788690802,
    "sources": [
     "blockchain.info",
-    "blockstream",
-    "mempool"
+    "blockstream"
    ]
   },
   "965753": {
@@ -277,8 +254,7 @@
    "timestamp": 1788692598,
    "sources": [
     "blockchain.info",
-    "blockstream",
-    "mempool"
+    "blockstream"
    ]
   },
   "965767": {
@@ -287,14 +263,177 @@
    "timestamp": 1788698483,
    "sources": [
     "blockchain.info",
-    "blockstream",
-    "mempool"
+    "blockstream"
    ]
   },
   "965784": {
    "hash": "00000000000000000000984bcb4de8cca51b750a62a6b8563e60d59a8c4b73d8",
    "merkle_root": "5d65ae5e5a55e51cf1477df815f41cdc3486dfe25e33999361e582bdde0e9c2c",
    "timestamp": 1788705094,
+   "sources": [
+    "blockchain.info",
+    "blockstream"
+   ]
+  },
+  "965818": {
+   "hash": "00000000000000000002340adb9950168dd19c3fe07220575c2094aa23d3bc77",
+   "merkle_root": "6e9b364e154b594ce72804c6be577f7fb7ae9bf49d941cb71fe9c8bb9d1b2ea8",
+   "timestamp": 1788719410,
+   "sources": [
+    "blockchain.info",
+    "blockstream"
+   ]
+  },
+  "965831": {
+   "hash": "000000000000000000017903a7e13032c60439afc11ce93edbe926b2abbc1790",
+   "merkle_root": "84f7aba8c1732f40a3b4a6fa6845d0f1e0272bf882760122ff257a23485a3b08",
+   "timestamp": 1788728323,
+   "sources": [
+    "blockchain.info",
+    "blockstream"
+   ]
+  },
+  "965832": {
+   "hash": "0000000000000000000164e1cafa9c4034bbfdc67ff55112d8faffe78a17e753",
+   "merkle_root": "fe0ed8292038251f49661bc2c2674520f23510114b49b7d0089caeb9d2c28855",
+   "timestamp": 1788728832,
+   "sources": [
+    "blockchain.info",
+    "blockstream"
+   ]
+  },
+  "965840": {
+   "hash": "00000000000000000001fe5abe3f2b0088c5ec9fa790ea481679b5c980e51457",
+   "merkle_root": "4a817365b47122ee011d2542c01e677c3dcca3abfa04f01715de02f38bdc7b84",
+   "timestamp": 1788733269,
+   "sources": [
+    "blockchain.info",
+    "blockstream"
+   ]
+  },
+  "965910": {
+   "hash": "00000000000000000000bbbdb28d2ff098642c6fde0a5fd84a707c92d146b146",
+   "merkle_root": "2a7d27ba92ece6f533426c684cc7ab0bbc57a51eed4dc2e332f921a71f3836ec",
+   "timestamp": 1788772786,
+   "sources": [
+    "blockchain.info",
+    "blockstream"
+   ]
+  },
+  "965912": {
+   "hash": "00000000000000000001ab02f7b66b8a44c3b416b3a13fe126bd4f0ce580311f",
+   "merkle_root": "4c456b1d277b5969250a57052ce30a0b70f4c41cd0659e8f780e4695e3fb2504",
+   "timestamp": 1788774086,
+   "sources": [
+    "blockchain.info",
+    "blockstream"
+   ]
+  },
+  "965922": {
+   "hash": "0000000000000000000098157a5dcc9c87e661c877954295d547428a04f55f0f",
+   "merkle_root": "e67fe31925653d81ff315c29d2364a5023ebec76de0fc0a6ce347202b3a4edea",
+   "timestamp": 1788781602,
+   "sources": [
+    "blockchain.info",
+    "blockstream"
+   ]
+  },
+  "966979": {
+   "hash": "00000000000000000000e6555c903b5ff30463667ed50555599c50d4eb690350",
+   "merkle_root": "d154bdb8cfe1926a12a668599b409bc32fde8cb301ff670b9077587dcc4b294c",
+   "timestamp": 1789398627,
+   "sources": [
+    "blockchain.info",
+    "blockstream"
+   ]
+  },
+  "966981": {
+   "hash": "0000000000000000000090c998be1fe38562663b21193eee2befaa86e16233ff",
+   "merkle_root": "febf47418ab2295a9531814e72e716a74ad1cdf853d90cb064be963b75676db0",
+   "timestamp": 1789399822,
+   "sources": [
+    "blockchain.info",
+    "blockstream"
+   ]
+  },
+  "967137": {
+   "hash": "000000000000000000014a5c7461aa3edf1aaba609938f4a4d0f696040a9f5a2",
+   "merkle_root": "fbbe69eb9f9f39133822c0be9eae5fd2c6b16f93c4cbab0d1de3efb508d669d7",
+   "timestamp": 1789484366,
+   "sources": [
+    "blockchain.info",
+    "blockstream"
+   ]
+  },
+  "967140": {
+   "hash": "00000000000000000000707ad432680e2dbe0a9b41e3cd08f7d71b383836fd4c",
+   "merkle_root": "58b46a7bd1b5813a1b30644c25815d37b298a3532ba893c6e3dc93eab7999088",
+   "timestamp": 1789485763,
+   "sources": [
+    "blockchain.info",
+    "blockstream"
+   ]
+  },
+  "967150": {
+   "hash": "00000000000000000001998f987d447c78e4ca82e379843e18d5c79699f21f27",
+   "merkle_root": "f099824f9d0fdece911e67d6380e08b6ffe2fe0b0952e398229f4b0cba5acbc6",
+   "timestamp": 1789488772,
+   "sources": [
+    "blockchain.info",
+    "blockstream"
+   ]
+  },
+  "967531": {
+   "hash": "0000000000000000000111f15dcd5671d92531e8c63ec5550142fa18479886f5",
+   "merkle_root": "3abf092a1eafa76fde606ffffc5e62cf7c7fbcad944d1ec83eebed0aa38fe0dc",
+   "timestamp": 1789719998,
+   "sources": [
+    "blockchain.info",
+    "blockstream"
+   ]
+  },
+  "967728": {
+   "hash": "00000000000000000000c64cf970d66077c5a0284854250b444b35b0b3f89cda",
+   "merkle_root": "57aff597b9004136ea9de160d284ba8cd1c59f8ac72aa400210c82a497c99d03",
+   "timestamp": 1789840049,
+   "sources": [
+    "blockchain.info",
+    "blockstream"
+   ]
+  },
+  "967736": {
+   "hash": "0000000000000000000034a1769f37dc42d794eafd1672bb882f60dd7876ce43",
+   "merkle_root": "a27c668a4d320942f8cb3906efbfefefaedda9d760d5d52bdb74f7a7e0f1a0d4",
+   "timestamp": 1789846698,
+   "sources": [
+    "blockchain.info",
+    "blockstream"
+   ]
+  },
+  "968668": {
+   "hash": "0000000000000000000188e7a3e1e9a25e7b7786555a2c367092b2274efc6098",
+   "merkle_root": "62e24a1b11ad70b4aedc31f2eca6d15eec594db333f747ed994b2faa008f8688",
+   "timestamp": 1790416238,
+   "sources": [
+    "blockchain.info",
+    "blockstream",
+    "mempool"
+   ]
+  },
+  "968689": {
+   "hash": "00000000000000000000b695f1743c08a5405c6c464f7baa03c0efa0971519dd",
+   "merkle_root": "a78a98471004cbaadb5109722db134ac691eb9c9c8d504616626b33e74566c02",
+   "timestamp": 1790429810,
+   "sources": [
+    "blockchain.info",
+    "blockstream",
+    "mempool"
+   ]
+  },
+  "968848": {
+   "hash": "0000000000000000000023479380bb225d0ef71f50f8660d099bbc3877b79d7d",
+   "merkle_root": "453eebd038135e3b5fa26754b4d850dc1a8b9520d28ca0d4990c38d6bbe4b202",
+   "timestamp": 1790518514,
    "sources": [
     "blockchain.info",
     "blockstream",

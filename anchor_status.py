@@ -67,7 +67,12 @@ WHY = {
     "corpus/MANIFEST.json": "the corpus the model is trained on",
 }
 # never annotated, always required
-ALWAYS = ("corpus/MANIFEST.json",)
+# ⛔ REMOVED IN ROUND 8. This was `("corpus/MANIFEST.json",)` -- see `required()`. The corpus
+# manifest is still required, and it is required because the governing version PINS it, which is a
+# fact this tool now reads rather than a line somebody has to remember to add.
+
+
+PINNED_UNANCHORED = []
 
 
 def required():
@@ -84,10 +89,91 @@ def required():
     that. So the projection FAILS CLOSED: a document that exists without a proof is a FAILURE
     rather than an omission, and a version that is absent from the disk entirely is caught by
     `check_commitments.governing()`, which selects authority rather than trusting this list.
+
+    ⛔⛔ AND `ALWAYS` SURVIVED THE FIX AS A ONE-ELEMENT LIST. `("corpus/MANIFEST.json",)` --
+    four characters of residue beside the projection that replaced it, inside a docstring that
+    calls the hand-kept list instance thirteen. v18 pinned and ANCHORED a new artifact,
+    `exposure/exposure-2026-09-07.json`, whose entire claim is *captured before any announcement*
+    and whose proof this round genuinely repaired from a 530-byte calendar receipt to Bitcoin
+    block 965922 -- and this tool filed it under:
+
+        ⚠ 7 proof(s) present but not in the required list ... An unlisted proof is not a
+          failure, but it is not evidence for anything either.
+
+    Nobody added a line, because adding a line is the maintenance step the fix was meant to
+    abolish. That is instance fourteen, in the file that names instance thirteen.
+
+    ⚠️ THE SIX `.asc.ots` FILES ARE THE SAME SHAPE ONE LEVEL OVER. This derived the required
+    set as {document name + ".ots"}, so a proof over a SIGNATURE could never be in it -- and those
+    six ship with the stated reason *proof over v12's signature*, while this reports them as
+    evidence for nothing.
+
+    ⇒ DERIVE THE WHOLE SET FROM WHAT MUST BE ANCHORED: every protocol document, every file the
+    governing version PINS, and every detached signature sitting beside either. Nothing is
+    appended by hand, so nothing has to be remembered.
     """
     out = [(p.name, WHY.get(p.name, "a protocol document -- undescribed here, still required"))
            for p in sorted(HERE.glob("PRE-REGISTRATION*.md"))]
-    return out + [(f, WHY.get(f, "")) for f in ALWAYS]
+    names = {n for n, _w in out}
+    _pinned_unanchored = PINNED_UNANCHORED
+
+    # Everything the governing version commits by digest. Read, not listed.
+    try:
+        import prepare_anchor as _PA
+        _vs = _PA.versions()
+        if _vs:
+            # ⛔ `max(_vs)` AGAIN -- the sixth occurrence of the same selector. Highest present
+            # is not governing while a successor waits; the required set is composed over the
+            # versions IN FORCE. Less severe here only because the recursive `.ots` projection
+            # below rediscovers most proof-bearing files anyway, which is luck and not a design.
+            for _n in sorted(_PA.governing_pins()[0]):
+                # ⚠️ A PINNED FILE IS ANCHORED THROUGH THE DOCUMENT THAT PINS IT. Its digest is
+                # inside a text whose own proof fixes when that text existed, so demanding a
+                # separate proof for `train.py` would be a requirement this design never made --
+                # and would put every pinned tool into NO PROOF, blocking publication over
+                # versions in force for weeks.
+                #
+                # ⇒ It enters the REQUIRED set when it carries a proof of its own, which is
+                # what `corpus/MANIFEST.json` and `exposure/exposure-2026-09-07.json` do. That is
+                # the misfiling this replaces: the exposure capture's genuinely repaired proof --
+                # Bitcoin block 965922, on the one artifact whose claim is *captured before any
+                # announcement* -- was being reported as "not evidence for anything".
+                if _n not in names and (HERE / _n).is_file() and (HERE / (_n + ".ots")).is_file():
+                    out.append((_n, "pinned by the governing version AND independently anchored"))
+                    names.add(_n)
+                elif _n not in names and (HERE / _n).is_file():
+                    _pinned_unanchored.append(_n)
+    except BaseException as _e:                                       # pragma: no cover
+        out.append(("<pins unreadable>", "could not read what the governing version pins: %s"
+                    % type(_e).__name__))
+
+    # ⚠️ A SIGNATURE IS ACCOUNTED FOR, NOT REQUIRED TO BE ANCHORED. The complaint this answers
+    # was that the six existing `.asc.ots` proofs -- shipped with the stated reason *proof over
+    # v12's signature* -- were reported as "present but not in the required list", i.e. as
+    # evidence for nothing. So a signature enters the required set exactly when its proof EXISTS,
+    # which stops that misfiling.
+    #
+    # ⛔ AND NOT FURTHER. Requiring a proof for every `.asc` would put eight historical
+    # signatures into NO PROOF and block publication over versions that have been in force for
+    # weeks -- a retroactive demand this project did not make when they were signed. Those are
+    # listed below as a stated gap instead: WHO is established for them, WHEN is not.
+    for _n in sorted(names):
+        _asc = _n + ".asc"
+        if (HERE / _asc).is_file() and _asc not in names and (HERE / (_asc + ".ots")).is_file():
+            out.append((_asc, "a detached signature whose own proof exists -- it says WHO, and "
+                              "its proof says by when it said it"))
+    return out
+
+
+def signatures_without_proofs():
+    """Signatures beside a required file that carry no proof of their own. A gap, stated."""
+    have = {n for n, _w in REQUIRED}
+    out = []
+    for n in sorted(have):
+        asc = n + ".asc"
+        if (HERE / asc).is_file() and not (HERE / (asc + ".ots")).is_file():
+            out.append(asc)
+    return out
 
 
 REQUIRED = required()
@@ -110,12 +196,30 @@ def _is_superseded(path):
 
 def check(rel):
     doc = HERE / rel
-    proof = HERE / (rel + ".ots")
     if not doc.exists():
         return "DOCUMENT MISSING", 0, False
-    if not proof.exists():
+    # ⛔ ROUND 17: THIS FOUND THE PROOF BY FILENAME, `rel + ".ots"`, AND WAS THE THIRD TOOL IN
+    # THIS TREE TO ANSWER *is there a proof of these bytes*. §2n repaired `stamped()` and §2r
+    # repaired `check_commitments.anchored()`; a reporting tool left deciding by name reports NO
+    # PROOF for a commitment that is sitting in the folder under another name. It failed closed,
+    # which is why it was a report and not a bypass, and a report that is wrong about the tree is
+    # still wrong. ⇒ The same projection the other two use, from the one place it now lives.
+    _proofs = _OTS.proofs_over(doc)
+    if not _proofs:
+        _named = HERE / (rel + ".ots")
+        if _named.is_file():
+            return "NOT A PROOF OF THESE BYTES", _named.stat().st_size, False
         return "NO PROOF", 0, False
-    blob = proof.read_bytes()
+    proof, blob, _ok = None, None, False
+    for _p in _proofs:
+        _b = _p.read_bytes()
+        if proof is None:
+            proof, blob = _p, _b
+        if len(_b) < 32:
+            continue
+        if _OTS.verify(_b, doc.read_bytes())[0]:
+            proof, blob = _p, _b
+            break
     if len(blob) < 32:
         return "PROOF TOO SHORT TO BE ONE", len(blob), False
     digest = hashlib.sha256(doc.read_bytes()).digest()
@@ -124,8 +228,30 @@ def check(rel):
     # attestation records rather than assumed to exist.
     ok, why, found = _OTS.verify(blob, doc.read_bytes())
     if ok:
-        return ("ANCHORED " + why.split(";")[0].replace("anchored in Bitcoin block(s) ", ""),
-                len(blob), True)
+        # ⛔⛔ AND `ANCHORED` IS TWO DIFFERENT CLAIMS. `ots_verify` proves a proof is structurally
+        # valid and self-consistent WITH `ANCHORS.json`; it cannot prove `ANCHORS.json` carries
+        # the chain's real merkle root, and this tree's own `check_commitments.py` reports that
+        # file as RETIRED by v10 and committed by no version. Round-11 reviewers substituted a
+        # root at an existing height, and appended a row for a block that was never pinned, and
+        # both reached `ANCHORED`. A full node would have rejected each.
+        #
+        # ⇒ THE WORD IS QUALIFIED BY WHAT SUPPORTS IT. A block a signed-and-anchored version
+        # names in its own §2d fact table is CONFIRMED -- written down before anyone could choose
+        # it. A block known only to `ANCHORS.json` is PROVISIONAL. This tool REPORTS both, which
+        # is its job; `prepare_anchor.in_force()` requires the confirmed one, which is its job.
+        _w = why.split(";")[0].strip()
+        _blocks = _w[_w.find("["):] if "[" in _w else _w
+        try:
+            import prepare_anchor as _PA
+            _conf = _PA.confirmed(doc)
+        except Exception:                                                # noqa: BLE001
+            _conf = None
+        if _conf is True:
+            return ("ANCHORED (confirmed) " + _blocks, len(blob), True)
+        if _conf is False:
+            return ("ANCHORED against the pinned anchor set, PROVISIONAL " + _blocks,
+                    len(blob), True)
+        return ("ANCHORED against the pinned anchor set " + _blocks, len(blob), True)
     if "carries no Bitcoin attestation" in why:
         return "pending (calendar only)", len(blob), False
     # ⛔ THIS RETURNED TWO VALUES WHERE THE CALLER UNPACKS THREE, so the tool CRASHED on the
@@ -174,6 +300,8 @@ def main():
                     and not _is_superseded(p))
     print()
     for p in sorted(HERE.rglob("*.ots*")):
+        if "package" in p.parts or "review" in p.parts:      # round 16: the shipped projection, not scratch
+            continue
         if _is_superseded(p):
             print("  (superseded, binds historical bytes)  %s" % p.relative_to(HERE))
     if extras:
@@ -190,6 +318,11 @@ def main():
             print("      %-46s %s" % (rel, st))
         print()
         print("  Nothing may be published, and no document may say ANCHORED, until this is empty.")
+        print("  %s AND `ANCHORED` HERE MEANS *against the pinned anchor set*. ANCHORS.json is an"
+              % chr(0x26A0))
+        print("     explorer-sourced assertion this tree does not commit; a block a signed and")
+        print("     anchored version names in its own fact table is CONFIRMED, and a block known")
+        print("     only to that file is PROVISIONAL. Only the confirmed one moves authority.")
         print("  " + W + " 'PROOF DOES NOT BIND THIS DOCUMENT' usually means the document was")
         print("  EDITED AFTER STAMPING. Stamp last. If the text must change, retire the old proof")
         print("  under a name that says what it binds and create a new one.")

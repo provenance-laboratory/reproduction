@@ -1,5 +1,11 @@
 # Publishing the package — the decisions that must be made in the act
 
+> ## ⚠️ READ WITH v18 SS1. This file predates the withdrawal of the ecosystem claim.
+>
+> Two of its instructions have been corrected in place and are marked where they occur. **Nothing
+> in this checklist may be read as making silence a result.** If a line here and v18 disagree,
+> v18 governs and this file is the one to fix.
+
 ⛔ **Publishing is not a build step.** Section 2c of the pre-registration fixes the reproduction
 window's close date *at the moment of publication*, and section 2b binds us from that moment
 onward. `build_package.py` therefore stops short of publishing on purpose: everything below is a
@@ -15,14 +21,23 @@ THE ADDRESS      REPRODUCTION-CALL.md says reports go to "the address published 
                  sentence is true. A repository issue tracker, with the template already in
                  .github/ISSUE_TEMPLATE/
 
-THE WINDOW       its close date. Section 2c says the null outcome is a RESULT, and a result
-                 needs a boundary decided in advance or it becomes "we waited until we got
-                 tired". Pick it before publishing, state it in the call, do not move it
+THE WINDOW       its close date -- 7 December 2026, already fixed and anchored by v15-v17.
+                 It is a REPORTING CUTOFF, not a deadline: nothing must happen on or before
+                 it. v18 SS1 withdrew the inference that made silence a result, and the cutoff
+                 survives for the opposite reason -- a reproduction is now the flattering
+                 outcome, so an open stopping point would let the study wait for one
 ```
 
-⚠️ **Moving the close date afterwards would destroy the null result.** If nobody reproduces the
-artifact and the window is then extended, the silence stops being a measurement and becomes a
-schedule. The date is cheap to choose now and impossible to choose honestly later.
+⛔ **This paragraph argued from both sides of the withdrawal, and a round-8 reviewer caught it.**
+It used to read *moving the close date afterwards would destroy the null result ... the silence
+stops being a measurement and becomes a schedule.* **"Stops being a measurement" presupposes it is
+one**, which is the inference v18 §1 withdrew -- six lines above, in this same file.
+
+⚠️ **Moving the close date afterwards would still be wrong, for the reason stated above and not
+that one.** A reproduction is now the flattering outcome, so an open stopping point would let the
+study wait for one and report whenever the waiting paid off. The cutoff removes that freedom. The
+date is cheap to choose now and impossible to choose honestly later -- and nothing about silence
+follows from it either way.
 
 ## ✅ BOTH VALUES DECIDED, 7 September 2026 — before publication, as required
 
@@ -118,4 +133,8 @@ the package digest and the .ots proof
 the commit the package was built from
 ```
 
-That block goes into the paper. **Silence after it is a finding; silence before it is nothing.**
+That block goes into the paper. ⛔ **AND SILENCE IS NOT A FINDING EITHER SIDE OF IT.** This
+line used to read *"Silence after it is a finding; silence before it is nothing"*, which is v18
+SS1's withdrawn inference stated as a live publication instruction. Reports before the cutoff are
+counted in the pre-cutoff number and reports after it are labelled post-cutoff; **no conclusion is
+drawn from an absence of either.**

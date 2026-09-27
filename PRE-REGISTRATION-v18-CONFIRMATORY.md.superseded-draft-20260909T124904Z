@@ -1,0 +1,312 @@
+# Pre-registration v18 — exposure becomes an instrument, and v17's repair is repaired
+
+*Amends v17. Everything not restated here is unchanged and still governs.*
+
+## 1. ⛔ The null was unfalsifiable, and an external reviewer found it
+
+The reproduction study's headline is that if nobody reproduces the artifact within the window, the
+silence is a finding about the ecosystem. A reviewer of v17 showed the instrument cannot support it:
+
+> The instrument can only measure "no issue was filed." Nothing in seventeen anchored versions
+> fixes, in advance, how the call is distributed, to how many people, or what would count as
+> insufficient exposure. … §3 of the checklist forbids approaching any party in a way not equally
+> available to everyone. That is a good fairness rule, and there is no matching rule *requiring*
+> broad announcement. **So minimum exposure is fully protocol-compliant, and it produces the
+> sharper finding.**
+
+⇒ **A protocol under which doing nothing is compliant and yields the preferred result can produce a
+dishonest paper without anyone lying.** Every other input to this study is committed in advance and
+anchored; the one input that licenses the headline — did anyone see it — was uncommitted,
+unanchored, under sole author control, and written after the outcome was known.
+
+### 1a. What v18 adds
+
+```
+capture_exposure.py                GitHub's own traffic record, captured on a fixed schedule and stamped
+DISTRIBUTION-PLAN.md               the venues, named in advance; the capture cadence; the EXPOSURE FLOOR
+exposure/exposure-2026-09-07.json  the BASELINE, captured before any announcement, and stamped
+attempts.py                        the append-only distribution record, and the control over it
+```
+
+⛔ **The floor is 100 unique VIEWERS over the window.** Below it the outcome is reported as
+`INSUFFICIENT EXPOSURE` and explicitly **not** as a null about the ecosystem. The number is fixed
+here, before a single post, because a floor chosen after seeing the traffic is worth nothing.
+
+### 1b. ⚠️ And the denominator is not unique cloners, which the baseline is why
+
+Measured before any announcement: **41 unique cloners against 1 unique viewer.** That ratio is
+crawlers, CI mirrors and scrapers, not readers. Reporting 41 as exposure would let this study claim
+a readership it never had — **the same defect the instrument exists to prevent, arriving through
+the flattering number instead of the flattering narrative.** Both series are recorded; the floor is
+set against the human one.
+
+### 1c. ⛔ Announcement is now an obligation, not an option
+
+The fairness rule stands: no party may be approached in a way not equally available to everyone.
+Beside it, `DISTRIBUTION-PLAN.md` names the venues that must each be attempted once, with the date
+of each attempt recorded. **One attempt per venue** — a study that spams to reach its own floor has
+replaced a measurement with an effort.
+
+## 2. ⛔ v17's repair closed the loud half and left the quiet half
+
+The same reviewer took v17's structural strip apart, and was right three times.
+
+**Finding 1. The two patterns disagreed about the line's tail.** The commitment pattern permitted a
+trailing `# comment`; the anchor-fact pattern did not; and the strip required *every* line to match
+the stricter one. **A single annotated height turned all 32 heights back into committed file
+paths** — on a signed, anchored version. This file's own `_ROW` comment records that exact class,
+fixed between two of the three readers and left broken between the other two.
+
+**Finding 2. The strip was structural and the reader was still heading-located.** A renumbered heading
+stripped correctly and declared **zero facts, silently** — the loud half repaired, the quiet half
+untouched, in a document whose §3 says the wrong-answer case matters more than the no-answer case.
+
+**Finding 3. And it shipped with no control at all.** The function whose failure cost three protocol
+versions was never called by the control suite. That is the v10 defect verbatim: *"the rule was
+violated by the document that introduced it."*
+
+⇒ **One block-finder now serves both the strip and the reader**, so "stripped" and "read" cannot
+disagree; all fenced blocks are merged rather than only the first; a tagged fence is recognised;
+duplicate heights are refused across blocks as well as within one; and `commitments()` refuses
+outright if blocks were stripped while the reader returned nothing. **Eleven controls cover it**,
+including three negative ones proving a real commitment table still survives the strip.
+
+⚠️ **v15 now parses correctly despite its renumbered heading** — 29 facts, 22 commitments — so the
+defect that cost two protocol versions is unreachable rather than patched.
+
+## 2.1 ⛔ Round 2 found the floor was fixed and the METRIC was not
+
+v18 was reviewed before it was signed. The reviewer's first finding:
+
+> The floor is 100 unique viewers "over the window", **and that quantity does not exist.** GitHub
+> returns a rolling 14 days of per-day uniques and a 14-day total. Uniques do not add. … You fixed
+> the threshold blind and left the *metric* free. **The metric is the larger degree of freedom.**
+
+Three readings were available and they differ by more than an order of magnitude; two already
+disagree at the baseline (clones: 41 by the 14-day figure, 43 by summing daily uniques). ⇒ Whoever
+computed the number in December would have been choosing, **with the answer visible**, between a
+rule that licenses the ecosystem claim and one that forbids it.
+
+```
+METRIC     the sum of views[].uniques over every DISTINCT DATE in the capture series
+           -- over-counts returning visitors, so it is an UPPER BOUND on persons
+COMPUTED   by capture_exposure.py on every run, printed whether or not it is convenient
+```
+
+⚠️ **And nothing computed it.** The most load-bearing number in the study was prose in one document
+and enforced nowhere, which is the condition `check_commitments.py` exists because of.
+
+## 2.2 ⛔ And the block-finder was defeated three more ways
+
+Sharing one finder closed the two states round 1 named and **did not close the class**: a comment on
+its own line inside the fence, and an indented fence, each lost every height silently. The eleven
+controls were eleven shapes a reviewer had named — **enumeration standing in for projection, inside
+the repair for the defect this project calls enumeration-for-projection.**
+
+⇒ **The projection, which does not depend on knowing the shape:** every anchor-fact-shaped line in a
+document must be accounted for by some block, or the document is refused. A height stated and read
+by nobody is committed to nothing however its fence is written.
+
+⚠️ **And the merge was a denial of service.** Refusing a repeated height *across* blocks meant a
+version illustrating the format with a real height killed every tool that asks which document is
+authority — refusing even when both blocks stated the same root. Scoped: within a block a repeat is
+a lie; across blocks, only disagreement is.
+
+## 2.3 ⛔ Round 3: four repairs, four defects, all introduced by round 2's fix
+
+**The bound ran backwards, in our favour.** v18's first draft said over-counting *"makes failing the
+floor harder, which is the right direction"*. It makes it **easier** — an inflated figure clears the
+floor, so the ecosystem claim is easier to license, and a gate on a claim should be hard to pass.
+⚠️ The sentence had travelled from a code comment into this document and then into the review brief
+asking someone to check it, **each copy citing the last**. ⇒ Corrected in all three, and the bound
+is now declared as a cost: clearing the floor shows that *no more than* N people saw the call.
+
+**The projection projected over its own predicate.** `_raw` used the detector's own pattern, so a
+`>`, `|` or `-` prefix hid a line from the check *and* from the thing it checks. This document's own
+fact table, rewritten as a pipe table, parsed as 25 commitments and **zero facts, silently**. ⇒ It
+counts **digests** now, which cannot be reformatted away. Ten shapes tested, two negative controls.
+
+**The baseline proof was a calendar receipt, not an anchor** — 530 bytes, zero Bitcoin attestations,
+on the one artifact whose entire claim is *"captured before any announcement"*. ⇒ Now **block
+965922**, pinned and verified.
+
+**And this plan was byte-pinned while required to grow.** It carried `[ ]` boxes and instructed that
+each attempt be recorded with its date, so ticking one would have voided the pre-registration it
+belongs to — **the `ANCHORS.json` circularity, recommitted on the one document whose purpose is to
+accumulate entries.** ⇒ Rules stay pinned; attempts move to an append-only `exposure/attempts.jsonl`,
+each entry stamped, with removals and rejections recorded rather than retried.
+
+## 2.4 ⛔ Round 4: the projection was defeated a third time, and three rules were prose
+
+**The projection projected over a SHAPE again, and round 3's fix is what put the shape back.**
+Counting digests meant matching `^[^0-9a-fA-F]*?(\d{6,9})[^0-9a-fA-F]+([0-9a-fA-F]{64})` — *"no hex
+character before the height"* — and **`0`–`9` and `a`–`f` are hex.** So any prefix containing a
+digit or one of six letters was invisible: a numbered list, `Block 964534 <root>`, `height 964534:
+<root>`, a row written digest-first. A reviewer produced five in one sitting and there was no reason
+to think five was the number. **Three consecutive versions have written this rule so that its blind
+spot is the parser's blind spot**, which is the one property it exists not to have.
+
+⇒ **The predicate now describes neither half in terms of what surrounds it.** The digests are
+removed from the line, and a height is looked for in what remains. Nothing about a prefix,
+separator, bullet, cell or column order can hide either token, because the rule never looks at
+anything but the two tokens. Its one bound is stated rather than assumed: a digest is a hex run of
+**64 or more**, so a malformed 65-character digest — which disqualifies its block and would
+otherwise vanish — is seen; runs *shorter* than 64 are excluded because these documents legitimately
+abbreviate digests in prose beside heights. **The accounting is positional, not a count**: two
+totals can agree while naming different lines.
+
+**And the rule that catches every other shape had no controls, for three rounds.** It was rewritten
+twice and `test_controls.py` was byte-identical across both, so each rewrite shipped having never
+been attacked. ⇒ **Sixteen now**: eleven decorations that defeated some earlier version, three ways
+a block is disqualified rather than missed, and five negatives proving legitimate prose still parses.
+
+**`exposure/attempts.jsonl` was named in an anchored document, and protected by nothing.** No
+writer, no reader, no control, no file. A `removed` outcome could be deleted, a date moved, an
+attempt invented, and every gate here would have reported green over the record of the one thing
+this version is about. ⇒ `attempts.py`, built as the **same monotonic construction as the anchor
+facts**: each entry carries the digest of the one before it, that digest is written to
+`exposure/attempts-<n>.head` and **stamped**, and every scheduled capture records the head and count
+it saw. Growth is permitted; contradiction has to argue with Bitcoin or with an earlier stamped
+capture. **Twenty controls**, including the two cases a hash chain alone cannot see — a deleted tail
+and a second attempt at one venue.
+
+**And `--publishing` enforced none of v18.** The version whose subject is *"a protocol under which
+doing nothing is compliant"* left its own new rules in prose. ⇒ Publishing now requires that
+`DISTRIBUTION-PLAN.md` and `capture_exposure.py` are **pinned by the governing document**, that a
+**stamped baseline capture exists**, that the baseline **precedes the first attempt**, and that the
+attempts record checks out. ⚠️ The floor itself is deliberately *not* a publishing condition: it is
+decided at the close of the window, and a gate nobody can pass at publication is a gate that gets
+removed rather than met.
+
+⚠️ **v18 also manufactured the v15 hazard by hand.** It numbered its narrative `## 2d.`, `## 2e.`,
+`## 2f.` while `### 2a.`–`### 2d.` name the commitment tables, so a reader met two sections called
+*2d*. It was harmless only because v17 stopped locating tables by heading at all. ⇒ Narrative
+renumbered to `2.1`–`2.4`, the reservation written down in §3, and `_after_heading` now **refuses**
+when a marker begins more than one line rather than silently taking the first.
+
+## 3. ⛔ What is committed, by DIGEST
+
+⛔ **`2a.`–`2d.` are RESERVED for these four tables and are not available to narrative.** v18's
+first draft numbered its round-2 and round-3 sections `## 2d.`, `## 2e.`, `## 2f.`, so a reader of
+this document met two different sections called *2d* — the same ambiguity that, in v15, cost two
+protocol versions when a renumbered heading silently emptied the fact table. It was harmless here
+only because v17 stopped locating the tables by heading at all. The narrative is now numbered
+`2.1`, `2.2`, `2.3`, and `check_commitments.py` **refuses outright** when a heading marker begins
+more than one line, so this is a failure rather than a preference from here on.
+
+### 2a. Experimental inputs
+
+```
+corpus/MANIFEST.json       fa67e35a7b7fb0c4b79f467cda6708226a4f0fab97e6116ed2ef69655b642c47
+corpus/build_corpus.py     2d3ce23b80e9de7b25679e1a0eb81f4da62b058dc3dd15b466f2983306c87ec3
+corpus/sources.json        7548856806ec771d973789c5e62d1cf8101976255ddbcae474d0f290e6d45b30
+train.py                   ebd61532782573a04aca8ab5d526ab6d233c450963ac111460f2d5d86f81d2fe
+```
+
+### 2b. Instruments and gates
+
+```
+PUBKEY.asc                         88f9a69659c87a898c6a4408d28e69520306b6916744642f60519469cbb24273
+anchor_status.py                   6a25887d9758fdc629c96b2e84f4380bb6fe7abf8581c7e63b7507cd3958206a
+build_package.py                   0ee1a04d30ce88f11d625b49c5abcbdd79a9ad3aa43b6c33afd05d8ccd74d8f2
+build_review_packet.py             db18eba091a229271e3219950cc59650bb7c5a8c2e0efe0e9a11f39019098dde
+check_commitments.py               2d8b7fa4756fb1fbfcb4e6ebb896e39e8eea58059de2fd766d648d54fc784f16
+check_signature.py                 76923dcbcf0d6b4b36af0cc0057dacba39194baab5ff9babf05f350b24f49fe5
+corpus/verify_shipped.py           943ebf0f6051a6b7c822378430a5e482b9e02b11de799a420b1bf9c838748749
+measure_cost.py                    4b8bdd95c6fcbc37fd557ff81041e0af28202bf4816ef34e5e458e9e8bdedba9
+measure_divergence.py              d1dc9c7630e4b5c36231dd1a8ff7c044355463349ab6f674e390f2c63969711f
+measure_hardware.py                9686200fc21b08e1ef0cfeb14f7ecda9733bc34296e0318b7e63c4f390b6effc
+measure_storage.py                 1254e4049813bd28ef2064f2252bcc5983e6d2bbac22825bf445ff1f4e0895c5
+ots_verify.py                      15ca911511c6c8aff0eee0c2821203cc201d689788f4687bee63e00c8a7c2ca9
+pin_anchors.py                     98ef5a2074803888da417bafc9ff6e9f01e16d5fde669acd5a54d651888ba705
+reproduce_findings.py              d9c6be8882464a59e054d525b6e9970c02bb4f4b34be584cc403826cd0b39f25
+seed_sensitivity.py                1012eb90d895146cac6d5f212ec18bc3012bc1e12176cb8918b83ea4563c24f5
+test_controls.py                   09a303c059f510eae6023472fa9c807c4e761da7a502862591e59053e495fea7
+verify_package.py                  2f80ff99f8c92baef0a89e9f797e69611597f9698458e8653d91550d259ee748
+HOW-TO-RECHECK-THE-ANCHORS.md      403526de7aeaa22a73ddcc0df24350898a43a455beb97357c63e1f1d21d04233
+capture_exposure.py                e5b9f96719d425a4a88eaf4ca0aa7eb4ae31af0685ca077a3860e146ccba4a3f
+DISTRIBUTION-PLAN.md               29db9350db299f4da5792fdc41a4bf709892d903fa875f6a0f9e7af8eb73f2e9
+exposure/exposure-2026-09-07.json  837fb43a3f9f5ddeddcd06372759c796d2df91ba958d12b269b0de2c7ccb2624
+attempts.py                        ff4a8a74ee75f59e93da7172820ff6f760fe0bf3bbd8c288c1bdaf63b5c078e3
+```
+
+⚠️ **Three digests moved and four entries are new**
+
+```
+build_package.py                   ccbcd3b34a8be7bb -> 0ee1a04d30ce88f1
+check_commitments.py               63c8054579615da3 -> 2d8b7fa4756fb1fb
+test_controls.py                   0e38c72c43969cf7 -> 09a303c059f510ea
+capture_exposure.py                NEW, pinned from this version
+DISTRIBUTION-PLAN.md               NEW, pinned from this version
+exposure/exposure-2026-09-07.json  NEW, pinned from this version
+attempts.py                        NEW, pinned from this version
+```
+
+### 2c. ⛔ What the reproducer package contains
+
+```
+check_commitments.py
+check_signature.py
+corpus/MANIFEST.json
+corpus/build_corpus.py
+corpus/sources.json
+corpus/verify_shipped.py
+ots_verify.py
+test_controls.py
+train.py
+```
+
+### 2d. ⛔ ANCHOR FACTS — monotonic
+
+**Every line must remain present and unchanged; new heights may be added and are not a violation.**
+
+```
+964534     018d69dc7bf4e2e8a45fdf3a89855b9b7e03027227aa14e596a91dcf320e09b9
+964535     ef17461955701f9c1d296245df4ab22a71a7e3e0fd3ceeb7213de12958ba69c5
+964549     e863c303c5b515da7544652b29648659c66ff2fa6ffad9fe82ccc975042eb439
+964747     8a9766909969f175693a1fd85a7236e3be4d33a95cd4a0bcab3fff2e76e16857
+964761     23019c9499bd74096ae1d9c4015bc4f10176900d99cb805e7252011ed7415d37
+964762     ff5f6043b9883f8e8830856a16dc52783c66d1185d6ffebab5dbe3598f42c543
+964775     ed2dd86c5b3c983d859139542aeced248e1f18ec030ccd550e36286a59f54f5e
+964785     8aac2039e614e1557aab7264848c8b0cb1152970f2d5e7fa76170ccdfbf2a587
+964789     b73d9657064cb4a9842e18ec1a007bc4702308730257cc378dd56ed3443ec0dd
+964812     9cd60bdc0fdc9ba7784f8a4705c22d11b82b081a41d69ff598729522834dbd4a
+964815     ac3592ef064ea4e4c7db187954f057550018a38dfa02afc7a2c3d33ad2955b76
+964848     5784c7dab006cedba2172ec6cce265b83b1f75c8a27a117f4b2df1165b151d9c
+964856     a2c750b72ab68db7602962f230b1e8a236633d5cef8f132fed1547b3ac6aba9e
+964878     b9fef3d8dd2fc6b2945cb580525f25beaf5612b7b71e3a1b78799e22f353dce0
+964881     45cb82a2d9677e318826afb6fd6f3a6be84b5cf94780ee1487b49097d5293579
+964920     7f5a7092d6b342430276b08b492f1f18e8a6fa8ddb55a6245f0d93f6e70e13d3
+964922     d876c661233b2de9d92f1dabebf9c1a677570711dbec02b1e5317502b2610fe6
+964923     92687073de11e6fd31a71c3f6aa0c75aa60a0950dffa30b80ad91155425f4986
+965140     c836cd739ba5bddf491db621fcfe76154d6002cecfb10dd4a72eecd99e039ec6
+965142     df6e4b4f68795f65252340e42467d77e8e8c2a44e1e5a4ff40730848aca56eb6
+965152     46e025634022f51ac766cc16d8be33c04068c0eb7e7a2f66930e022ca4185ece
+965332     c20da71633ebb813cd0f4f78f6059bab6b6b06912a2eb76cc48182acf66a9d35
+965333     3d4a2b7fe40ea918d1496985dce09db8395a9559f99c80b7be61b9c259b32266
+965458     f4cb09e6fc3350c3ddcf0b4d64d124d1504d94a8b148f92298cf0465fc1513c9
+965750     6dde0e9afe57f11f8b833e405d736ae64820acc04ef97d4bfeaffb3d089b949c
+965753     a0a8bb7589ecd091de601d52e66639b755285ad688f23b43bc161f8092937586
+965767     1a000e0f8b386a3d7b9af7eea508041fc818776605e5be6e5eb3fa108ea5c750
+965784     5d65ae5e5a55e51cf1477df815f41cdc3486dfe25e33999361e582bdde0e9c2c
+965818     6e9b364e154b594ce72804c6be577f7fb7ae9bf49d941cb71fe9c8bb9d1b2ea8
+965831     84f7aba8c1732f40a3b4a6fa6845d0f1e0272bf882760122ff257a23485a3b08
+965832     fe0ed8292038251f49661bc2c2674520f23510114b49b7d0089caeb9d2c28855
+965840     4a817365b47122ee011d2542c01e677c3dcca3abfa04f01715de02f38bdc7b84
+965910     2a7d27ba92ece6f533426c684cc7ab0bbc57a51eed4dc2e332f921a71f3836ec
+965912     4c456b1d277b5969250a57052ce30a0b70f4c41cd0659e8f780e4695e3fb2504
+965922     e67fe31925653d81ff315c29d2364a5023ebec76de0fc0a6ce347202b3a4edea
+```
+
+⇒ **3 height(s) added since v17**, being the block that anchored v17 itself.
+
+## 4. ⚠️ Unchanged
+
+v14's withholding rule; v15's shipping of the anchor pins and the statement that they are checkable
+rather than independently verified; the close date of **7 December 2026**.
+
+## 5. ⛔ What this version does NOT do
+
+It does not make the reproduction blind. It does not make measurement 4 confirmatory. **And it does
+not make the ecosystem claim safe** — it makes it *conditional*, on a floor fixed in advance. If the
+floor is not met, the claim is not available, and no reading of the result may restore it.

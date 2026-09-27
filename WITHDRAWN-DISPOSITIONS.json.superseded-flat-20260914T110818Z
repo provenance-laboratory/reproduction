@@ -1,0 +1,274 @@
+{
+  "the ecosystem claim": {
+    "AMENDMENT-2026-08-30.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "779d9289bf389063ab0e83a28e14b4c2be11181e2650edaec364a2dc1c4f6303"
+    },
+    "DISTRIBUTION-PLAN.md": {
+      "disposition": "marked",
+      "note": "quotes the claim to describe what it superseded, and states the withdrawal at line 11",
+      "seeded_from": "human",
+      "sha256": "6a1851278f20a89328cd5ffccb0359ee97d0ebbfc6e39147feea3b734fb2cb89"
+    },
+    "FINDING-2026-09-05.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "43d3daaa9d6b352912fc56e773867e0c4535c460f26f029caee6361123d56680"
+    },
+    "HOW-TO-RECHECK-THE-ANCHORS.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "403526de7aeaa22a73ddcc0df24350898a43a455beb97357c63e1f1d21d04233"
+    },
+    "MEASUREMENT-4-RUNBOOK.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "29f08c07447bdd06e7fc769e1c2662b090b9a232421fa4311585e4603434b57b"
+    },
+    "MEASUREMENT-6.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "50679ef1ef55f82665e8d4ef27e320a1802558b033c0944634c446b1bf98315b"
+    },
+    "PHASE-2-FINDINGS.md": {
+      "disposition": "clean",
+      "note": "its withdrawals are about numerical indistinguishability and repeatability, not the ecosystem inference; the word silence at line 238 is about a different thing",
+      "seeded_from": "human",
+      "sha256": "50de1ea784159936fec927e384d086afd4641290d7144937dd9c0a1be6e5e207"
+    },
+    "PILOT-2026-08-29.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "f894d13038d5d3e272653e1525f0820171759a6b9f9c5704e1b926c32b5a250a"
+    },
+    "PRE-REGISTRATION-v10-CONFIRMATORY.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "879f0701fba2f559bd12db57d574f2466edbcfbc148c4eb923419cd2f8c31f25"
+    },
+    "PRE-REGISTRATION-v11-CONFIRMATORY.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "963c8974559bdd704d91424c35b1330c8236a520d00d171e79ff40e82d93e8fd"
+    },
+    "PRE-REGISTRATION-v12-CONFIRMATORY.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "6f9a6ff40fd6d6b9b3fb82b43117e1a09eced53a4b5da583e47bb0288c048853"
+    },
+    "PRE-REGISTRATION-v13-CONFIRMATORY.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "0860fa273b5e8767a2e88191f326183f1030895a0ee99fc1c767ed7b3f8308f4"
+    },
+    "PRE-REGISTRATION-v14-CONFIRMATORY.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "e3c626bd507ea6aeec1b75e57ec2e4c63e01c3b0b447634b448636d125b2d979"
+    },
+    "PRE-REGISTRATION-v15-CONFIRMATORY.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "412211503544220eca5d981cf9fe5ef688d005185079aa7c5456e20c960241f4"
+    },
+    "PRE-REGISTRATION-v16-CONFIRMATORY.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "25605bfe1a0998280996ff8cb4c3e5778db006ed94ae3fe698b6b946ba830bdd"
+    },
+    "PRE-REGISTRATION-v17-CONFIRMATORY.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "2472418b71db024f5d8e4cccc1259e7d1ef4fab291e40adb69330525137d4a1f"
+    },
+    "PRE-REGISTRATION-v18-CONFIRMATORY.md": {
+      "disposition": "marked",
+      "note": "re-read after the round-8 repin",
+      "seeded_from": "human",
+      "sha256": "df6dd2ee63bdc7cfa8bf9defeffb3e1ac7d0d7d72f020994b45a66d72f3e2c35"
+    },
+    "PRE-REGISTRATION-v2-CONFIRMATORY.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "035d61aa560f7db9880456a47293bd8b2e1833e375f7902e762fcd5798c4db12"
+    },
+    "PRE-REGISTRATION-v3-CONFIRMATORY.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "28dff7fde6e54c3713946f1ecad09946d7d6d2018be91a0d8d48cf03247b0c9e"
+    },
+    "PRE-REGISTRATION-v4-CONFIRMATORY.md": {
+      "disposition": "clean",
+      "note": "its 'withdrawn' is about the platform claim, not this one",
+      "seeded_from": "human",
+      "sha256": "e4bcbe93ac39aefb15e004344f142f0b32333c0f59047c1658d6166e566abade"
+    },
+    "PRE-REGISTRATION-v5-CONFIRMATORY.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "3d3b3fc341a5dbfa1b8a4a0ea4f1d8df96a950d30c14cabb7dbb6bb6628661b7"
+    },
+    "PRE-REGISTRATION-v6-CONFIRMATORY.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "337b6029aa538011d0707a0144346ee4dcf86ad5d4be6a77d678be6ab9aacf93"
+    },
+    "PRE-REGISTRATION-v7-CONFIRMATORY.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "6f615d078174567573a331070d1ebf14666821f135ce66515b7b7cc7cfe35002"
+    },
+    "PRE-REGISTRATION-v8-CONFIRMATORY.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "f1e2b29ac97da8fbf9108103f3a7a0685ded7d17a72e56d96899a470598f14cc"
+    },
+    "PRE-REGISTRATION-v9-CONFIRMATORY.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "e9eda0cfa8d44ef82609dc1e047da074f5ba035b54b2ce8e84a0efdf7ae95a15"
+    },
+    "PRE-REGISTRATION.md": {
+      "disposition": "carrier",
+      "note": "line 98 asserts the claim plainly with no marker. Anchored, so it cannot be edited -- this is the survivor the marker exists for",
+      "seeded_from": "human",
+      "sha256": "f0df2401ce718ee2775fbeb8d79b97ee96ab019fdc184e26afe4d6efe551d831"
+    },
+    "PUBLICATION-CHECKLIST.md": {
+      "disposition": "marked",
+      "note": "round 8 found it arguing from both sides -- 'the silence stops being a measurement' presupposes it is one. The paragraph was rewritten to rest on the reason stated six lines above it, and the file now records the withdrawal rather than presupposing against it",
+      "seeded_from": "human",
+      "sha256": "b4fecca0cab14dab09a5e1590f892032701844a160d97a014c7e2088b5848ddb"
+    },
+    "REPRODUCER-STATUS-NOTE.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "489310bc6302d5cca0044bc783870de7d5bb033a83b60a23e360ac1f5a46b6d1"
+    },
+    "REPRODUCTION-CALL.md": {
+      "disposition": "marked",
+      "note": "states the claim at line 129 and withdraws it at line 131, naming v18 section 1",
+      "seeded_from": "human",
+      "sha256": "803e1047c9fcb186be4b4c5f8d16966db4ee4a9a00e252e42a8f01eb1d38ac83"
+    },
+    "ZENODO-DEPOSIT.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "a14a59c2dd8eb5549ddeff80a220f534d8304188aecdcfcd5042f7b97b466ce4"
+    },
+    "package.incomplete/AMENDMENT-2026-08-30.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "779d9289bf389063ab0e83a28e14b4c2be11181e2650edaec364a2dc1c4f6303"
+    },
+    "package.incomplete/PILOT-2026-08-29.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "f894d13038d5d3e272653e1525f0820171759a6b9f9c5704e1b926c32b5a250a"
+    },
+    "package.incomplete/PRE-REGISTRATION-v10-CONFIRMATORY.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "879f0701fba2f559bd12db57d574f2466edbcfbc148c4eb923419cd2f8c31f25"
+    },
+    "package.incomplete/PRE-REGISTRATION-v11-CONFIRMATORY.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "963c8974559bdd704d91424c35b1330c8236a520d00d171e79ff40e82d93e8fd"
+    },
+    "package.incomplete/PRE-REGISTRATION-v12-CONFIRMATORY.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "6f9a6ff40fd6d6b9b3fb82b43117e1a09eced53a4b5da583e47bb0288c048853"
+    },
+    "package.incomplete/PRE-REGISTRATION-v13-CONFIRMATORY.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "0860fa273b5e8767a2e88191f326183f1030895a0ee99fc1c767ed7b3f8308f4"
+    },
+    "package.incomplete/PRE-REGISTRATION-v14-CONFIRMATORY.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "e3c626bd507ea6aeec1b75e57ec2e4c63e01c3b0b447634b448636d125b2d979"
+    },
+    "package.incomplete/PRE-REGISTRATION-v2-CONFIRMATORY.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "035d61aa560f7db9880456a47293bd8b2e1833e375f7902e762fcd5798c4db12"
+    },
+    "package.incomplete/PRE-REGISTRATION-v3-CONFIRMATORY.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "28dff7fde6e54c3713946f1ecad09946d7d6d2018be91a0d8d48cf03247b0c9e"
+    },
+    "package.incomplete/PRE-REGISTRATION-v4-CONFIRMATORY.md": {
+      "disposition": "clean",
+      "note": "the same, in the copy",
+      "seeded_from": "human",
+      "sha256": "e4bcbe93ac39aefb15e004344f142f0b32333c0f59047c1658d6166e566abade"
+    },
+    "package.incomplete/PRE-REGISTRATION-v6-CONFIRMATORY.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "337b6029aa538011d0707a0144346ee4dcf86ad5d4be6a77d678be6ab9aacf93"
+    },
+    "package.incomplete/PRE-REGISTRATION-v7-CONFIRMATORY.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "6f615d078174567573a331070d1ebf14666821f135ce66515b7b7cc7cfe35002"
+    },
+    "package.incomplete/PRE-REGISTRATION.md": {
+      "disposition": "carrier",
+      "note": "a copy of the survivor inside the preserved half-built package; same assertion, same absence of a marker",
+      "seeded_from": "human",
+      "sha256": "f0df2401ce718ee2775fbeb8d79b97ee96ab019fdc184e26afe4d6efe551d831"
+    },
+    "package.incomplete/REPRODUCTION-CALL.md": {
+      "disposition": "marked",
+      "note": "the same pair of lines in the preserved copy",
+      "seeded_from": "human",
+      "sha256": "803e1047c9fcb186be4b4c5f8d16966db4ee4a9a00e252e42a8f01eb1d38ac83"
+    },
+    "reference/README.md": {
+      "disposition": "clean",
+      "note": "proposed by the phrase scan: no phrasing this scan knows",
+      "seeded_from": "phrase-scan",
+      "sha256": "0edbb46b6270732bafb9f0493929b733a54dd58220624e97b1a9967dd7c3ea3a"
+    }
+  }
+}

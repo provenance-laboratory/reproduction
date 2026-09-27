@@ -17,8 +17,16 @@ so on this date, and anyone may recompute it against the chain". That is weaker 
 full node and stronger than believing the artifact about itself. The source and date are recorded
 so the claim can be re-checked rather than taken.
 
-    python pin_anchors.py            fetch and record every block our proofs name
-    python pin_anchors.py --verify   re-fetch and refuse if any pin has moved
+    python pin_anchors.py --add      fetch and APPEND the blocks our proofs name that are not pinned yet
+    python pin_anchors.py --verify   re-fetch EVERY pin and refuse if any has moved (the gate's act)
+
+⚠️ TWO ACTS, NOT ONE FILE REBUILT OR NOTHING. Pinning v21's two new blocks re-fetched forty-one over
+five hours, because pin and verify were the same whole-file act. A round-13 reviewer named the cure
+and the wrong cure: not a shorter timeout, and not "trust the existing rows" either -- that would
+leave unchecked the rows that matter on the run that matters. `--add` is cheap and fetches only
+what is new, under the same MIN_AGREE / MIN_FAMILIES rule as everything else; `--verify` stays
+total and is the thing anything trusts. Running with neither flag is refused, so the expensive act
+is never done by accident and the cheap one is never mistaken for it.
 """
 import datetime
 import io
@@ -69,7 +77,7 @@ MIN_FAMILIES = 2
 
 def _get(url):
     req = urllib.request.Request(url, headers={"User-Agent": UA})
-    with urllib.request.urlopen(req, timeout=60) as r:
+    with urllib.request.urlopen(req, timeout=_HTTP_TIMEOUT) as r:
         return r.read().decode("utf-8", "replace").strip()
 
 
@@ -93,20 +101,58 @@ def _from_blockchain_info(base, height):
     return {"hash": b["hash"], "merkle_root": b["mrkl_root"], "timestamp": b.get("time")}
 
 
+# How hard a source is asked before its silence is called an answer. See `block()`.
+#
+# ⚠️ AND 60 SECONDS PER REQUEST WAS THE WRONG HALF OF THE TRADE. These explorers answer in
+# about a second when they are healthy, so a 60s ceiling does not rescue a slow answer -- it just
+# makes a dropped connection cost a minute, and with three sources and three attempts a single
+# block could burn nine. Measured: 31 blocks in four hours, and the run died to its own clock
+# rather than to any finding. **A long timeout and a retry are alternatives, not companions**:
+# with retries in place the timeout should be short, because the second ask is what covers a
+# request that was going to be slow.
+_TRIES = 3
+_BACKOFF = 2.0
+_HTTP_TIMEOUT = 15
+
+
 def block(height):
     """The block at `height`, agreed by at least MIN_AGREE independent operators.
 
     Returns the agreed record with a `sources` list naming who agreed. Raises if fewer than
     MIN_AGREE could be reached, or if any two that were reached disagree.
     """
+    # ⛔⛔ ONE ATTEMPT PER SOURCE, SO A TRANSPORT FAILURE WORE A NEGATIVE RESULT'S COSTUME.
+    # A rate limit, a dropped connection or a slow response raised, was recorded once, and the run
+    # reported `no source answered for <height>` -- a sentence that reads as a fact about the
+    # block. Three consecutive runs of this file died that way, one after 17 blocks and one after
+    # 35, with `curl` returning HTTP 200 from the same host seconds later. **That is the failure
+    # shape this project has now met four times**: the broken `ots` CLI reported as *pending*, an
+    # HTTP 200 from a bot-walled host read as an answer, a stale CA store read as *the calendar is
+    # not ready*, and this.
+    #
+    # ⇒ A SOURCE HAS NOT ANSWERED UNTIL IT HAS FAILED `_TRIES` TIMES WITH BACKOFF. What is a
+    # finding is an explorer that ANSWERS and DISAGREES; what is weather is one that does not
+    # answer. Those must not produce the same message, and until now they did.
+    #
+    # ⚠️ It does not retry forever and it does not lower `MIN_AGREE`. A run that still cannot
+    # reach two independent software families refuses exactly as before -- this changes how hard
+    # it tries, never what it will accept.
     got, errs = {}, []
     for name, base, kind in SOURCES:
-        try:
-            b = (_from_esplora(base, height) if kind == "esplora"
-                 else _from_blockchain_info(base, height))
-            got[name] = b
-        except Exception as e:                                               # noqa: BLE001
-            errs.append("%s: %s" % (name, str(e)[:40]))
+        _last = None
+        for _attempt in range(_TRIES):
+            try:
+                b = (_from_esplora(base, height) if kind == "esplora"
+                     else _from_blockchain_info(base, height))
+                got[name] = b
+                _last = None
+                break
+            except Exception as e:                                           # noqa: BLE001
+                _last = "%s: %s" % (name, str(e)[:40])
+                if _attempt + 1 < _TRIES:
+                    time.sleep(_BACKOFF * (2 ** _attempt))
+        if _last:
+            errs.append("%s after %d attempt(s)" % (_last, _TRIES))
         time.sleep(0.4)
 
     # ⚠ Timestamp is NOT part of the agreement key: explorers report it consistently, but it is
@@ -208,6 +254,12 @@ def main():
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace",
                                   line_buffering=True)
     verify = "--verify" in sys.argv
+    add = "--add" in sys.argv
+    if not (verify or add) or (verify and add):
+        print("  usage: python pin_anchors.py --add      (append the unpinned blocks our proofs name)")
+        print("         python pin_anchors.py --verify   (re-fetch every pin; the gate's act)")
+        print("  " + D + " one flag, deliberately: adding is cheap and unverified, verifying is total.")
+        return 2
     want = heights()
     print("=" * 78)
     print("  BITCOIN ANCHORS -- %d block(s) our proofs name" % len(want))
@@ -216,6 +268,13 @@ def main():
     old = {}
     if OUT.exists():
         old = json.loads(OUT.read_text(encoding="utf-8")).get("blocks", {})
+    if add:
+        _new = sorted(h for h in want if str(h) not in old)
+        print("  --add: %d block(s) pinned already, %d to fetch: %s" % (len(want) - len(_new), len(_new), _new))
+        want = {h: want[h] for h in _new}
+        if not want:
+            print("  ok  nothing to add. `--verify` is the act that re-checks what is pinned.")
+            return 0
     rec, bad = {}, []
     for h in sorted(want):
         try:
@@ -293,7 +352,8 @@ def main():
         "blocks": _merged(rec),
     }, indent=1) + NL, encoding="utf-8")
     print()
-    print("  wrote %s -- %d block(s)" % (OUT.name, len(_merged(rec))))
+    print("  wrote %s -- %d block(s)%s" % (OUT.name, len(_merged(rec)),
+                                          " (+%d added; run --verify for the total act)" % len(rec) if add else ""))
     return 0
 
 

@@ -13,11 +13,19 @@ WHERE       github.com/provenance-laboratory/reproduction/issues
 THE WINDOW  closes 7 DECEMBER 2026
 ```
 
-⛔ **The close date does not move.** It was chosen before the window opened and it is stated here so
-that it cannot be chosen afterwards. If nobody reproduces this artifact by 7 December 2026, that
-silence is the result we report — and a window extended until a reproduction arrives would not be a
-measurement, it would be a schedule. **Reports filed after the close are welcome and will be
-reported, but separately, and they do not reopen the window.**
+⛔ **The close date does not move, and it is a reporting cutoff rather than a deadline.** Nothing
+has to happen on or before it. It was chosen before the window opened and is stated here so that it
+cannot be chosen afterwards.
+
+⚠️ **What it protects against has reversed direction.** It used to guard against a study that
+benefits from silence. Now that no inference is drawn from silence, a reproduction is the
+flattering outcome --- so the pressure runs toward WAITING FOR ONE, and an open-ended stopping point
+would let this run until something good arrives. Closing that is the only thing the cutoff still
+does.
+
+⇒ **If nobody reproduces this artifact by 7 December 2026 we report that nobody did, and draw no
+conclusion from it.** Reports filed after the close are welcome and will be reported, labelled
+post-cutoff, and they do not reopen the window.
 
 ---
 
@@ -34,9 +42,16 @@ So if you intend to try, **file a one-line commitment issue first**, at
 `github.com/provenance-laboratory/reproduction/issues`. It costs you nothing, binds you to nothing,
 and you may still report whatever you get — including that you gave up.
 
-⚠️ **We are also measuring whether anyone commits.** If nobody does, that is a reported result
-about how hard it is to get a deliberately trivial artifact reproduced, and it was written down
-before the call went out so that it cannot later look like a consolation prize.
+⚠️ **We record the number and timing of public commitments, and nothing more.** A count of zero
+is **descriptive only**. It is not read as evidence about difficulty, interest, visibility, or
+anything about the field.
+
+⛔ **An earlier version of this paragraph said the opposite** — that if nobody commits, "that is a
+reported result about how hard it is to get a deliberately trivial artifact reproduced". That is an
+inference from absence, and it is the same one v18 §1 withdrew about reproductions, moved one stage
+earlier: *no commitment, therefore difficult.* No commitment can equally mean nobody saw the call,
+nobody noticed it, nobody had time, or nobody wanted to commit in public. **The withdrawal is not
+real until it covers this sentence too.**
 
 ## What you need
 
@@ -103,18 +118,28 @@ from the record, not ours to assert on their behalf.
 harder to dress up. A reproduction study whose author coached the reproducers and then vouched for
 their independence measures the author's persuasiveness.
 
-## ⛔ If nobody answers, that is the finding
+## ⛔ If nobody answers, we draw no conclusion from it
 
-This was written before the window opened, and it is in the pre-registration
-([`PRE-REGISTRATION-v2-CONFIRMATORY.md`](PRE-REGISTRATION-v2-CONFIRMATORY.md) §2, §7) so that it cannot later look like a consolation
-prize assembled after silence.
+An earlier version of this call said the opposite, and it is worth saying why it changed rather
+than quietly deleting it.
 
-The companion paper measured twelve public model releases against 22 axes and found that
-**independent reproduction is satisfied by none of them**. If an artifact published expressly to be
-reproduced — a few megabytes, licensing-clean, deterministic by construction, every input hashed and
-timestamped, runnable in under a minute on a laptop with no GPU — **also goes unreproduced**, then
-the barrier is not cost, not scale, and not licensing. It would be a finding about the ecosystem
-rather than about this artifact, and a sharper one than a successful reproduction would have been.
+It said that if an artifact published expressly to be reproduced — a few megabytes, licensing-clean,
+deterministic by construction, every input hashed and timestamped, runnable in under a minute on a
+laptop with no GPU — **also goes unreproduced**, then the barrier is not cost, not scale, and not
+licensing, and the silence would be a finding about the ecosystem.
+
+⛔ **That inference is withdrawn** (pre-registration v18 §1). It required knowing that the silence
+meant something, which required knowing who had seen this — and we have no way to establish that
+which does not rest on our own account of how widely we posted it. **A conclusion that depends on
+the author's own diligence, and is sharpest when that diligence is least, is not a conclusion we
+should be able to reach.**
+
+⇒ So: **we publish the artifact, we report every reproduction we receive, and we draw no
+inference from their absence.** If nobody answers, the paper says nobody answered.
+
+⚠️ This is the more neutral position and not the weaker one. The study's results are the
+measurements — the cost of determinism, and whether bit-identity survives different hardware — and
+none of them was ever contingent on anyone answering this call.
 
 ## What we already know, so you are not chasing our bugs
 

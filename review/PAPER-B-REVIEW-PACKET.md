@@ -5,12 +5,12 @@
 ## ⇒ SEND THESE TWO
 
 ```
-paper-b-review.zip     194 files
-  sha256 813c8ba06ea52e5b3273c26bf857030aa7ff6f9c7dc1ea032b51d8c0fa63e792
+paper-b-review.zip     215 files
+  sha256 cfc1a0b1de6f5bcf5945809ee09a775111d6a3476610bbba29f7d5b5f93ea290
 this file
 ```
 
-Repository `provenance-laboratory/reproduction`, commit `6964564`.
+Repository `provenance-laboratory/reproduction`, commit `3029912`  ⚠️ TREE DIRTY.
 
 ---
 
@@ -42,7 +42,7 @@ It re-derives the thread partition and the divergence table **on YOUR stack**, f
 ⇒ To audit the CONFIGURATION-A numbers rather than your own, use the reference bundle: `reference/` ships the arrays and `MEASUREMENT-5-7.json` the derived values, so the published figures can be recomputed from published bytes without training anything.
 
 ```
-python verify_package.py         the package run in a directory it has never seen
+# python verify_package.py       THERE IS NO PACKAGE IN THIS ARCHIVE -- see below
 ```
 
 ## What is measured, and by what
@@ -94,7 +94,14 @@ threads=16   d0dcb2066db6a2f6f3a9e54e52869ce9a658a07c87e5bca0
 corpus        6312982 clean bytes, 10 texts, merkle 2006b7327c616f0ca5f9c0b9c3e766b5
 model         8-byte context, d_emb 64, d_hid 1024, 300 steps, batch 256, float32
 weights       sha256 a4afb5c86dd88ae5ce7a475d448ee6bab18f6bc4e3c6c59721511f98f1c23d38
-published as  package/ -- 64 files; OUR WEIGHTS ARE NOT IN IT, only the digest
+
+⛔ **THERE IS NO REPRODUCER PACKAGE IN THIS ARCHIVE, AND THAT IS A STATE, NOT AN OMISSION.**
+   `build_package.py` refuses while the governing protocol version is not in force, so no
+   package has been built since v18 was written. Nothing in this archive can be verified with
+   `verify_package.py`, and the reproduction instructions downstream of it describe a directory
+   that does not exist yet. The blocking act is a human one and it is named in `prepare_anchor.py`.
+
+published as  package/ -- 0 files; OUR WEIGHTS ARE NOT IN IT, only the digest
 ```
 
 ## ⚠️ Known-weak, and a reviewer should push here
@@ -110,7 +117,7 @@ published as  package/ -- 64 files; OUR WEIGHTS ARE NOT IN IT, only the digest
 - **`--publishing` now enforces v6 §7's last two conditions, and its first version accepted its own template's placeholder.** `report_to` reading `FILL IN: the URL a reproducer files at...` passed, because the check refused only "", None, TBD and ?; only the close date was caught, and only because a date must PARSE. Look for the same shape elsewhere: a gate that tests the SHAPE of a value rather than the claim it makes.
 - **§2c's distribution subset is a new rule with a branch no live input has taken.** It declares which pinned files a reproducer package contains, and the test is an EQUALITY — absent must equal the complement — because a skip would make deletion the way to avoid a digest check. It cannot take effect until v8 anchors, so in THIS package `check_commitments.py` still refuses. The five rule cases in `test_controls.py` are exercised against the declaration rather than the authority, which is honest but is not the same as having run in anger.
 - **Measurement 6 is reported NOT MEASURABLE.** Everything else is a digest or a timing a stranger can re-run. That page cannot be checked and says so.
-- **The independent reproduction does not exist**, and by section 2b we may not produce one. If nobody answers the call, section 2c pre-registered that silence as a result — a reviewer should decide whether that is a finding or a rationalisation, because it was written before the window opened precisely so that question could be asked.
+- **The independent reproduction does not exist**, and by section 2b we may not produce one. **v18 §1 withdrew the inference that silence is a result**: if nobody answers the call we report that nobody did and draw no conclusion from it. A reviewer should check that the paper holds to that everywhere, including in sentences that only imply it.
 
 ## ⛔ What the reviewer should NOT accept without pushing
 

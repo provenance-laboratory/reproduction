@@ -83,7 +83,7 @@ def main():
         #
         # ⚠ Narrow on purpose. Only `__pycache__/` and `.pyc`; every other unlisted file is still
         # a finding, because "ignore what is not in the list" is how an addition becomes invisible.
-        _extra = sorted(_present - _listed - {"SHA256SUMS"}
+        _extra = sorted(_present - _listed - {"SHA256SUMS", "BUILD-COMPLETE.json"}
                         - {f for f in _present if f.startswith("my-run/")}
                         - {f for f in _present
                            if "__pycache__/" in f or f.endswith((".pyc", ".pyo"))})
@@ -105,6 +105,39 @@ def main():
         # ⛔ AND EXACTLY ONE STAGE. The input package carries NO-TARGET.md and no
         # EXPECTED.json; the target package carries EXPECTED.json and no NO-TARGET.md. Both, or
         # neither, means the package does not know which stage of the protocol it is.
+        # ⛔ AND THE EXCLUSION ABOVE MUST NOT FAIL OPEN. `BUILD-COMPLETE.json` cannot be in
+        # SHA256SUMS -- it is written after the manifest, which is the whole point of a marker
+        # that means *nothing was written after this* -- so the manifest cannot speak for it and
+        # something else has to. If an unlisted name were merely forgiven, deleting the marker
+        # would be the way to make a half-built package verify, and that is the exact failure the
+        # marker exists to catch. It is REQUIRED here, and read.
+        _marker = work / "BUILD-COMPLETE.json"
+        if not _marker.is_file():
+            bad.append("BUILD-COMPLETE.json is ABSENT: no build this code can vouch for finished "
+                       "this directory. A partial package is byte-identical to a complete one "
+                       "except for this file.")
+        else:
+            try:
+                _m = json.loads(_marker.read_text(encoding="utf-8"))
+                if not isinstance(_m, dict) or not _m.get("completed_utc"):
+                    bad.append("BUILD-COMPLETE.json does not state completed_utc")
+                # ⛔ A TIME AND A SENTENCE VOUCH FOR AN EVENT, NOT FOR THESE BYTES. The marker
+                # binds to the manifest's digest, and the manifest binds to everything else -- so
+                # a marker lifted from another build, or kept across an edit to SHA256SUMS, is
+                # visible here instead of silently certifying a directory it never saw.
+                _want = (_m or {}).get("sha256sums_sha256") if isinstance(_m, dict) else None
+                _got = hashlib.sha256((work / "SHA256SUMS").read_bytes()).hexdigest()
+                if not _want:
+                    bad.append("BUILD-COMPLETE.json does not bind to SHA256SUMS, so it asserts "
+                               "that A build finished rather than that THESE bytes are what it "
+                               "finished with")
+                elif _want != _got:
+                    bad.append("BUILD-COMPLETE.json binds to SHA256SUMS %s and this package's is "
+                               "%s: the marker is from a different build" % (_want[:16], _got[:16]))
+            except (OSError, ValueError):
+                bad.append("BUILD-COMPLETE.json is present and unreadable, which is neither a "
+                           "finished build nor an honest absence")
+
         _has_target = "EXPECTED.json" in _present
         _has_notarget = "NO-TARGET.md" in _present
         if _has_target == _has_notarget:

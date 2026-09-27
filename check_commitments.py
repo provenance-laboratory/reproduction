@@ -39,6 +39,10 @@ NL = chr(10)
 D = chr(0x26D4)
 W = chr(0x26A0)
 HERE = pathlib.Path(__file__).resolve().parent
+# ⚠️ ONE QUESTION ONLY, NOW. This once meant both "how many pins make a table" and "how many
+# loose digests make an empty parse suspicious", and round 9 found it answering a third: whether a
+# complete parse of a SMALL table is a broken parser. It is not, and the completeness comparison in
+# `governing()` replaced it there. What is left is the honest use.
 MIN_EXPECTED = 4
 # ⚠ How long a stamped-but-unanchored successor may sit before it is a violation rather than a
 # wait. Calendars aggregate on their own schedule and a few days is ordinary; a week during which
@@ -66,6 +70,11 @@ DIGEST_LINE = re.compile(r"^([A-Za-z0-9_./-]+)\s+([0-9a-fA-F]{64})\s*(?:#.*)?$",
 # block or a pipe-table row -- something with table shape. Prose is not table shape however many
 # digests it quotes, and a three-row table is a table.
 _FENCE = re.compile(r"^```[^\n]*\n(.*?)^```", re.M | re.S)
+# The distribution subset says what it is, in the one place a fence can carry a name that no
+# heading owns and no example acquires by accident. See `distribution_subset`.
+# _SUBSET_FENCE was a regex here until round 13; see `_fenced_blocks` for why a regex cannot
+# read a fence. The name is kept so an importer fails loudly rather than silently on a None.
+_SUBSET_FENCE = None
 # ⛔ THE TWO PATTERNS DISAGREED ABOUT THE LINE'S TAIL, AND THE DISAGREEMENT WAS FATAL. `_ROW`
 # ended at a word boundary and `DIGEST_LINE` at end-of-line, so a fenced block whose rows carry
 # trailing annotations -- `train.py  <64hex>  # unchanged` -- is SEEN as four commitment rows and
@@ -112,24 +121,271 @@ def _without_anchor_facts(text):
     the parsed commitment table -- 21 real pins plus 21 heights read as files -- and the first
     generated v10 reported 42. Caught by parsing the document back immediately after writing it,
     which is the only reason it did not ship.
+
+    ⛔⛔ AND THE FIX WAS DEFEATED BY A RENUMBERED HEADING. v15 called its tables 3a-3d instead of
+    2a-2d, so this function did not find its heading, stripped NOTHING, and every one of v15's 30
+    anchor heights was parsed as a committed FILE PATH. v15 is anchored, so `compose()` inherited
+    all 30 permanently and `check_commitments` reported them MISSING forever.
+
+    ⇒ THE STRIP IS NOW STRUCTURAL, NOT POSITIONAL. A fenced block whose every non-blank line is
+    anchor-fact shaped IS an anchor-fact block, whatever heading sits above it or whether one does.
+    That repairs every already-anchored version at parse time -- commitments are re-derived from
+    each document on every run, never stored -- so no retirement list is needed and none is written.
+    ⚠ Retiring the 30 names would have been an enumeration, and the next renumbering would have
+    recreated them under different numbers.
+
+    ⚠ A block must be non-empty to qualify: an empty fence is not an anchor-fact block, and treating
+    it as one would strip a real table that happened to be blank.
     """
-    if ANCHOR_FACTS_HEADING not in text:
-        return text
-    head, tail = text.split(ANCHOR_FACTS_HEADING, 1)
-    block = re.search(r"```" + NL + r".*?```", tail, re.S)
-    return head + (tail[:block.start()] + tail[block.end():] if block else tail)
+    out, pos = [], 0
+    for start, end, _pairs in _anchor_fact_blocks(text):
+        out.append(text[pos:start])
+        pos = end
+    out.append(text[pos:])
+    return "".join(out)
 
 
 def commitments(text):
-    """(path, digest) for every file a protocol version pins. Read out, never retyped."""
+    """(path, digest) for every file a protocol version pins. Read out, never retyped.
+
+    ⛔ THE STRIP AND THE READER MUST AGREE, AND THIS REFUSES IF THEY EVER STOP. They were separate
+    implementations and diverged: the strip removed blocks the reader could not find, so a document
+    could have its facts deleted from the commitment table and contributed to no fact table either
+    -- committed to nothing, silently, with every check green.
+
+    ⇒ They now share `_anchor_fact_blocks`, which makes that unreachable. The assertion stays
+    anyway: it costs nothing, and "unreachable by construction" is what was believed about the
+    previous arrangement.
+    """
+    _blocks = _anchor_fact_blocks(text)
+    if _blocks and not anchor_facts(text):
+        raise SystemExit(
+            D + " %d anchor-fact block(s) were stripped from the commitment table and the fact "
+            "reader returned nothing. A document whose facts are removed from one side and absent "
+            "from the other is committed to neither, and every check downstream would pass."
+            % len(_blocks))
     return [(m.group(1), m.group(2).lower())
             for m in DIGEST_LINE.finditer(_without_anchor_facts(text))]
 
 
 BITCOIN_TAG = bytes([0x05, 0x88, 0x96, 0x0d, 0x73, 0xd7, 0x19, 0x01])
 
+
+def _after_heading(text, heading):
+    """Text following HEADING where it appears AS A HEADING -- at the start of a line.
+
+    ⛔ THE LOOKUPS USED `text.split(heading, 1)`, WHICH MATCHES THE FIRST OCCURRENCE ANYWHERE. A
+    document that DISCUSSES its own structure therefore rewrites it: v16's first draft quoted these
+    constants with their values, so the marker appeared in prose ahead of the real heading.
+    `anchor_facts` then parsed the explanation, and `distribution_subset` did not fail -- it
+    returned the INSTRUMENTS table, eighteen entries of the wrong list, silently.
+
+    ⇒ A heading is a line that STARTS with the marker. Prose that mentions it is prose. Returns
+    None when absent, so a caller must decide rather than receive an empty string.
+
+    ⛔ AND IT TOOK THE FIRST OF SEVERAL WITHOUT SAYING SO. Moving the match to line-start fixed
+    prose-versus-heading and left the other half of the same defect: if the marker heads TWO lines,
+    this returned the first and the second was read by nobody. v18 arrived with `## 2d.` narrating
+    round 2 and `### 2d.` carrying the anchor facts -- two sections a reader calls "2d" -- which is
+    the v15 renumbering hazard rebuilt by hand, and the only reason it was harmless is that the
+    fact table stopped being found by heading at all.
+
+    ⇒ AMBIGUITY IS A REFUSAL. A marker that names more than one place names none, and choosing
+    silently is how a document quietly rewrites its own structure.
+    """
+    _all = list(re.finditer(r"^" + re.escape(heading), text, re.M))
+    if len(_all) > 1:
+        raise SystemExit(
+            D + " the heading %r begins %d lines of this document. A marker that identifies more "
+            "than one section identifies none, and taking the first silently is how v15's "
+            "renumbering went unnoticed for two protocol versions." % (heading, len(_all)))
+    return text[_all[0].end():] if _all else None
+
+
+# ⚠ RESERVED, AND DELIBERATELY NOT USED TO FIND ANYTHING. `2a.`-`2d.` name the four commitment
+# tables in every version since v15, and the strip became structural precisely so that no reader
+# depends on them. The constant stays as the written record of the reservation -- a version that
+# reuses these labels for narrative is the collision `_after_heading` now refuses -- and any code
+# that starts locating facts by it has reintroduced the defect that cost v16 and v17.
 ANCHOR_FACTS_HEADING = "### 2d."
-ANCHOR_FACT_LINE = re.compile(r"^\s*(\d{6,9})\s+([0-9a-fA-F]{64})\s*$", re.M)
+# ⛔ THIS ENDED AT `\s*$` WHILE `DIGEST_LINE` PERMITTED A TRAILING `# comment`, AND THE STRIP
+# REQUIRED *EVERY* LINE TO MATCH THIS ONE. So a single annotated height -- `965840  <root>  # the
+# block that anchored v16`, which v17 §2d says in prose one line above its own table -- disqualified
+# the whole block, and all 32 heights were parsed as committed FILE PATHS on a signed, anchored
+# version. A reviewer ran it and reported the exact counts.
+#
+# ⚠ `_ROW`'s comment block above records this identical class -- "the two patterns disagreed about
+# the line's tail, and the disagreement was fatal" -- fixed between the DETECTOR and the PARSER and
+# left in place between the STRIP and the parser. Fixing one instance of a class and leaving its
+# sibling is how this project keeps producing the same defect in a new place.
+ANCHOR_FACT_LINE = re.compile(r"^\s*(\d{6,9})\s+([0-9a-fA-F]{64})\s*(?:#.*)?$", re.M)
+
+
+# ⛔ THE TWO TOKENS, EACH DEFINED WITHOUT REFERENCE TO ITS SURROUNDINGS. These deliberately do NOT
+# reuse ANCHOR_FACT_LINE: the whole purpose is to see what that pattern cannot, so sharing it would
+# reproduce the defect this pair was written to end. Where a check and the thing it checks must
+# differ, they differ here, on purpose and in one place.
+_DIGEST_TOKEN = re.compile(r"(?<![0-9a-fA-F])[0-9a-fA-F]{64,}(?![0-9a-fA-F])")
+_HEIGHT_TOKEN = re.compile(r"(?<![0-9])[0-9]{6,9}(?![0-9])")
+
+
+# ⛔ A HEIGHT IS MADE OF HEX CHARACTERS TOO, so a height written HARD AGAINST its digest is one
+# unbroken hex run and the digest token swallows the pair whole:
+#
+#     964534aaaaaaaa...aaaa      -> _anchor_shaped_lines []  -> anchor_facts {}
+#
+# A reviewer executed that against the real parser. The rule claimed to describe neither token in
+# terms of what surrounds it, and a token with NOTHING around it defeated it.
+#
+# ⇒ A run of 70-73 hex characters is a 6-9 digit height followed by a 64-character digest, and
+# nothing else this project writes looks like that. Split it and the pair is visible again.
+_FUSED = re.compile(r"(?<![0-9a-fA-F])([0-9]{6,9})([0-9a-fA-F]{64})(?![0-9a-fA-F])")
+
+
+def _anchor_shaped_lines(text):
+    """[(offset, line)] for every line stating a height beside a digest, however it is decorated.
+
+    The digests come out FIRST -- a digest contains digit runs of its own, and leaving them in
+    would let the height be found inside the very token it is supposed to sit beside.
+    """
+    out, pos = [], 0
+    for line in text.split(NL):
+        probe = _FUSED.sub(lambda m: m.group(1) + " " + m.group(2), line)
+        if _DIGEST_TOKEN.search(probe) and _HEIGHT_TOKEN.search(_DIGEST_TOKEN.sub(" ", probe)):
+            out.append((pos, line))
+        pos += len(line) + 1
+    return out
+
+
+# ⛔ AND A DIGEST ONE CHARACTER SHORT WAS SILENTLY IGNORED. `964534  <63 hex>` is not a fact this
+# parser can read, and it was not a fact this parser complained about either -- it simply vanished,
+# which is the whole failure class.
+#
+# ⚠ THE FIX IS CONTEXTUAL, BECAUSE A GLOBAL ONE WOULD BE WRONG. Lowering the digest threshold
+# everywhere would make ordinary prose -- "965840 -> 8aac2039, the block that anchored v16" -- into
+# a malformed fact, and these documents abbreviate digests beside heights on purpose. So: in PROSE
+# a short hash beside a height stays prose; inside a FENCED BLOCK that otherwise presents itself as
+# a fact table, a height beside a hash-shaped run that is not 64 characters is a MALFORMED FACT and
+# is refused rather than dropped.
+_NEARLY = re.compile(r"(?<![0-9a-fA-F])([0-9]{6,9})[^0-9a-fA-F]+([0-9a-fA-F]{16,63}|"
+                     r"[0-9a-fA-F]{65,})(?![0-9a-fA-F])")
+
+
+def _malformed_fact_rows(block):
+    """Rows inside a fenced block that are ALMOST anchor facts. [(row, why)]."""
+    bad = []
+    for row in block.split(NL):
+        if not row.strip() or ANCHOR_FACT_LINE.match(row):
+            continue
+        m = _NEARLY.search(row)
+        if m:
+            bad.append((row.strip(), "height %s beside a %d-character hex run"
+                        % (m.group(1), len(m.group(2)))))
+    return bad
+
+
+def _anchor_fact_blocks(text):
+    """Every fenced block that IS an anchor-fact table: [(start, end, [(height, root), ...])].
+
+    ⛔ ONE FINDER, USED BY BOTH THE STRIP AND THE READER. They were separate: the strip was
+    structural and removed every qualifying block; the reader located `### 2d.` and took the FIRST
+    bare fence after it. Three consequences, all reported by a reviewer and all reproduced here:
+
+      * a document with TWO fact blocks had both stripped and only the first read, so the second
+        block's heights were silently committed to nothing;
+      * a renumbered heading stripped correctly and declared ZERO facts, silently -- the reader
+        failing quietly while the strip succeeded;
+      * a fence tagged ```text was invisible to the strip (which required a bare fence) and visible
+        to `_FENCE` everywhere else.
+
+    ⇒ Sharing the finder makes those states unreachable rather than merely fixed.
+
+    ⚠ THE ASSUMPTION, STATED RATHER THAN HIDDEN: a fenced block whose every row is a 6-9 digit
+    token beside 64 hex characters is an anchor-fact table. An anchor fact and a commitment are
+    genuinely indistinguishable by shape -- a file could legally be NAMED `964534`. This rule
+    therefore misreads a commitment table all of whose paths are bare 6-9 digit numbers, and no
+    such table exists or is ever likely to. The alternative -- trusting a heading -- is what cost
+    three protocol versions.
+    """
+    out = []
+    for m in _FENCE.finditer(text):
+        rows = [l for l in m.group(1).split(NL) if l.strip()]
+        if not rows or not all(ANCHOR_FACT_LINE.match(l) for l in rows):
+            continue
+        out.append((m.start(), m.end(),
+                    [(int(x.group(1)), x.group(2).lower())
+                     for x in ANCHOR_FACT_LINE.finditer(m.group(1))]))
+
+    # ⛔ ELEVEN CONTROLS WERE ELEVEN SHAPES A REVIEWER HAD NAMED -- bare, trailing comment, tagged
+    # fence, second block, renumbered heading -- which is ENUMERATION STANDING IN FOR PROJECTION,
+    # inside the repair for the defect this project calls enumeration-for-projection. The next
+    # unnamed shape wins, and a reviewer found two more in ten minutes:
+    #
+    #   a comment on its own LINE inside the fence   -> block disqualified, heights become PATHS
+    #   an INDENTED fence (a list item)              -> no blocks at all; facts=0 AND commitments=0,
+    #                                                   so the two halves "agree" on nothing and the
+    #                                                   disagreement assertion cannot fire
+    #
+    # ⇒ THE PROJECTION, WHICH DOES NOT DEPEND ON KNOWING THE SHAPE. Every anchor-fact-shaped line in
+    # the document must be accounted for by some block. A line the document commits and no reader
+    # reads is the whole failure class, however the fence around it is written.
+    # ⛔ THE PROJECTION PROJECTED OVER ITS OWN PREDICATE, AND A REVIEWER WALKED THROUGH IT. `_raw`
+    # used ANCHOR_FACT_LINE -- the same pattern as the detector -- so any prefix the pattern does
+    # not expect ('> ', '| ', '- ') hides a line from the CHECK and from the THING IT CHECKS alike,
+    # and the two agree on having seen nothing. Real v18 with its fact table rewritten as a pipe
+    # table reported 25 commitments and 0 facts, silently.
+    #
+    # ⇒ COUNT THE DIGESTS, NOT THE LINES. A 64-hex token beside a 6-9 digit number is an anchor
+    # fact however the row around it is decorated, and **a digest cannot be reformatted away**.
+    #
+    # ⛔⛔ AND THAT REPAIR WAS DEFEATED BY THE SAME MOVE, A THIRD TIME. It read
+    #     ^[^0-9a-fA-F]*?(\d{6,9})[^0-9a-fA-F]+([0-9a-fA-F]{64})\b
+    # -- "the text before the height contains no hex character". But 0-9 and a-f ARE hex, so a
+    # prefix containing a digit or any of a-f made the line invisible: `1. 964534 <root>`,
+    # `Block 964534 <root>`, `height 964534: <root>`, `at height 964534 the root is <root>`, and
+    # a row written digest-first. A reviewer listed five and there was no reason to think five was
+    # the number. The rule was blind wherever the parser was blind and the two agreed on nothing,
+    # which is the property the projection exists to make impossible.
+    #
+    # ⇒ THE PREDICATE NOW DESCRIBES NEITHER HALF IN TERMS OF WHAT SURROUNDS IT. Remove the digests
+    # from the line first, then ask whether a height survives in what is left. No prefix, bullet,
+    # quotation mark, pipe, cell, link or ordering can hide either token, because the rule never
+    # looks at anything except the two tokens themselves.
+    #
+    # ⚠ THE ONE BOUND, STATED: a digest is a hex run of SIXTY-FOUR OR MORE. Sixty-four exactly is a
+    # SHA-256; more is a malformed one, and it is included deliberately -- appending a character to
+    # the only row of a one-row block would otherwise disqualify the block and leave nothing for
+    # this rule to notice. Runs SHORTER than 64 are excluded because these documents legitimately
+    # abbreviate digests in prose beside heights (38 such runs exist in this tree today), so a
+    # lower threshold would fail on correct documents rather than on wrong ones.
+    # ⇒ A BLOCK THAT LOOKS LIKE A FACT TABLE AND CONTAINS A MALFORMED ROW IS REFUSED, not
+    # silently skipped. "Almost a fact" inside a fence is the one place a short or over-long digest
+    # cannot be prose.
+    for _m in _FENCE.finditer(text):
+        _rows = [l for l in _m.group(1).split(NL) if l.strip()]
+        if not _rows:
+            continue
+        _good = sum(1 for l in _rows if ANCHOR_FACT_LINE.match(l))
+        _bad = _malformed_fact_rows(_m.group(1))
+        if _bad and (_good or len(_bad) == len(_rows)):
+            raise SystemExit(
+                D + " a fenced block presents as an anchor-fact table and %d row(s) are malformed "
+                "(%s: %s). A row that is almost a fact is a fact this parser would drop, and a "
+                "dropped height is committed to nothing."
+                % (len(_bad), _bad[0][1], _bad[0][0][:60]))
+
+    _loose = [(_o, _l) for _o, _l in _anchor_shaped_lines(text)
+              if not any(_s <= _o < _e for _s, _e, _p in out)]
+    if _loose:
+        # ⚠ POSITIONAL, NOT A COUNT. `raw > accounted` compares two totals, and two totals can
+        # agree while naming different lines -- a disqualified block of n facts and n shaped lines
+        # loose elsewhere cancel exactly. Each shaped line must lie INSIDE a block that was read.
+        raise SystemExit(
+            D + " %d anchor-fact-shaped line(s) in this document are accounted for by no block "
+            "(%d fact(s) read). A height the document states and no reader parses is committed to "
+            "nothing, and every check downstream would pass. First one:%s    %s"
+            % (len(_loose), sum(len(p) for _s, _e, p in out), NL, _loose[0][1].strip()[:120]))
+    return out
 
 
 def anchor_facts(text):
@@ -143,12 +399,37 @@ def anchor_facts(text):
     heights are permitted. Later anchoring adds; it never contradicts. Anyone can re-derive every
     line from the chain, which is the property a digest of the file never had.
     """
-    if ANCHOR_FACTS_HEADING not in text:
+    # ⛔ THIS LOCATED THE TABLE BY HEADING AND READ ONLY THE FIRST FENCE AFTER IT, while the strip
+    # removed EVERY qualifying block. A document with two fact blocks therefore had both stripped
+    # and one read, and a renumbered heading produced zero facts SILENTLY. Both halves now come
+    # from `_anchor_fact_blocks`, so "stripped" and "read" cannot disagree.
+    #
+    # ⚠ ALL BLOCKS ARE MERGED, not just the first. A version may legitimately table its facts in
+    # more than one fence -- and if it does, every one of them is a commitment.
+    _blocks = _anchor_fact_blocks(text)
+    if not _blocks:
         return {}
-    tail = text.split(ANCHOR_FACTS_HEADING, 1)[1]
-    block = re.search(r"```" + NL + r"(.*?)```", tail, re.S)
-    if not block:
-        return {}
+    # ⛔ THE MERGE TURNED A DOCUMENTATION EXAMPLE INTO A TREE-WIDE DENIAL OF SERVICE. Refusing a
+    # repeated height ACROSS blocks meant a version that illustrates the format with a real height
+    # -- which v17 warns about and v18 does in prose -- raised SystemExit inside anchor_facts ->
+    # commitments -> governing, so every tool asking which document is authority died. It refused
+    # even when both blocks stated the SAME root, reporting "commits height X TWICE", which is
+    # false: two blocks each committed it once.
+    #
+    # ⇒ SCOPE THE RULE TO WHAT IS ACTUALLY A LIE. Within one block a repeat replaces the earlier
+    # commitment when the block is read as a mapping -- that is the round-14 attack and it stays
+    # refused. Across blocks, equal roots are consistent and only DISAGREEMENT is a violation.
+    for _s, _e, _ps in _blocks:
+        _within = {}
+        for _h, _r in _ps:
+            if _h in _within:
+                raise SystemExit(
+                    D + " one anchor-fact block commits height %d TWICE (%s then %s). A repeated "
+                    "height silently replaces the earlier commitment when the block is read as a "
+                    "mapping, which is how a fact pin lies while still looking monotonic."
+                    % (_h, _within[_h][:16], _r[:16]))
+            _within[_h] = _r
+    _pairs = [p for _s, _e, ps in _blocks for p in ps]
     # ⛔ THE DICT COLLAPSE WAS THE LIE. A fact pin promises "every committed height keeps its
     # merkle root", and a comprehension keyed on height silently kept the LAST line for a
     # repeated height. So a document could commit 964534 twice -- once truthfully, once with a
@@ -158,16 +439,15 @@ def anchor_facts(text):
     #
     # ⇒ A repeated height is refused before any collapse, whatever the roots say. Two lines for
     # one height is never a legitimate document: the block is a set of commitments, and a set
-    # cannot name the same thing twice.
-    _pairs = [(int(m.group(1)), m.group(2).lower())
-              for m in ANCHOR_FACT_LINE.finditer(block.group(1))]
+    # cannot name the same thing twice. ⚠ Now enforced ACROSS blocks as well as within one, because
+    # merging several fences is exactly where a duplicate could hide unnoticed.
     _seen = {}
     for _h, _r in _pairs:
-        if _h in _seen:
+        if _h in _seen and _seen[_h] != _r:
             raise SystemExit(
-                D + " an anchor-fact block commits height %d TWICE (%s then %s). A repeated "
-                "height silently replaces the earlier commitment when the block is read as a "
-                "mapping, which is how a fact pin lies while still looking monotonic."
+                D + " height %d is committed with TWO DIFFERENT roots (%s and %s). One of them is "
+                "false, and reading the blocks as a mapping would silently keep whichever came "
+                "last -- monotonic in shape, a lie in substance."
                 % (_h, _seen[_h][:16], _r[:16]))
         _seen[_h] = _r
     return _seen
@@ -210,13 +490,147 @@ def distribution_subset(text):
     equality, not a skip: the absent set must be EXACTLY the pinned set minus the declared subset.
     One file missing from the subset, or one absence outside the complement, and this refuses.
     """
-    if DISTRIBUTION_HEADING not in text:
+    # ⛔⛔ AND IT WAS FOUND BY A HAND-WRITTEN LABEL, WHICH v19 RENUMBERED. `DISTRIBUTION_HEADING`
+    # is `### 2c.`; in v18 that is *What the reproducer package contains* and `### 2d.` is the
+    # anchor facts, and in v19 -- signed, anchored, and the current authority -- **§2c IS the
+    # anchor-fact table and there is no 2d**. So this returned 35 merkle roots as the declared
+    # contents of the reproducer package:
+    #
+    #     subset: ['964534  018d69dc7bf4e2e8...', '964535  ef17461955701f9c...', ... 35 rows]
+    #
+    # The complement became the entire pinned set, and §2c's equality rule then required a
+    # reproducer package to be missing every pinned file -- which is how *a genuine distribution*
+    # and *everything absent* became the same input with opposite expectations, and why the suite
+    # reports the collision as `⛔ WRONG everything absent`.
+    #
+    # ⚠️ v18 §3 NAMES THIS FAILURE SIX LINES ABOVE ITS OWN TABLES -- *a reader of this document
+    # met two different sections called 2d* -- and reserved `2a.`-`2d.`. The reservation was read
+    # as *narrative may not use these numbers* and not as *each number names one table*. v19
+    # renumbered anyway, and this time the collision filled the subset with the wrong rows instead
+    # of emptying it, which is quieter and worse.
+    #
+    # ⇒ FOUND BY SHAPE, LIKE THE ANCHOR FACTS ALREADY ARE. A distribution subset is a fenced
+    # block whose every row is a bare path this tree resolves -- no digest, no height -- which is
+    # what the block IS rather than what a heading calls it. `_anchor_fact_blocks` made exactly
+    # this move for the same reason, and `_after_heading`'s own docstring records that trusting a
+    # heading cost three protocol versions.
+    #
+    # ⚠️ TWO SUCH BLOCKS IS A REFUSAL, NOT A CHOICE. v10 carries a second one-row block naming
+    # `ANCHORS.json`, so the rule cannot be *the first* or *the largest* without being a guess:
+    # the subset is the block whose rows are all pins the document also commits, and if more than
+    # one block qualifies this returns nothing rather than picking.
+    # ⛔⛔ AND SHAPE ALONE CANNOT SAY WHAT A BLOCK IS FOR. The rule below -- a fence whose
+    # rows are all bare paths the document pins -- fixed the heading collision and bought a new
+    # ambiguity in its place. A round-12 reviewer appended an entirely ordinary code example to
+    # v21 and read the result back out:
+    #
+    #     a fence containing the single line `anchor_status.py`
+    #     distribution_subset() -> {'anchor_status.py'}
+    #
+    # There is nothing structural separating *these files constitute the reproducer distribution*
+    # from *here is a path you might type*. The old rule read a heading and the new rule reads a
+    # coincidence -- that the filenames in some block happen also to be pinned -- and a
+    # coincidence is not a grammar. Enumerating more exceptions would be the same move a third
+    # time.
+    #
+    # ⇒ THE DISCRIMINATOR IS PART OF THE BLOCK. A distribution subset is a fence whose INFO
+    # STRING is `distribution-subset`. It is declared, not inferred; it is independent of every
+    # heading, which is what the collision repair was for; and no example, quotation or listing
+    # becomes one by accident, because writing it is a deliberate act. Two of them is a refusal
+    # for the same reason two of anything is.
+    #
+    # ⚠️ A DECLARED BLOCK IS HELD TO MORE, NOT LESS. Under the shape rule a row naming a file
+    # the document does not pin quietly disqualified the whole block; now it is an error, because
+    # the block has said what it is. A subset may only name files the document commits -- the
+    # equality this feeds is between the absences and the complement OF THE PINNED SET, and a row
+    # outside that set makes the complement meaningless.
+    # ⛔⛔ AND THE SENTINEL WAS READ BY A REGEX THAT IS NOT A MARKDOWN GRAMMAR, WITH THE OLD
+    # SHAPE RULE UNDERNEATH IT. Two round-13 reviewers took it from both sides. One nested a
+    # sentinel fence inside a four-backtick fence: CommonMark renders the inner three backticks
+    # as LITERAL TEXT of the outer block, and the regex read them as a declaration -- a subset the
+    # document's own structure does not contain. The other indented the sentinel two spaces
+    # (natural under a list item): CommonMark still opens a fence, the regex saw nothing, and
+    # the function FELL THROUGH to the coincidence rule it had replaced -- returning an example
+    # elsewhere in the document as the declared subset. Author and tool held different subsets
+    # of one anchored document, which is the heading collision one level down.
+    #
+    # ⇒ THE READER IS A FENCE SCANNER THAT WALKS THE DOCUMENT AS COMMONMARK DOES -- up to
+    # three spaces of indent, backtick or tilde fences, a closing fence of the same character at
+    # least as long, and everything between an opening and its closing fence is content in which
+    # no fence opens. The shape fallback is GONE: a document declares a subset with the sentinel
+    # or declares none (v22 carries the sentinel; v18's shape block is history, and history does
+    # not govern). And a NEAR MISS IS A REFUSAL, not a silent demotion: a line that spells the
+    # sentinel on a fence-shaped line the scanner did not accept as an opening fence -- inside
+    # another fence, inside a blockquote, indented four spaces, with trailing text in the info
+    # string -- is a declaration a renderer and this tool would read differently, and the only
+    # safe reading of that is none.
+    _pins = {n for n, _d in commitments(text)}
+    _blocks = _fenced_blocks(text)
+    _declared = [(ln, [l.strip() for l in body if l.strip()])
+                 for info, body, ln in _blocks if info == "distribution-subset"]
+    _accepted_open = {ln for ln, _rows in _declared}
+    _near = []
+    for _i, _line in enumerate(text.split(NL)):
+        if "distribution-subset" not in _line or _i in _accepted_open:
+            continue
+        _bare = re.sub(r"^[ \t>]*", "", _line)
+        if _bare.startswith((BT * 3, "~~~")):
+            _near.append(_i + 1)
+    if _near:
+        raise SystemExit("%s line(s) %s spell a `distribution-subset` fence that a CommonMark "
+                         "renderer would not open as one -- inside another fence, in a blockquote, "
+                         "indented four or more spaces, or with text after the sentinel. A "
+                         "declaration this tool and a reader would read differently is refused, "
+                         "not guessed at." % (D, _near[:4]))
+    if not _declared:
         return set()
-    tail = text.split(DISTRIBUTION_HEADING, 1)[1]
-    block = re.search(r"```" + NL + r"(.*?)```", tail, re.S)
-    if not block:
-        return set()
-    return {ln.strip() for ln in block.group(1).split(NL) if ln.strip()}
+    if len(_declared) > 1:
+        raise SystemExit("%s this document declares %d `distribution-subset` blocks. What a "
+                         "reproducer package contains is a single fact about a single "
+                         "package, and this will not choose between two statements of it."
+                         % (D, len(_declared)))
+    _rows = _declared[0][1]
+    _stray = sorted(r for r in _rows if r not in _pins)
+    if _stray:
+        raise SystemExit("%s the `distribution-subset` block names %d file(s) this document "
+                         "does not pin: %s. The subset is checked as an equality against the "
+                         "complement of the PINNED set, so a row outside that set makes the "
+                         "rule state nothing." % (D, len(_stray), ", ".join(_stray)))
+    return set(_rows)
+
+
+BT = chr(96)
+_FENCE_OPEN = re.compile(r"^( {0,3})(" + BT + r"{3,}|~{3,})[ \t]*([^\n]*?)[ \t]*$")
+
+
+def _fenced_blocks(text):
+    """[(info, body_lines, opening_line_index)] -- fenced code blocks as CommonMark reads them.
+
+    A fence opens on a line indented at most three spaces that starts with three or more
+    backticks or tildes; a backtick fence's info string may not contain a backtick. It closes
+    on a line of the same character at least as long, indented at most three spaces, and
+    nothing else on it; an unclosed fence runs to the end of the document. Lines between are
+    content, and NO FENCE OPENS INSIDE CONTENT -- which is the whole reason a scanner is needed
+    where a regex was: a regex has no notion of being inside something.
+    """
+    blocks, lines, i = [], text.split(NL), 0
+    while i < len(lines):
+        m = _FENCE_OPEN.match(lines[i])
+        if m and not (m.group(2)[0] == BT and BT in m.group(3)):
+            ch, n, info = m.group(2)[0], len(m.group(2)), m.group(3)
+            close = re.compile(r"^ {0,3}" + re.escape(ch) + "{%d,}[ \t]*$" % n)
+            body, j, closed = [], i + 1, False
+            while j < len(lines):
+                if close.match(lines[j]):
+                    closed = True
+                    break
+                body.append(lines[j])
+                j += 1
+            blocks.append((info, body, i))
+            i = j + 1 if closed else j
+            continue
+        i += 1
+    return blocks
 
 
 def anchored(doc):
@@ -231,19 +645,167 @@ def anchored(doc):
     and never added PARSING. The class was "a proof is a structure and I am looking for bytes in
     it", and fixing the instance left the class alone. ots_verify.py reads the structure.
     """
-    proof = doc.parent / (doc.name + ".ots")
-    if not proof.exists():
+    # ⛔ ROUND 16: THIS WAS STILL A FILENAME TEST, one tool over from §2n's repair of `stamped()`.
+    # A round-16 reader deleted v21's `.asc`, renamed its `.ots` under the retired-proof
+    # convention, and this read DRAFT: the authority demoted to v20 with no refusal, and an
+    # attacker holding pre-repair tool bytes rolls the tree back with rc=0. ⇒ The proof is found
+    # by PROJECTION over every proof-shaped sibling (the OpenTimestamps magic, then a header that
+    # commits to these bytes), whatever it is called; and a document whose proof is present while
+    # its signature is absent is MISSING -- somebody's commitment with its signature gone -- not a
+    # draft. A draft is the state with NEITHER.
+    # ⛔⛔ ROUND 17: THE PROJECTION KEPT FIRST-MATCH-AND-BREAK SEMANTICS FOR A QUESTION THAT
+    # NEEDS ANY-MATCH. A reviewer wrote a small, valid OpenTimestamps proof over v21's exact
+    # bytes carrying only a calendar receipt, named it so it sorts before the real proof, and
+    # this returned PENDING while the Bitcoin-attested proof sat unread one file along. PENDING
+    # does not block, so authority rolled back a version in silence and the pre-signing gate
+    # still printed READY. ⇒ Fixing instance N (a name decides nothing) built instance N+1 (the
+    # FIRST thing found decides). THE STRONGEST COMMITMENT DECIDES, NOT THE FIRST ONE FOUND:
+    # every proof-shaped sibling is read, ANCHORED wins if any of them verifies against the
+    # pinned chain, and among the rest a file that is not a proof of these bytes outranks a
+    # receipt -- because refusing is the safe direction and a receipt must not mask it.
+    _proofs = _OTS.proofs_over(doc)
+    proof = _proofs[0] if _proofs else None
+    if proof is None:
+        # ⛔⛔ AND A DRAFT HAS NO PROOF EITHER. `MISSING` above the selected authority is treated
+        # as *someone removed the table that would have governed* -- correctly, for a document
+        # somebody signed. An UNSIGNED draft is in exactly that shape and is the normal state of
+        # this folder whenever anyone is writing the next version: drafting v21 made this tool
+        # refuse outright, which is the same defect as a check that is switched off during every
+        # drafting period, turned the other way round.
+        #
+        # ⇒ NO SIGNATURE AND NO PROOF IS A DRAFT. Nobody has claimed those bytes, so there is no
+        # commitment to have been removed. A signature with no proof is still `MISSING` -- that is
+        # a document somebody stood behind whose proof is gone, which is the attack.
+        #
+        # ⚠️ THE RESIDUAL, AND IT IS A PROPERTY OF THE DESIGN RATHER THAN OF THIS CHECK: an
+        # attacker who deletes BOTH the signature and the proof of a signed higher version makes
+        # it indistinguishable from a draft, and a weaker table then governs. Nothing local can
+        # separate those two states -- a document newer than every anchored version cannot be
+        # committed by one. What catches it is a reader noticing a version they signed is now a
+        # draft, which is why every run prints the state of every document.
+        if not (doc.parent / (doc.name + ".asc")).exists():
+            return False, "an unsigned draft: no signature and no proof", "DRAFT"
         return False, "no proof beside it", "MISSING"
-    ok, why, found = _OTS.verify(proof.read_bytes(), doc.read_bytes())
-    if ok:
-        return True, why, "ANCHORED"
     # ⚠ PENDING AND TAMPERED ARE NOT THE SAME REJECTION, and §11 now turns on the difference,
     # so it is a VALUE and not a phrase in `why`. A proof that parses, commits to these bytes and
     # carries a calendar attestation is a document waiting for Bitcoin -- the normal state for
     # hours after stamping. Anything else is a proof that is not a proof.
-    state = "PENDING" if (found and all(k != "bitcoin" for k, _v, _r in found)
-                          and any(k == "pending" for k, _v, _r in found)) else "TAMPERED"
-    return False, why, state
+    _doc_bytes = doc.read_bytes()
+    _weakest = None
+    for _p in _proofs:
+        ok, why, found = _OTS.verify(_p.read_bytes(), _doc_bytes)
+        if ok:
+            return True, _named_proof(doc, _p, why), "ANCHORED"
+        _state = "PENDING" if (found and all(k != "bitcoin" for k, _v, _r in found)
+                               and any(k == "pending" for k, _v, _r in found)) else "TAMPERED"
+        if _weakest is None or (_weakest[2] == "PENDING" and _state == "TAMPERED"):
+            _weakest = (_p, why, _state)
+    return False, _named_proof(doc, _weakest[0], _weakest[1]), _weakest[2]
+
+
+def _named_proof(doc, proof, why):
+    """`why`, and the proof it came from when that is not the conventional `<doc>.ots`.
+
+    ⛔ THE DEMOTION WAS SILENT. `grep -c 0shadow` over the whole of this tool's output, while a
+    planted file was deciding the verdict, returned 0: the reader could not learn WHICH file had
+    answered. A verdict that depends on a file must name it.
+    """
+    if proof.name == doc.name + ".ots":
+        return why
+    return "%s [read from %s]" % (why, proof.name)
+
+
+def witnessed_blocks(doc):
+    """[(height, root)] that some proof in this folder verifies FOR THIS DOCUMENT, against the
+    pinned chain -- over the document's own bytes, or over the bytes of its detached signature.
+
+    The signature's proof is the second witness, and it is the one that matters here: a document
+    whose own proof has been swapped for a calendar receipt still has, beside it, a proof of the
+    SIGNATURE it was stamped with, and that proof names the blocks. See `pending_is_a_downgrade`.
+    """
+    out = []
+    for _target in (doc, doc.parent / (doc.name + ".asc")):
+        try:
+            if not _target.is_file():
+                continue
+            _b = _target.read_bytes()
+        except OSError:                                                   # pragma: no cover
+            continue
+        for _p in _OTS.proofs_over(_target):
+            try:
+                _ok, _why, _found = _OTS.verify(_p.read_bytes(), _b)
+            except OSError:                                               # pragma: no cover
+                continue
+            if not _ok:
+                continue
+            for _k, _v, _r in (_found or ()):
+                if _k == "bitcoin":
+                    out.append((int(_v), str(_r).lower()))
+    return sorted(set(out))
+
+
+def pending_is_a_downgrade(doc, committed_facts):
+    """(blocking, why) for a document that now reads PENDING. A Bitcoin attestation this tree can
+    still see, for a document that no longer carries one, is one that was taken away.
+
+    ⚠ PENDING MUST STAY NON-BLOCKING FOR THE STATE IT WAS EXCLUDED FOR: the hours between
+    stamping a freshly signed successor and its block. In that state nothing in the folder
+    witnesses a block for the document -- its signature's proof is a receipt too -- so this
+    returns False and the tree stays green while it waits.
+
+    ⇒ It blocks in the other state, which is the attack: the document reads PENDING and a proof
+    of its own signature verifies in a Bitcoin block whose root a committed §2d anchor-fact table
+    already confirms, or failing that which this tree's anchor file pins. The anchor file is not
+    committed by any version and is not enough to ACCEPT anything; it is enough to REFUSE, which
+    is the direction that cannot be used to promote a weaker table.
+    """
+    blocks = witnessed_blocks(doc)
+    if not blocks:
+        return False, ""
+    _confirmed = sorted({h for h, r in blocks if committed_facts.get(h) == r})
+    _heights = sorted({h for h, _r in blocks})
+    return True, ("its proof names no Bitcoin block while a proof of its own signature is "
+                  "anchored in block(s) %s, %s. An attestation this tree can still see has been "
+                  "taken off the document"
+                  % (_confirmed or _heights,
+                     "confirmed by a committed anchor-fact table" if _confirmed
+                     else "pinned by this tree's anchor file"))
+
+
+_SIG_CACHE = {}
+
+
+def signed_by_protocol_key(doc):
+    """True, or the reason it is not. The protocol's signature, as `check_signature.verify` decides it.
+
+    ⛔⛔ ROUND 14: `governing()` SELECTED EVERY ANCHORED DOCUMENT AND NEVER ASKED WHO SIGNED IT. A
+    reviewer created a v23 with no signature, made only the selector's `anchored()` say True, and
+    got `highest selected: (23, ...)`. Stamping is free -- anyone can obtain a calendar receipt and,
+    in hours, a Bitcoin attestation over any bytes -- so an anchored unsigned successor is a draft
+    with a timestamp, and the authority rule was letting a timestamp stand in for a signature.
+    `in_force()` required `signed()`; the code that actually composes authority did not, and the
+    two were not the same predicate.
+    ⇒ ONE QUESTION, ANSWERED HERE FOR THE SELECTOR AND BY THE SAME VERIFIER `in_force()` USES: a
+    version is eligible to govern only if the protocol's key stands behind it. Fails closed: a
+    signature that cannot be attributed to that key is not one. Cached on the bytes of the
+    document and its signature, because this is asked once per candidate per run.
+    """
+    sig = doc.parent / (doc.name + ".asc")
+    try:
+        key = (hashlib.sha256(doc.read_bytes()).hexdigest(),
+               hashlib.sha256(sig.read_bytes()).hexdigest() if sig.is_file() else "")
+    except OSError as e:
+        return "the document or its signature could not be read (%s)" % e
+    if key in _SIG_CACHE:
+        return _SIG_CACHE[key]
+    try:
+        import check_signature as _CS
+        state, detail, _f = _CS.verify(doc)
+    except Exception as e:                                               # noqa: BLE001
+        _SIG_CACHE[key] = "check_signature.verify could not run (%r)" % (e,)
+        return _SIG_CACHE[key]
+    _SIG_CACHE[key] = True if state == "ok" else "%s: %s" % (state, str(detail)[:90])
+    return _SIG_CACHE[key]
 
 
 NEVER_RETIRE = ("train.py", "corpus/MANIFEST.json", "corpus/build_corpus.py",
@@ -319,9 +881,10 @@ def retires(text):
     is refused unless some lower anchored version actually pinned that path. Retiring something
     nothing pinned is a no-op that reads like an action.
     """
-    if RETIRES_HEADING not in text:
+    _t = _after_heading(text, RETIRES_HEADING)
+    if _t is None:
         return []
-    body = text.split(RETIRES_HEADING, 1)[1].split(NL + "## ", 1)[0]
+    body = _t.split(NL + "## ", 1)[0]
     out = []
     for line in body.splitlines():
         s = line.strip().lstrip("-*").strip()
@@ -652,19 +1215,49 @@ def governing(here, _raise_on_blocking=True):
                      "has a table is a broken check, not an absent one.",
                      "NO-TABLE", True))
             continue
-        if len(pinned) < MIN_EXPECTED:
+        # ⛔⛔ `len(pinned) < MIN_EXPECTED` ASKED A QUESTION ABOUT THE FORMAT AND ANSWERED IT WITH
+        # A QUESTION ABOUT THE SIZE, AND THE COMMENT TWENTY LINES ABOVE ALREADY SAYS WHY THAT IS
+        # WRONG: *one integer cannot carry two questions*, and *a three-row table is a table*. The
+        # structural detector was written for exactly this and then was not used here.
+        #
+        # Round 9 produced the document that proves it. v18 bundled a governance change with the
+        # substantive withdrawal under review, so v19 was split out to carry the two tools alone
+        # -- **two commitment rows**, correctly and completely parsed -- and this line filed it as
+        # `UNPARSEABLE: the table's format has changed`. A version whose whole merit is being
+        # small was refused for being small, by the threshold whose own comment forbids it.
+        #
+        # ⇒ THE FORMAT MOVED IF ROWS WENT MISSING, WHICH IS A COMPARISON, NOT A FLOOR. Every
+        # version in this tree satisfies `presents_table == commitments + anchor facts` exactly,
+        # because those are the only two kinds of row there are. When the structural count exceeds
+        # what the two parsers read, rows exist that neither can see -- which is the real failure,
+        # at any size. `MIN_EXPECTED` no longer decides anything here; it is kept only where it
+        # answers its other, honest question.
+        _rows = presents_table(_body)
+        _read = len(pinned) + len(anchor_facts(_body))
+        if _rows > _read:
             # ⛔ A THREE-TUPLE WHERE THE CONSUMER UNPACKS FOUR. This rejection path
             # raised ValueError instead of reporting, which is the same class as the eight
             # crashing error paths the sibling project found this round: a control that fires
             # and then destroys its own message. Found by adding a second rejection beside it.
             rejected.append(Rejection(version, f.name,
-                             "parses only %d commitment(s); the table's format has changed and "
-                             "this parser no longer reads it" % len(pinned), "UNPARSEABLE",
+                             "lays out %d row(s) in table shape and the two parsers between them "
+                             "read %d (%d commitment(s), %d anchor fact(s)). The rows neither can "
+                             "see are commitments this document makes and nothing enforces."
+                             % (_rows, _read, len(pinned), _read - len(pinned)), "UNPARSEABLE",
                              True))
             continue
         ok, why, state = anchored(f)
         if not ok:
             rejected.append(Rejection(version, f.name, why, state, bool(pinned)))
+            continue
+        # ⛔ ROUND 14: anchored is not authority; see `signed_by_protocol_key`. A proof says WHEN,
+        # a signature says WHO, and a version eligible to govern needs both.
+        _who = signed_by_protocol_key(f)
+        if _who is not True:
+            rejected.append(Rejection(version, f.name,
+                                      "anchored and NOT signed by the protocol's key (%s). A timestamp "
+                                      "over unsigned bytes is a draft somebody stamped, and a draft does "
+                                      "not govern" % _who, "UNSIGNED", bool(pinned)))
             continue
         found.append((version, f.name, pinned))
 
@@ -714,17 +1307,65 @@ def governing(here, _raise_on_blocking=True):
 
     if found:
         top = max(v for v, _n, _p in found)
+        # UNSIGNED joins the blocking states: an anchored document above the authority that the
+        # protocol's key does not stand behind is either a stripped signature or a stamp taken
+        # before the signature the protocol requires first -- a tree to refuse, not to read past.
         blocking = [r for r in rejected
-                    if r.version > top and r.state in ("TAMPERED", "MISSING")]
+                    if r.version > top and r.state in ("TAMPERED", "MISSING", "UNSIGNED")]
+        # ⛔ ROUND 17: AND PENDING WAS THE WAY PAST ALL THREE. A planted calendar-only proof over
+        # the authority's own bytes demoted it a version with no refusal at all. PENDING blocks
+        # when this tree can still witness the Bitcoin block the document has stopped naming --
+        # see `pending_is_a_downgrade`, which leaves a genuinely fresh stamp alone.
+        _facts = {}
+        for _v, _n, _p in found:
+            try:
+                for _h, _r in anchor_facts((here / _n).read_text(encoding="utf-8")).items():
+                    _facts.setdefault(int(_h), str(_r).lower())
+            except (OSError, SystemExit, ValueError):                     # pragma: no cover
+                continue
+        for r in rejected:
+            if r.version > top and r.state == "PENDING":
+                _down, _why = pending_is_a_downgrade(here / r.name, _facts)
+                if _down:
+                    blocking.append(r._replace(why=_why, state="DOWNGRADED"))
+        blocking.sort(key=lambda r: r.version)
         if blocking and _raise_on_blocking:
+            # ⛔ THE REFUSAL HARDCODED ONE CAUSE FOR FOUR STATES. It said *its proof is not a
+            # proof* for a document whose proof had just been read as ANCHORED and whose
+            # SIGNATURE was the thing missing, and then cut the real reason off at sixty
+            # characters, mid-word, leaving an unbalanced bracket. §2l added UNSIGNED to this set
+            # and did not touch the sentence that reports it: the cause printer naming the wrong
+            # cause, one tool over from §2e, for the third time in this archive. ⇒ The message
+            # branches on the state, and the reason is clipped at a word or not at all.
+            _worst = blocking[-1]
+            _cause = {
+                "TAMPERED": "the file beside it named as its proof is not a proof of these bytes",
+                "MISSING": "its proof has been removed",
+                "UNSIGNED": "nothing the protocol's key stands behind is holding it up",
+                "DOWNGRADED": "its Bitcoin attestation has been taken off it",
+            }.get(_worst.state, "its proof is not a proof")
             raise SystemExit(
-                D + " %s is present, is a HIGHER version than the authority %s would select, and "
-                "its proof is not a proof (%s). Falling back to an older document would enforce a "
-                "SMALLER table -- v5 pins 4 files where v6 pins 16 -- so destroying a proof would "
-                "make this check weaker and still pass. A protocol document whose proof has been "
-                "destroyed is a tampered tree, not an older one."
-                % (blocking[-1].name, "the next version down", blocking[-1].why[:60]))
+                D + " %s is present, is a HIGHER version than the authority the next version "
+                "down would select, and %s (%s). Falling back to an older document would enforce "
+                "a SMALLER table -- v5 pins 4 files where v6 pins 16 -- so destroying a proof "
+                "would make this check weaker and still pass. A protocol document whose proof "
+                "has been destroyed is a tampered tree, not an older one."
+                % (_worst.name, _cause, _clip(_worst.why)))
     return found, rejected
+
+
+def _clip(text, limit=220):
+    """`text`, cut at a WORD boundary if it must be cut at all.
+
+    ⛔ `why[:60]` CUT THE ONE SENTENCE AN OPERATOR SEES IN THE MIDDLE OF A WORD -- `UNSIGNED: no `
+    -- inside a parenthesis it then left unbalanced. A message that reports a rolled-back tree is
+    not the place to save a hundred and sixty characters.
+    """
+    text = " ".join(str(text).split())
+    if len(text) <= limit:
+        return text
+    cut = text[:limit].rsplit(" ", 1)[0]
+    return (cut or text[:limit]) + " …"
 
 
 def main():

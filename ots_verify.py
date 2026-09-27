@@ -166,6 +166,68 @@ def _pinned():
         return None
 
 
+def commits(proof_bytes, document_bytes):
+    """Does this proof's HEADER commit to these bytes? Structure and digest only, no attestations.
+
+    ⚠️ THIS IS THE WEAKEST QUESTION THIS MODULE ANSWERS, and it exists because the write gate
+    needs exactly it. `prepare_anchor.writable()` asks whether ANYTHING has ever committed a
+    document's bytes -- a superseded proof with a historical suffix is still a proof that those
+    bytes were timestamped, and the fact that it was renamed does not un-take it. Whether the
+    proof is anchored is `verify()`'s question and a different one.
+    """
+    try:
+        r = _Reader(proof_bytes)
+        if r.take(len(MAGIC)) != MAGIC:
+            return False
+        r.varuint()
+        op = r.byte()
+        if op not in DIGEST_LEN or op == 0x67:
+            return False
+        digest = r.take(DIGEST_LEN[op])
+        want = hashlib.new({0x02: "sha1", 0x03: "ripemd160", 0x08: "sha256"}[op],
+                           document_bytes).digest()
+        return digest == want
+    except (NotAProof, ValueError, IndexError):
+        return False
+
+
+def proofs_over(doc_path):
+    """Every proof-shaped file BESIDE this one whose header commits to its exact bytes.
+
+    Sorted by name, and the list may be longer than one: a document can have a current proof, a
+    superseded proof kept under this study's historical convention, and anything else a writer
+    dropped in the folder.
+
+    ⛔ ROUND 17: THREE TOOLS ASKED *IS THERE A PROOF OF THESE BYTES* AND EACH ANSWERED IT ITS
+    OWN WAY -- `prepare_anchor.stamped()` by projection, `check_commitments.anchored()` by the
+    FIRST projected match, `anchor_status.check()` by the filename `<doc>.ots`. A reviewer planted
+    one small valid proof carrying only a calendar receipt, named so it sorts first, and the
+    strongest commitment in the folder was never read. ⇒ The projection lives in ONE place, here,
+    beside the parser it uses; a caller decides what to do with the list, and no caller decides by
+    name. A name decides nothing; the header decides, and the caller decides which verdict wins.
+    """
+    doc = pathlib.Path(doc_path)
+    try:
+        target = doc.read_bytes()
+        siblings = sorted(doc.parent.iterdir())
+    except OSError:                                                          # pragma: no cover
+        return []
+    out = []
+    for p in siblings:
+        try:
+            if p == doc or not p.is_file():
+                continue
+            with open(p, "rb") as fh:
+                if fh.read(len(MAGIC)) != MAGIC:
+                    continue
+            blob = p.read_bytes()
+        except OSError:                                                      # pragma: no cover
+            continue
+        if commits(blob, target):
+            out.append(p)
+    return out
+
+
 def verify(proof_bytes, document_bytes):
     """(ok, why, attestations). ok means: a real proof, over THESE bytes, with a Bitcoin block."""
     try:
