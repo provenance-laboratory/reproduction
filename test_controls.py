@@ -2113,7 +2113,13 @@ def main():
     # claim about this codebase's own error paths. Round 9 split the first two after a reviewer
     # flagged the conflation three times; round 10 added a control that folded the third back
     # into the first, and reported a crashing error path as an attack that had passed.
-    caught = missed = 0
+    # ⛔ A FOURTH COUNTER, AND THE REASON IS THE FIELD NAME. `missed` fed
+    #    `attacks_passed_that_should_not_have`, but it was incremented for ANY attack that
+    #    was not `ok` -- including one that refused for a DIFFERENT reason than the one
+    #    under test. That is an unattributed refusal, a coverage fact; it is not an
+    #    accepted attack, which is a security fact. Round 9 split security from liveness
+    #    for the same reason; this is the same conflation one level in.
+    caught = missed = wrong_reason = 0
     hygiene_failed = False
 
     print("  check_commitments.py")
@@ -2129,7 +2135,13 @@ def main():
         ok = rc != 0
         print("    %s %-52s" % ("refused " if ok else D + " PASSED", label))
         caught += ok
-        missed += not ok
+        # not ok AND it refused -> the attack tested nothing (coverage).
+        # not ok AND it did not refuse -> the attack was accepted (security).
+        if not ok:
+            if rc != 0:
+                wrong_reason += 1
+            else:
+                missed += 1
 
     print()
     print("  prepare_anchor.py -- the gate between a draft and a signature")
@@ -2192,7 +2204,13 @@ def main():
             _tail = [l for l in out.strip().splitlines() if l.strip()]
             print("        got: %s" % (_tail[-1].strip()[:150] if _tail else "(no output)"))
         caught += ok
-        missed += not ok
+        # not ok AND it refused -> the attack tested nothing (coverage).
+        # not ok AND it did not refuse -> the attack was accepted (security).
+        if not ok:
+            if rc != 0:
+                wrong_reason += 1
+            else:
+                missed += 1
 
     print()
     print("  withdrawn_claims.py -- the generator, and the record of the readings")
@@ -2211,6 +2229,8 @@ def main():
         print("      " + (_out.strip().splitlines() or ["(no output)"])[-1][:100])
         hygiene_failed = True
 
+    # Counted apart from `caught` and `missed`: an unmeasured attack is neither.
+    unmeasured = 0
     for label, build, phrase in WITHDRAWN_ATTACKS:
         work = pathlib.Path(tempfile.mkdtemp(prefix="wc-"))
         root = work / "r"
@@ -2221,13 +2241,32 @@ def main():
         finally:
             shutil.rmtree(work, ignore_errors=True)
         ok = rc != 0 and phrase in out
+        # ⛔ A REFUSAL UNDER A BROKEN BASELINE IS NOT A MEASUREMENT. When the baseline fails, the
+        #    tool is already refusing for a reason that is not the one under test, so "refused"
+        #    here says nothing about whether the attack was caught. The suite printed both claims
+        #    -- "nothing below is measured" and four lines of "refused" -- and they cannot both be
+        #    load-bearing. The baseline's is.
+        if not _base_ok:
+            print("    %s %-52s %s" % (W + " unmeasured", label,
+                                       "the baseline is broken, so this attack tested nothing"))
+            unmeasured += 1
+            continue
         why = ("refused " if ok else
                D + " WRONG   " if rc != 0 else
                D + " PASSED ")
         print("    %s %-52s %s" % (why, label, "" if ok else "(wanted %r)" % phrase))
         caught += ok
-        missed += not ok
+        # not ok AND it refused -> the attack tested nothing (coverage).
+        # not ok AND it did not refuse -> the attack was accepted (security).
+        if not ok:
+            if rc != 0:
+                wrong_reason += 1
+            else:
+                missed += 1
 
+    if unmeasured:
+        print("    %s %d attack(s) above were NOT MEASURED, and are counted in "
+              "neither the caught nor the missed total." % (W, unmeasured))
     print()
     print("  measure_hardware.py -- none of these may return MATCHED-STACK")
     # {D} THIS CRASHED INSIDE THE PACKAGE, with a FileNotFoundError traceback, on the file the
@@ -2267,7 +2306,13 @@ def main():
             ok = "ok  MATCHED-STACK" not in out
             print("    %s %-52s" % ("refused " if ok else D + " PASSED", label))
             caught += ok
-            missed += not ok
+            # not ok AND it refused -> the attack tested nothing (coverage).
+        # not ok AND it did not refuse -> the attack was accepted (security).
+        if not ok:
+            if rc != 0:
+                wrong_reason += 1
+            else:
+                missed += 1
     except _SkipSection:
         pass
     finally:
@@ -2601,6 +2646,10 @@ def main():
                 "attacks_refused": caught,
                 "hygiene_failed": bool(hygiene_failed),
                 "attacks_passed_that_should_not_have": missed,
+                # Refused, but by a rule other than the one under test: the attack
+                # measured nothing. Reported apart from `missed` because it is a claim
+                # about coverage and not about security.
+                "attacks_refused_for_the_wrong_reason": wrong_reason,
                 "positive_control_failed": bool(positive_failed),
                 "security_ok": missed == 0,
                 "liveness_ok": not positive_failed}

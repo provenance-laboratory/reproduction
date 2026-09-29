@@ -62,6 +62,32 @@ _WHY = {
 }
 
 
+def _findings_send():
+    """Every FINDING-*.md present, described by its own first heading.
+
+    ⛔ THESE WERE LISTED BY HAND, and the list was inside a file the protocol PINS -- so shipping
+    one new finding cost a signed, stamped, anchored version. Three rounds in a row paid it: v23
+    pinned this file, v24 §2c re-pinned it to ship four findings, and v24 pinned it again.
+
+    ⚠️ The rule is what deserves pinning, not the inventory. A round-21 reviewer put it exactly:
+    pin *every FINDING-* file must be classified or the build refuses*, and the list can then change
+    without a protocol version while the build still cannot silently drop a finding.
+
+    ⚠️ THE DESCRIPTION IS READ, NOT TYPED. A hand-written summary beside a document drifts from
+    it, and a reviewer reading the packet index would be told something the finding no longer says.
+    The first heading is the document's own account of itself.
+    """
+    out = []
+    for f in sorted(HERE.glob("FINDING-*.md")):
+        head = ""
+        for line in f.read_text(encoding="utf-8").splitlines():
+            if line.startswith("#"):
+                head = line.lstrip("#").strip()
+                break
+        out.append((f.name, head or "a finding record carrying no heading of its own"))
+    return tuple(out)
+
+
 def _protocol_send():
     """Every protocol document present, with its proof, its signature, and its retired proofs.
 
@@ -122,7 +148,7 @@ DOTFILES = (
     (".github/ISSUE_TEMPLATE/reproduction-report.yml", "the issue form a reproducer files a report with"),
 )
 
-SEND = _protocol_send() + DOTFILES + (
+SEND = _protocol_send() + _findings_send() + DOTFILES + (
     # ⛔ THIS WAS EXCLUDED -- *a shipped copy would be a verdict not produced by the run the
     # reader is looking at* -- and the exclusion cost three rounds of a red hygiene bit: the
     # withdrawn-claims scan counts every text file in the tree, this one included, so the shipped
@@ -195,24 +221,11 @@ SEND = _protocol_send() + DOTFILES + (
     ("DISTRIBUTION-PLAN.md",
      "the exposure plan v18 supersedes. Shipped BECAUSE it is superseded: the withdrawal is only "
      "judgeable beside the thing withdrawn"),
-    ("FINDING-2026-09-05.md", "the finding record from 5 September"),
-    # Recorded 26 September while v23 was cut. Each is an OPEN defect in this tree's own
-    # machinery, found by running it rather than by reading it, and each is shipped because a
-    # packet that omits what the round found is a packet the reviewer cannot judge the round from.
-    ("FINDING-2026-09-26-suite-crashes-when-all-anchored.md",
-     "the control suite crashes when no unanchored draft exists -- which is the STEADY STATE of a "
-     "healthy tree, so the suite cannot measure the condition the protocol is trying to reach"),
-    ("FINDING-2026-09-26-orphan-pins-half-repaired.md",
-     "two tools implement one rule with two definitions: --verify refuses two heights an anchored "
-     "section requires, on a tree whose authority check is clean"),
-    ("FINDING-2026-09-26-what-the-repaired-suite-measured.md",
-     "v23 anchored and the suite ran for the first time since v22: liveness TRUE, the wrong-key "
-     "control now exercised and holding, and ONE control whose coverage fails -- the tree refuses "
-     "the attack by a different rule than the one under test, so the security property held and the "
-     "coverage did not"),
-    ("FINDING-2026-09-26-wrong-key-control-unmeasured.md",
-     "the case that would catch a valid signature by a key that is not the protocol's has never "
-     "run; v23 repairs one cause and a second, environment-dependent one is recorded beside it"),
+    # ⛔ THE FINDINGS ARE NO LONGER LISTED HERE. They were, and the list sat inside a file the
+    #    protocol pins, so each new finding cost a protocol version. `_findings_send()` now collects
+    #    every FINDING-*.md and reads each one's description from its own first heading. The
+    #    fail-closed rule is untouched: a finding that does not match the pattern is still a stray
+    #    file and still refuses the build.
     ("HOW-TO-RECHECK-THE-ANCHORS.md", "how to re-verify every proof here without trusting us"),
     ("REPRODUCER-STATUS-NOTE.md", "what a reproducer can and cannot currently do"),
     ("ZENODO-DEPOSIT.md", "the deposit record"),
