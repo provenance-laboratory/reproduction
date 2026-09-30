@@ -1,12 +1,13 @@
-# Open finding, 28 September 2026: a control baseline that passes alone and fails inside the suite
+# DIAGNOSED 30 September 2026: the suite deletes a file the record counts
 
-**Status: OPEN. Not a red tree, not an attack passing.** `test_controls.py` reports
-`security_ok: true`, `liveness_ok: true`, `attacks_refused: 68`,
-`attacks_passed_that_should_not_have: 0`, and the positive control passes. What is red is
-`hygiene_failed: true`, which the suite defines as *a control that would crash instead of
-speaking*.
+**Status: CAUSE ESTABLISHED. The repair needs a new protocol version.** This document was opened on
+28 September saying the cause was not understood, and that reporting the consequence honestly was
+not the same as understanding it. The cause is now understood and is recorded here in place of the
+speculation.
 
-## What the suite says
+## What was observed
+
+`test_controls.py` reported `hygiene_failed: true` on every run, from this block:
 
 ```
   withdrawn_claims.py -- the generator, and the record of the readings
@@ -15,52 +16,58 @@ speaking*.
       ⛔ WITHDRAWN-CLAIMS.md does not describe this folder. Regenerate it.
 ```
 
-`WITHDRAWN-CLAIMS.md` was regenerated on 28 September, and the message did not change.
-
-## What was established
-
-The baseline is `run(HERE, "withdrawn_claims.py", "--check")` — the real folder, not a sandbox,
-which the code comments say is deliberate: the generated file states how many text files were
-**scanned**, and the sandbox copies a deliberate subset, so a sandbox is a folder the shipped
-document correctly does not describe.
-
 Run by hand with the suite's exact invocation — same interpreter, same `-X utf8`, same working
-directory, stdout and stderr combined as the suite combines them — it **passes**:
+directory, streams combined the same way — `withdrawn_claims.py --check` **passed**, before the
+suite and after it, with `WITHDRAWN-CLAIMS.md` unchanged in size and mtime across the run.
+Regenerating the record changed nothing. Reproduced on four runs across three days, including with
+the tree red and with it green, so it was not the pin state.
 
-```
-rc = 0
-phrase present: True
-  ok   WITHDRAWN-CLAIMS.md describes this folder
-```
+## The cause
 
-`python withdrawn_claims.py --check` also passes immediately **before** and immediately **after** a
-full suite run, and `WITHDRAWN-CLAIMS.md` is unchanged in size and mtime across that run. So the
-folder is not left mutated, and the record is not stale in the state a reader would find it in.
+**`WITHDRAWN-CLAIMS.md` records how many text files the folder holds, and
+`CONTROL-SUITE-VERDICT.json` is one of them.** The suite deletes that file at the start of its own
+run, so that a stale verdict can never be mistaken for a fresh one — the nonce discipline
+`build_package.py` documents.
 
-## What was not established
+So for the duration of a run the folder holds one text file fewer than the record describes, the
+check correctly reports a mismatch, and the file is back before anyone looks.
 
-**Why the same call gives a different answer inside the suite.** Reproduced three times, so it is
-not intermittent. Ruled out: a stale record (regenerated), a mutated folder (byte-identical before
-and after), and a sandbox path (`HERE` is `__file__.resolve().parent`).
+Measured rather than argued:
 
-⛔ **The obvious next step is blocked by the protocol, and that is worth saying plainly.**
-Instrumenting either side means editing `withdrawn_claims.py` or `test_controls.py`, and **both are
-pinned by v24**. Editing a pinned file to diagnose it turns the tree red and would need a v25 to
-re-pin — the exact sequencing error v24 §1 records. A diagnosis that breaks the thing it is
-diagnosing is not available here.
+| state of the folder | text files scanned | `--check` |
+|---|---:|---|
+| `CONTROL-SUITE-VERDICT.json` present, as a person finds it | **151** | passes |
+| the same file absent, as it is during a suite run | **150** | refuses |
 
-## What this does and does not affect
+The difference is exactly that one file.
 
-- It does **not** affect the authority chain. v24 is anchored in Bitcoin block 968848, is selected
-  as authority over 21 anchored versions, and all 30 committed files hash to the digests it pins.
-- It does **not** mean the withdrawal record is wrong. `--check` passes standalone.
-- It **does** mean the four attacks under that baseline print `refused` while the suite also says
-  nothing below the baseline is measured. **Those two statements cannot both be load-bearing**, and
-  until this is settled the four refusals should be read as unconfirmed rather than as evidence.
+⚠️ **Nothing was wrong with the record, the generator, or the check.** Each behaved correctly
+throughout. What was wrong was an assumption nobody had written down: that the folder a record
+describes holds still while the record is being checked. **The suite's own output file is inside the
+subject it measures, and the suite removes it in order to measure.**
 
-## The route that does not break a pin
+## Why it was hard to see
 
-Diagnose from outside: run the suite under a filesystem watcher sampling the folder's entries, and
-compare what exists at the moment the baseline runs against what exists before and after. That
-needs no edit to either pinned file. It was attempted on 28 September and the probe's own shell
-quoting defeated it; the approach stands.
+Every instinct was to test it by hand, and by hand it always passed — the observation and the
+condition could not coexist. The earlier write-up recorded the right constraint for the wrong
+reason: it said the obvious next step was blocked because the files are pinned. In fact the step
+that settled it needed no edit at all, only running the check against the folder **in the state the
+suite puts it in**, which is one `mv` and one command.
+
+⇒ **A check that cannot be reproduced by hand is not thereby unreproducible.** It may be measuring a
+state a person never occupies.
+
+## The repair, and why it is not applied here
+
+`CONTROL-SUITE-VERDICT.json` should be outside the scan. It is a run artifact, not a document that
+could carry a withdrawn claim, and no reading of the withdrawal record is served by counting it.
+
+⛔ **`withdrawn_claims.py` is pinned by v25**, so that one-line change needs a v26 — which is the
+cost v25 itself reduced for findings and did not reduce for tools. The repair is queued rather than
+made, and this document is the record of why the queue exists.
+
+⚠️ **Until then the four attacks below that baseline remain `unmeasured`, and that is now known to be
+a reporting artifact rather than a gap in coverage.** v25 §2z made them say `unmeasured` instead of
+`refused`, which was the right change on the evidence then available and is still right: they did
+test nothing. What is new is that we know why, and that the security property they guard was never
+in question.

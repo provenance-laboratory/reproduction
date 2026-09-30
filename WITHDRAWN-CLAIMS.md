@@ -29,5 +29,5 @@ Each file below carries a RECORDED reading bound to its digest, in an append-onl
 - `capture_exposure.py`
 - `withdrawn_claims.py`
 
-148 text file(s) scanned; 11 read and recorded; 137 carry no phrasing this scan knows and rest on the scan alone. 2 carry the claim unmarked.
+151 text file(s) scanned; 11 read and recorded; 140 carry no phrasing this scan knows and rest on the scan alone. 2 carry the claim unmarked.
 
