@@ -95,6 +95,12 @@ KEYS = ("claim", "disposition", "doc", "n", "note", "prev", "sha256", "utc")
 # this script -- which does state the claim, in the hint list, and is recorded like anything else.
 WRITES = {OUT.name, LOG.name, HEAD.name, HEAD.name + ".ots"}
 
+
+def retired_head(rel):
+    """v27: a superseded head, or its proof, kept by write_head(). Written once by this tool and not
+    a reading's subject, so the walk skips it the way it skips the live head."""
+    return rel.startswith(HEAD.name + "-")
+
 # ⛔ TWO PROJECTIONS OVER "THE TREE", DISAGREEING BY 14 FILES. This kept its own skip list while
 # `build_review_packet.py` kept `EXCLUDED_DIRS`, so the walk here reached `package.incomplete/`
 # and the walk there did not -- and the shipped `WITHDRAWN-CLAIMS.md` therefore published
@@ -160,7 +166,7 @@ def documents():
         if not f.is_file():
             continue
         rel = f.relative_to(HERE)
-        if set(rel.parts) & SKIP_DIRS or rel.as_posix() in WRITES:
+        if set(rel.parts) & SKIP_DIRS or rel.as_posix() in WRITES or retired_head(rel.as_posix()):
             continue
         if _text(f) is None:
             continue
@@ -264,7 +270,34 @@ def check_head(entries):
     return bad
 
 
+def _retire_head():
+    """⛔ v27: KEEP THE OLD HEAD BESIDE ITS PROOF BEFORE IT IS REWRITTEN. Only if the proof commits to
+    the head's current bytes -- a proof over some other bytes is not this head's, and moving it
+    would put a false pair on disk. Returns the retired name, or None."""
+    proof = HERE / (HEAD.name + ".ots")
+    if not (HEAD.is_file() and proof.is_file()):
+        return None
+    old = HEAD.read_bytes()
+    sys.path.insert(0, str(HERE))
+    import ots_verify as _OV
+    if not _OV.commits(proof.read_bytes(), old):
+        print("  %s %s does not commit to the current head; it is left where it is" % (W, proof.name))
+        return None
+    name = "%s-%s" % (HEAD.name, hashlib.sha256(old).hexdigest()[:16])
+    kept, kept_proof = HERE / name, HERE / (name + ".ots")
+    if kept.exists() or kept_proof.exists():
+        if kept.read_bytes() != old:
+            raise SystemExit("%s %s exists with other bytes; refusing to overwrite a retired head"
+                             % (D, name))
+        return name
+    kept.write_bytes(old)
+    proof.replace(kept_proof)
+    print("  %s kept the previous head and its proof as %s{,.ots}" % (OK, name))
+    return name
+
+
 def write_head(entries):
+    _retire_head()
     HEAD.write_text(json.dumps({"_what": "pins how many readings the log holds and what its head "
                                          "is. Stamp this file: a head the same tool rewrites "
                                          "protects nothing until a calendar has seen it.",

@@ -66,8 +66,40 @@ could carry a withdrawn claim, and no reading of the withdrawal record is served
 cost v25 itself reduced for findings and did not reduce for tools. The repair is queued rather than
 made, and this document is the record of why the queue exists.
 
-⚠️ **Until then the four attacks below that baseline remain `unmeasured`, and that is now known to be
-a reporting artifact rather than a gap in coverage.** v25 §2z made them say `unmeasured` instead of
-`refused`, which was the right change on the evidence then available and is still right: they did
-test nothing. What is new is that we know why, and that the security property they guard was never
-in question.
+⚠️ **Until then the four attacks below that baseline remain `unmeasured`.** v25 §2z made them say
+`unmeasured` instead of `refused`, which was the right change then and is still right: they did test
+nothing.
+
+## ⛔ 6 October 2026 — the diagnosis above is incomplete, and the claim after it overreached
+
+This document said the unmeasured attacks were "a reporting artifact rather than a gap in coverage",
+and that the security property they guard "was never in question". **Neither statement was measured,
+and the first is now contradicted.**
+
+Measured today, by running the baseline in a copy of this folder twice, once with
+`CONTROL-SUITE-VERDICT.json` present and once with it absent:
+
+| verdict file | baseline `withdrawn_claims.py --check` |
+|---|---|
+| absent | refuses |
+| **present** | **still refuses** |
+
+So the deleted verdict file is **not the whole cause.** The scan now counts **154 text files** where
+`WITHDRAWN-CLAIMS.md` describes a smaller folder, and the baseline refuses on that mismatch whether or
+not the verdict file is there. The explanation recorded on 28 September accounted for one file and the
+gap is three.
+
+⇒ **What follows for the claim.** "The security property was never in question" asserts the attacks
+would have been refused had they run. Nothing here establishes that: an attack that does not run
+produces no evidence either way, and a second cause for the baseline failure means the conditions
+under which they would run have not been reproduced. The honest statement is the narrow one:
+**four declared attacks did not run, the reason is now known to be at least two things rather than
+one, and whether the gate refuses them is unmeasured.**
+
+⚠️ **Not repaired here, deliberately.** Regenerating `WITHDRAWN-CLAIMS.md` would change a file the
+pre-registration pins, and the one-line scan exclusion still needs a v26. This records what the
+measurement shows so the next version repairs the right thing — the earlier note would have sent it
+to fix the verdict-file exclusion alone, which the table above shows is not sufficient.
+
+★ `CONTROL-SUITE-VERDICT.json` now carries `attacks_declared` and `attacks_not_measured`, so a reader
+of the verdict sees the four without reconciling console output against a prompt.

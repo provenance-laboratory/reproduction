@@ -18,7 +18,7 @@
   }
  ],
  "agreement_required": 2,
- "fetched_utc": "2026-09-30T08:56:13Z",
+ "fetched_utc": "2026-10-29T16:48:08Z",
  "caveat": "\u26a0 A pin is an explorer's word on a date, not a node. It is recorded so a reader can recompute it against the chain, which is the only thing that settles it. Each block below names the operators that AGREED on its hash and merkle root; at least 2 must agree or nothing is pinned, and any disagreement is a refusal rather than a vote. Note the independence is partial and deliberately stated: blockstream and mempool are different operators running the same Esplora software, blockchain.info is a different codebase. Agreement across them is harder to forge than one API and is not the same thing as running your own node.",
  "blocks": {
   "964534": {
@@ -454,6 +454,84 @@
    "hash": "00000000000000000000f04f1c68f9fa47a5ef4da8edbe5c42b148472e89f9de",
    "merkle_root": "29d3d4864b9ff96bc99cbbf59e76b9257546c8fa77843363216b388d779d2db2",
    "timestamp": 1790693320,
+   "sources": [
+    "blockchain.info",
+    "blockstream",
+    "mempool"
+   ]
+  },
+  "970233": {
+   "hash": "000000000000000000003cf7f297d31723c475d49d308b012982c90e885b59d5",
+   "merkle_root": "22fdcf846a0d9f7503e50288098af5326cf451a38353a98a9577de1efd875f1c",
+   "timestamp": 1791320447,
+   "sources": [
+    "blockchain.info",
+    "blockstream",
+    "mempool"
+   ]
+  },
+  "970234": {
+   "hash": "00000000000000000001bc0ec58c0559f8f8a1bd1b37b1127d8614b5cc11ee65",
+   "merkle_root": "660f2aafcba2ef023209d30f9bbd397c7b1e3541224d93f2f62dc7e0ecac89b2",
+   "timestamp": 1791320536,
+   "sources": [
+    "blockchain.info",
+    "blockstream",
+    "mempool"
+   ]
+  },
+  "970258": {
+   "hash": "0000000000000000000000985cc39f87195a56985a6182b2bccc245c96c99c04",
+   "merkle_root": "e0b96e5f938904b8eeae1aed86ffdeea9278b1cd080be8b886a0fb796dbbd298",
+   "timestamp": 1791332208,
+   "sources": [
+    "blockchain.info",
+    "blockstream",
+    "mempool"
+   ]
+  },
+  "970631": {
+   "hash": "00000000000000000002078dd23dc181934f0784008a400e1667c047825397fa",
+   "merkle_root": "d7cb36e2ce7889c6be524c52dc3f9a5966f153a656da066b405ce65881f2652d",
+   "timestamp": 1791550623,
+   "sources": [
+    "blockchain.info",
+    "blockstream",
+    "mempool"
+   ]
+  },
+  "970639": {
+   "hash": "000000000000000000015f810d5d55c954c9bcd8064a632360db56d09b6d598a",
+   "merkle_root": "c8494c9b9dbc02ea333ad90d463337517e3e0666c7fcb28df9225e8bbe741ea3",
+   "timestamp": 1791553761,
+   "sources": [
+    "blockchain.info",
+    "blockstream",
+    "mempool"
+   ]
+  },
+  "971101": {
+   "hash": "00000000000000000000e683c947cd1c1bf167bb81aa6f336afe3507531aaf73",
+   "merkle_root": "8e8e46de7269fffc046e7cb83a2e873106c7d7a01aa2895a2cf9f8eeb25d4d15",
+   "timestamp": 1791815071,
+   "sources": [
+    "blockchain.info",
+    "blockstream"
+   ]
+  },
+  "971103": {
+   "hash": "000000000000000000014fa3973aaadac06e67b1ac3cfe048755fa3673200c6a",
+   "merkle_root": "e3bf9edd4f776153565f0583105612564f682271d8768599dff175432eab5a49",
+   "timestamp": 1791815303,
+   "sources": [
+    "blockchain.info",
+    "blockstream"
+   ]
+  },
+  "973704": {
+   "hash": "0000000000000000000089a1547088cf564a7ad6beaadedda75ee13481258aff",
+   "merkle_root": "20b8f880ac46717af861dc7024978d1889d6b53340b97b124f604f7e5e44e110",
+   "timestamp": 1793287344,
    "sources": [
     "blockchain.info",
     "blockstream",

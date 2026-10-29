@@ -246,11 +246,12 @@ def check(rel):
             _conf = _PA.confirmed(doc)
         except Exception:                                                # noqa: BLE001
             _conf = None
+        # v28 (V28-QUEUE item 4): the same words prepare_anchor.status_word prints.
         if _conf is True:
-            return ("ANCHORED (confirmed) " + _blocks, len(blob), True)
+            return ("ANCHORED, CONFIRMED (in force) " + _blocks, len(blob), True)
         if _conf is False:
-            return ("ANCHORED against the pinned anchor set, PROVISIONAL " + _blocks,
-                    len(blob), True)
+            return ("ANCHORED, PROVISIONAL (in force once a later version's section 2d names "
+                    "its blocks) " + _blocks, len(blob), True)
         return ("ANCHORED against the pinned anchor set " + _blocks, len(blob), True)
     if "carries no Bitcoin attestation" in why:
         return "pending (calendar only)", len(blob), False

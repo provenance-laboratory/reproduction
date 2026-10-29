@@ -1400,8 +1400,14 @@ def main():
     _pending = max(_present) if _present else version
     if _pending > version:
         print()
-        print("  " + W + " v%d IS PRESENT AND IS NOT AUTHORITY. v%d governs." % (_pending, version))
-        print("  A newly stamped version is pending until a calendar anchors it, which takes")
+        # v28 (review of 29 Oct 2026): the words are status_sentence()'s, as everywhere else; this
+        # printed "v%d governs" and called an unsigned draft "newly stamped".
+        import prepare_anchor as _PAp                                    # noqa: PLC0415
+        _pdoc = next((f for f in HERE.glob("PRE-REGISTRATION*.md")
+                      if re.search(r"-v%d-" % _pending, f.name)), None)
+        print("  " + W + " " + (_PAp.status_sentence(_pending, _pdoc) if _pdoc else "v%d present" % _pending)
+              + ". The digest check applies v%d's pins." % version)
+        print("  A version's pins apply once it is signed and its proof anchors, which takes")
         print("  hours. Building against v%d is fine and is what is happening. PUBLISHING while a"
               % version)
         print("  newer version is pending is not, and --publishing refuses it.")
@@ -1461,6 +1467,19 @@ def main():
     print()
     print("  authority %s (v%d), composed over %d anchored version(s): %d path(s)"
           % (PROTOCOL, version, len(found), len(pinned)))
+    # v28 (V28-QUEUE item 4): "authority" names whose PINS this check applies. Whether that version
+    #   is IN FORCE is a different fact, decided in one place (`prepare_anchor.status_word`), and is
+    #   printed here in the same words every other tool prints it.
+    try:
+        import prepare_anchor as _PAs                                     # noqa: PLC0415
+        print("  status    %s" % _PAs.status_sentence(version, HERE / PROTOCOL))
+        _conf = [v for v, d in sorted(_PAs.versions().items()) if _PAs.status_word(d) == "CONFIRMED"]
+        if _conf and _conf[-1] != version:
+            print("            the latest CONFIRMED version is v%d; v%d's pins are checked because"
+                  " the newest signed and anchored version's pins govern the digest check"
+                  % (_conf[-1], version))
+    except Exception as _e:                                               # noqa: BLE001
+        print("  " + W + " status not computed (%s) -- the digest check below is unaffected" % type(_e).__name__)
     if _retired:
         print("  " + W + " %d path(s) are RETIRED by an anchored version and are no longer"
               % len(_retired))
@@ -1630,9 +1649,9 @@ def main():
         print("  file its own anchoring rewrites.")
         print()
     if bad:
-        print("  " + D + " %d COMMITTED FILE(S) NO LONGER MATCH. By %s this pre-registration"
+        print("  " + D + " %d COMMITTED FILE(S) NO LONGER MATCH the pins %s applies."
               % (len(bad), PROTOCOL))
-        print("  IS VOID until they are restored or a new version re-commits them.")
+        print("  They must be restored, or a newer version must commit them and be signed and anchored.")
         print()
         for rel, why, want, got in bad:
             print("      %-26s %s" % (rel, why))

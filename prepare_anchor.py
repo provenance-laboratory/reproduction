@@ -353,6 +353,38 @@ def confirmed(doc):
     return any(known.get(h) == r for h, r in blocks)
 
 
+def status_word(doc):
+    """The ONE word every tool prints for a version's state (v28, V28-QUEUE item 4).
+
+    ⛔ TWO TOOLS DESCRIBED ONE STATE IN WORDS THAT READ AS A CONTRADICTION. `check_commitments.py`
+    said v27 was the *authority*; this tool and `anchor_status.py` said v27 was *NOT in force*. Both
+    followed the design -- the newest signed and anchored version's pins are the ones the digest check
+    applies, while a version is in force only when a LATER version's §2d table commits its blocks --
+    and two internal reviewers, and the review packet's own text ("signed, anchored and governing"),
+    took the stronger word. The rules do not change here; the vocabulary is decided once:
+
+        DRAFT        not signed
+        SIGNED       signed; its proof carries no Bitcoin attestation yet
+        PROVISIONAL  signed and anchored; no later version's §2d table names its blocks
+        CONFIRMED    signed, and a later version's §2d table names its blocks -- in force
+    """
+    if not signed(doc):
+        return "DRAFT"
+    if not anchored(doc):
+        return "SIGNED"
+    return "CONFIRMED" if confirmed(doc) else "PROVISIONAL"
+
+
+def status_sentence(v, doc):
+    """`v27 PROVISIONAL: ...` -- the sentence every tool prints, so no tool words it alone."""
+    w = status_word(doc)
+    why = {"DRAFT": "not signed",
+           "SIGNED": "signed; its proof carries no Bitcoin attestation yet",
+           "PROVISIONAL": "signed and anchored; in force once a later version's §2d table names its blocks",
+           "CONFIRMED": "signed, and a later version's §2d table names its blocks: in force"}[w]
+    return "v%d %s: %s" % (v, w, why)
+
+
 def in_force(doc):
     """A version is in force when it is signed AND its proof carries a Bitcoin attestation.
 
@@ -1310,7 +1342,7 @@ def main():
             % (D, newest, ", ".join("v%d" % v for v in _gap),
                "is" if len(_gap) == 1 else "are"))
     if prev is not None:
-        print("  %s v%d amends v%d, which is in force" % (OK, newest, prev))
+        print("  %s v%d builds on v%d, the latest version in force" % (OK, newest, prev))
 
     print()
     print("  READY. These are the operator's to run; nothing here does them.")
@@ -1372,7 +1404,12 @@ def main():
     print("     calendar servers. The digest discloses nothing about the contents, and it is")
     print("     not reversible. Anchoring a cutoff is deliberate here; anchoring a draft is not.")
     print()
-    print("  Then: python check_commitments.py   (it will select v%d as the authority)" % newest)
+    # v28 (V28-QUEUE item 3): signing adds a text file (the .asc), so the disposition record is
+    #   regenerated as part of the act that changes the folder, not discovered stale by the next run.
+    print("  Then: python withdrawn_claims.py     (signing added the .asc; the record must count it)")
+    print("  Then: python check_commitments.py   (it will check v%d's pins; v%d stays PROVISIONAL until a"
+          % (newest, newest))
+    print("        later version's §2d table names its blocks -- see status_word())")
     return 0
 
 

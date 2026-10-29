@@ -996,6 +996,11 @@ def p_rename_the_proof_superseded(root):
     p.write_bytes(p.read_bytes() + b"# touched" + bytes([10]))
 
 
+# v27: the `want` of a fixture that could not be set up. A fixture carrying it is counted as
+#   UNMEASURED -- never compared, so it can never be scored as refused.
+_UNMEASURED = object()
+
+
 class _Unmeasurable(Exception):
     """A control that cannot be set up on this machine. Reported, never scored either way."""
 
@@ -1586,7 +1591,7 @@ def _round14_fixtures():
         except FileNotFoundError:
             r = None
         if r is None or r.returncode != 0:
-            out.append(("(subkey control unmeasured: gpg could not make a key here)", True, True))
+            out.append(("(subkey control unmeasured: gpg could not make a key here)", None, _UNMEASURED))
         else:
             cols = _run(["--with-colons", "--list-keys", "sub@example.invalid"]).stdout
             fprs = [ln.split(":")[9] for ln in cols.splitlines() if ln.startswith("fpr:")]
@@ -1603,7 +1608,8 @@ def _round14_fixtures():
             if _rs.returncode != 0 or not (doc.parent / (doc.name + ".asc")).is_file():
                 # a control that could not be set up says so, with gpg's own words, and scores nothing
                 out.append(("(subkey control unmeasured: gpg would not sign with the subkey: %s)"
-                            % (_rs.stderr or _rs.stdout or "").strip().splitlines()[-1:][0:1], True, True))
+                            % (_rs.stderr or _rs.stdout or "").strip().splitlines()[-1:][0:1], None,
+                            _UNMEASURED))
                 shutil.rmtree(work, ignore_errors=True)
                 work = None
             # no GNUPGHOME: the MSYS gpg on this platform cannot open a Windows absolute homedir, and
@@ -1631,7 +1637,8 @@ def _round14_fixtures():
                                       "-o", doc.name + ".asc", doc.name], cwd=str(root), capture_output=True)
                 out.append(("... and by another key is still BAD", cs.verify(doc)[0], "BAD"))
             except _Unmeasurable:
-                pass
+                out.append(("(another-key control unmeasured: gpg could not make the second key)",
+                            None, _UNMEASURED))                                 # v27: counted
             finally:
                 _restore_imports(saved)
     finally:
@@ -2120,6 +2127,10 @@ def main():
     #    accepted attack, which is a security fact. Round 9 split security from liveness
     #    for the same reason; this is the same conflation one level in.
     caught = missed = wrong_reason = 0
+    # ⛔ v27: ONE COUNTER, BEFORE THE FIRST GROUP. v26 initialised it inside the withdrawn-claims
+    #   group, so only that group could increment it, and eight prepare_anchor attacks that did
+    #   not run reached no total. Every `except _Unmeasurable` below now increments it.
+    unmeasured = 0
     hygiene_failed = False
 
     print("  check_commitments.py")
@@ -2153,10 +2164,23 @@ def main():
     # OPERATOR-ACTIONS.md tells the operator to run this file directly, and on that path a run
     # that crashed left the PREVIOUS verdict in place with no timestamp and nothing saying which
     # tree it described. Absence should mean "no verdict" by hand as well.
-    try:
-        (HERE / "CONTROL-SUITE-VERDICT.json").unlink()
-    except OSError:
-        pass
+    #
+    # ⛔ v26: DELETING IT CHANGED THE TREE THAT THE NEXT GROUP MEASURES. The withdrawn-claims
+    #   baseline below counts the text files in this folder and compares the count with
+    #   WITHDRAWN-CLAIMS.md, which is generated with this verdict PRESENT. Unlinking it here made
+    #   the folder one file smaller for the rest of the run, the baseline refused on a count this
+    #   suite had just changed, and the four attacks under it were reported `unmeasured` for three
+    #   rounds. A finding of 28 September proposed excluding the verdict inside
+    #   `withdrawn_claims.py`; doing that changes a file whose reading is bound to its digest, and
+    #   recording the new reading rewrites the disposition log's head -- whose proof is the one
+    #   anchored in block 967531, which the anchor pin file would then hold with no proof naming it.
+    # ⇒ The protection this unlink gave -- a crashed run must not leave the previous green verdict
+    #   behind -- is kept by OVERWRITING it with a record that cannot be read as a pass: no nonce,
+    #   so `build_package.py` refuses it, and no `security_ok`, so nothing else reads it as clean.
+    #   The file stays present, the count stays stable, and the cause is fixed where it arises.
+    (HERE / "CONTROL-SUITE-VERDICT.json").write_text(
+        '{"in_progress": "a control-suite run started and has not finished; this is not a verdict"}'
+        + NL, encoding="utf-8", newline=NL)
     _w = pathlib.Path(tempfile.mkdtemp(prefix="pa-"))
     try:
         _r = _w / "r"
@@ -2184,12 +2208,22 @@ def main():
             # ⚠ NEITHER CAUGHT NOR MISSED. A control that could not be set up says so and is
             # scored as nothing; a suite that counted it as refused would be measuring the
             # absence of gpg, and one that counted it as passed would be crying wolf.
+            # ⛔ v27: and it is COUNTED, so the verdict's denominator includes it.
             print("    %s %-52s unmeasured: %s" % (W, label, _u))
+            unmeasured += 1
             continue
         finally:
             os.environ.clear()
             os.environ.update(_env)
             shutil.rmtree(work, ignore_errors=True)
+        # ⛔ v27: A REFUSAL UNDER A BROKEN BASELINE IS NOT A MEASUREMENT -- the rule the
+        #   withdrawn-claims group already applies. v26's first run scored two attacks here as
+        #   "refused for the wrong reason" while this group's baseline was refusing the tree.
+        if not _base_ok:
+            print("    %s %-52s %s" % (W + " unmeasured", label,
+                                       "the baseline is broken, so this attack tested nothing"))
+            unmeasured += 1
+            continue
         # ⛔ THE NAMED REFUSAL, NOT ANY REFUSAL.
         ok = rc != 0 and phrase in out
         why = ("refused " if ok else
@@ -2229,8 +2263,9 @@ def main():
         print("      " + (_out.strip().splitlines() or ["(no output)"])[-1][:100])
         hygiene_failed = True
 
-    # Counted apart from `caught` and `missed`: an unmeasured attack is neither.
-    unmeasured = 0
+    # Counted apart from `caught` and `missed`: an unmeasured attack is neither. (v27: the
+    # counter is initialised once, before the first group; re-initialising it here was what
+    # discarded the prepare_anchor group's.)
     for label, build, phrase in WITHDRAWN_ATTACKS:
         work = pathlib.Path(tempfile.mkdtemp(prefix="wc-"))
         root = work / "r"
@@ -2265,7 +2300,7 @@ def main():
                 missed += 1
 
     if unmeasured:
-        print("    %s %d attack(s) above were NOT MEASURED, and are counted in "
+        print("    %s %d attack(s) so far were NOT MEASURED, and are counted in "
               "neither the caught nor the missed total." % (W, unmeasured))
     print()
     print("  measure_hardware.py -- none of these may return MATCHED-STACK")
@@ -2451,6 +2486,7 @@ def main():
             missed += not _ok
         except _Unmeasurable as _u:
             print("    %s %-52s unmeasured: %s" % (W, "verify() names the wrong key", _u))
+            unmeasured += 1                                                     # v27
     finally:
         os.environ.clear()
         os.environ.update(_env)
@@ -2602,6 +2638,10 @@ def main():
     print()
     print("  round 14 -- the three findings, in process")
     for _label, _got, _want in _round14_fixtures():
+        if _want is _UNMEASURED:                                                # v27
+            print("    %s %-70s" % (W + " unmeasured", _label))
+            unmeasured += 1
+            continue
         _ok = _got == _want
         print("    %s %-70s %s" % ("refused " if _ok else D + " PASSED ", _label,
                                    "" if _ok else "got %r want %r" % (_got, _want)))
@@ -2641,7 +2681,9 @@ def main():
     # ⇒ The gate issues a nonce in the environment and the verdict carries it back, together
     # with the digest of the tree examined. A verdict without this run's nonce is somebody else's.
     import os as _os
-    _verdict = {"nonce": _os.environ.get("CONTROL_SUITE_NONCE", ""),
+    # v28 (V28-QUEUE item 5): a run with no nonce says so in the field rather than leaving it empty,
+    #   which a reader took for a value. `build_package.py` still refuses a verdict without its nonce.
+    _verdict = {"nonce": _os.environ.get("CONTROL_SUITE_NONCE") or "none: run outside build_package.py",
                 "tree_digest": tree_digest(),
                 "attacks_refused": caught,
                 "hygiene_failed": bool(hygiene_failed),
@@ -2650,6 +2692,25 @@ def main():
                 # measured nothing. Reported apart from `missed` because it is a claim
                 # about coverage and not about security.
                 "attacks_refused_for_the_wrong_reason": wrong_reason,
+                # ⛔ THE SUITE COUNTED THESE AND THE VERDICT DID NOT CARRY THEM. `unmeasured` was
+                # computed, printed to the console and then dropped, so a machine reading this file
+                # saw `attacks_refused: 64` beside `security_ok: true` with nothing to say that four
+                # declared attacks had not run at all. An external reviewer had to reconcile 68
+                # against 64 by reading the console output to discover the difference existed.
+                # ⇒ COVERAGE TRAVELS WITH THE VERDICT. `security_ok` still means "no attack was
+                # accepted", which is true and is not weakened by an attack that never ran -- but a
+                # reader can now see the denominator instead of inferring it.
+                "attacks_declared": caught + missed + wrong_reason + unmeasured,
+                "attacks_not_measured": unmeasured,
+                # v28 (V28-QUEUE item 5): the headline a reader quotes, with its denominator in it,
+                #   so "77/77 refused" cannot be read off a run in which nine did not run.
+                "attacks_measured": caught + missed + wrong_reason,
+                "headline": "%d of %d declared attacks measured; %d refused, %d accepted that should not "
+                            "have been, %d refused for the wrong reason; %d not measured"
+                            % (caught + missed + wrong_reason, caught + missed + wrong_reason + unmeasured,
+                               caught, missed, wrong_reason, unmeasured),
+                "security_ok_means": "no MEASURED attack was accepted; the unmeasured ones are counted "
+                                     "above and are not evidence either way",
                 "positive_control_failed": bool(positive_failed),
                 "security_ok": missed == 0,
                 "liveness_ok": not positive_failed}

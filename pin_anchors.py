@@ -261,6 +261,10 @@ def main():
         print("  " + D + " one flag, deliberately: adding is cheap and unverified, verifying is total.")
         return 2
     want = heights()
+    # v28 (V28-QUEUE item 1): the full projection keeps its own name. `--add` narrows `want` to the
+    #   heights it fetches, and "kept" used to be computed against that narrowed set, so every height
+    #   already pinned was reported as named by no proof (51 printed where section 2e expects 2).
+    named = {str(h) for h in want}
     print("=" * 78)
     print("  BITCOIN ANCHORS -- %d block(s) our proofs name" % len(want))
     print("=" * 78)
@@ -332,6 +336,7 @@ def main():
         print("  ok  every pin re-fetches to the same block, matches our proofs, and NO PIN IS")
         print("  PRESENT THAT NO PROOF NAMES.")
         return 0
+    merged = _merged(rec, named)        # v28: once; it printed its warning twice
     OUT.write_text(json.dumps({
         "_readme": ("The Bitcoin blocks our OpenTimestamps proofs attest to, with the merkle root "
                     "each one really has. ots_verify.py grants ANCHORED only when a proof's "
@@ -349,15 +354,15 @@ def main():
                    "operators running the same Esplora software, blockchain.info is a different "
                    "codebase. Agreement across them is harder to forge than one API and is not "
                    "the same thing as running your own node." % MIN_AGREE),
-        "blocks": _merged(rec),
+        "blocks": merged,
     }, indent=1) + NL, encoding="utf-8")
     print()
-    print("  wrote %s -- %d block(s)%s" % (OUT.name, len(_merged(rec)),
+    print("  wrote %s -- %d block(s)%s" % (OUT.name, len(merged),
                                           " (+%d added; run --verify for the total act)" % len(rec) if add else ""))
     return 0
 
 
-def _merged(rec):
+def _merged(rec, named=None):
     """Existing pins, plus the newly fetched ones. NEVER fewer.
 
     ⛔ THIS TOOL DELETED TWO ANCHOR FACTS ON 6 SEP 2026. It wrote "exactly the set our proofs
@@ -385,7 +390,9 @@ def _merged(rec):
                 "fact pin may grow but never contradict; refusing to overwrite."
                 % (h, prev.get("merkle_root", "")[:16], v.get("merkle_root", "")[:16]))
         out[h] = v
-    kept = sorted(set(out) - set(rec), key=int)
+    # v28: "kept" is pinned and named by NO proof -- measured against every height the proofs
+    #   name, not against the ones this run happened to fetch.
+    kept = sorted(set(out) - (set(named) if named is not None else set(rec)), key=int)
     if kept:
         print("  %s %d height(s) kept that no current proof names, as section 2d requires: %s"
               % (W, len(kept), ", ".join(kept)))

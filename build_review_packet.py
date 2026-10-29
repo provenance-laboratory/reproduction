@@ -84,7 +84,22 @@ def _findings_send():
             if line.startswith("#"):
                 head = line.lstrip("#").strip()
                 break
-        out.append((f.name, head or "a finding record carrying no heading of its own"))
+        # ⛔ A PLACEHOLDER IS NOT A CLASSIFICATION, AND THE PINNED RULE SAYS "OR THE BUILD REFUSES".
+        #   This filled a missing heading with "a finding record carrying no heading of its own" and
+        #   shipped. The rule v24 pinned is *every FINDING-* file must be classified or the build
+        #   refuses*; a file described by a sentence the build invented is unclassified, and the
+        #   packet index would tell a reviewer nothing about it while looking complete.
+        # ⚠️ AND THE RISK RUNS THE OTHER WAY NOW. Replacing the hand-written list with a glob means
+        #   a FILENAME authorises publication: anything matching FINDING-*.md ships. Refusing on a
+        #   missing heading is what stops a draft dropped into this folder going out described by a
+        #   placeholder. An external reviewer named this exact gap.
+        if not head:
+            raise SystemExit(
+                "%s %s carries no heading, so the build cannot describe it from the document "
+                "itself. The pinned rule is that every FINDING-* file is classified or the build "
+                "refuses -- a placeholder description is not a classification. Give it a first "
+                "heading, or move it out of this folder if it is not a finding." % (D, f.name))
+        out.append((f.name, head))
     return tuple(out)
 
 
@@ -136,211 +151,70 @@ def _protocol_send():
 # Read by the packet collector (`review-2026-09-19/collect.py`) by AST: the two members under a
 # dot-directory this archive ships on purpose, with the reason. Every other dot-directory member is
 # refused there on sight; these are the forms a reproducer files with, and the record counts them.
-SHIP_DOTPATHS = {
-    ".github/ISSUE_TEMPLATE/commitment.yml": "the issue form a reproducer files a commitment with",
-    ".github/ISSUE_TEMPLATE/reproduction-report.yml": "the issue form a reproducer files a report with",
-}
-DOTFILES = (
-    (".gitignore", "repository configuration; shipped so the tree the record describes is the tree"),
-    (".gitattributes", "the same"),
-    ("corpus/.gitignore", "the same, one directory down"),
-    (".github/ISSUE_TEMPLATE/commitment.yml", "the issue form a reproducer files a commitment with"),
-    (".github/ISSUE_TEMPLATE/reproduction-report.yml", "the issue form a reproducer files a report with"),
-)
+# ⛔ v27: THE INVENTORY LEFT THE PINNED CODE (carried from v26 §5; the operator's decision, 9 Oct
+#   2026). Every new file in this folder used to need an edit here, and this file is pinned, so every
+#   new file cost a protocol version -- and on 2 October the build refused for six days and a stale
+#   packet shipped in its place. The RULE stays here and is still enforced (every file shipped or
+#   excused by name, or no packet); the NAMES are data in REVIEW-SHIP-LIST.json, shipped with every
+#   packet. The lists as they stood until v26, comments included, are kept verbatim in
+#   build_review_packet.lists-until-v26.txt.
+SHIP_LIST = HERE / "REVIEW-SHIP-LIST.json"
 
-SEND = _protocol_send() + _findings_send() + DOTFILES + (
-    # ⛔ THIS WAS EXCLUDED -- *a shipped copy would be a verdict not produced by the run the
-    # reader is looking at* -- and the exclusion cost three rounds of a red hygiene bit: the
-    # withdrawn-claims scan counts every text file in the tree, this one included, so the shipped
-    # WITHDRAWN-CLAIMS.md said 139 files and a reviewer's extraction walked fewer. It ships now,
-    # BOUND to `tree_digest`: `build_review_packet.py` refuses unless that digest is the tree being
-    # shipped, and `REVIEW-COMMANDS.json` restates it as measured. A reviewer's own run overwrites
-    # it, which is what a verdict file is for.
-    ("CONTROL-SUITE-VERDICT.json",
-     "the suite's verdict as DATA, bound to the tree digest it was produced on; a reviewer's own "
-     "run replaces it, and nothing here treats a shipped copy as anyone's run but the builder's"),
-    ("PUBKEY.asc",
-     "the public key. ⛔ The round-6 repair shipped check_signature.py and NOT the key, so "
-     "every reproducer got NO_PUBKEY on all eight documents -- a check that returns the same "
-     "answer for a good signature and a forged one, for everyone except the one person who "
-     "does not need it. A round-7 reviewer found it reported as fixed and absent"),
-    ("pin_anchors.py",
-     "the blocks our proofs name, fetched from a public explorer with the source and date kept. "
-     "Parsing an attestation is not verifying one: two round-6 reviewers minted a structurally "
-     "valid attestation offline, one naming block 999999, and moved authority with it"),
-    ("ANCHORS.json",
-     "the real merkle root of each of those blocks. ANCHORED now means the root computed from "
-     "the document's own bytes IS the pinned root; a proof naming an unpinned block is "
-     "STRUCTURAL and never authority. NOT pinned by v9, because anchoring a document changes "
-     "this file -- see v9 section 14"),
-    ("ots_verify.py",
-     "the OpenTimestamps parser. Round 4's 35-bytes-of-junk attack survived its own repair "
-     "because the repair added BINDING and never added PARSING -- run it against the forgeries"),
-    ("check_signature.py",
-     "who asserted the protocol documents. Anchoring is free, public and unilateral, so it "
-     "answers WHEN and never WHO"),
-    ("REGISTRATION.template.json",
-     "what --publishing now requires: a reporting address and an OPEN close date. The first "
-     "version of that gate accepted this template's own FILL-IN placeholder"),
-    ("MEASUREMENT-4-recording-gap-no-pyyaml.json",
-     "the same two arms as the CONFOUNDED record, re-evaluated: the arms did not change, the "
-     "word for what went wrong did"),
-    # ---- declared this round -----------------------------------------------------------------
-    # ⛔ THE PACKET REFUSED UNTIL EVERY ONE OF THESE WAS NAMED, which is the rule working: a
-    # review packet that omits what the round did is a packet the round cannot be judged from.
-    ("withdrawn_claims.py",
-     "NEW: which anchored documents still state a withdrawn claim, and where the withdrawal is. "
-     "PRE-REGISTRATION.md states the ecosystem claim unmarked and is OpenTimestamped, so it "
-     "cannot be edited -- the marker is additive and generated rather than written"),
-    ("WITHDRAWN-CLAIMS.md", "NEW: what that generates. Travels with the documents it is about"),
-    ("prepare_anchor.py",
-     "what stands between a version and being in force, checked rather than written down. It "
-     "verifies that the file digests the document pins still describe the files here, then prints "
-     "the sign-and-stamp commands for the operator. It performs neither: the key is theirs and a "
-     "stamp is an outward act. COMMITTED BY v19, not v18 -- it carries the write path, and round "
-     "9 split that out of the version whose section 1 is the thing under review"),
-    ("attempts.py",
-     "NEW: the hash-chained attempt log. Note what it does NOT do any more -- the venue list is "
-     "reported as CONTEXT and no longer gates what may be recorded, because a superseded plan "
-     "cannot be both 'nothing in force' and the thing deciding what is recordable"),
-    ("capture_exposure.py",
-     "the v18 exposure instrument, stopped mid-build and shipped as it stood. Route 2 withdrew "
-     "the claim instead of instrumenting it, so this is evidence of a road not taken rather than "
-     "a working tool -- read it against section 1 of v18 and say whether withdrawing was right"),
-    # ⛔ v18 PINS THIS AND THE ARCHIVE DID NOT SHIP IT, so `prepare_anchor.py` -- the command the
-    # prompt tells a reviewer to run FIRST -- reported it as a broken commitment from the extracted
-    # archive. The proof ships beside it for the same reason every signature here does: a capture
-    # says what was seen, its proof says the capture existed by a date, and one half alone is not
-    # checkable.
-    ("exposure/exposure-2026-09-07.json",
-     "the single exposure capture, pinned by v18. Route 2 withdrew the claim this instrument was "
-     "built to support, so it is the record of a road not taken -- and it is pinned, so it must "
-     "travel or the pin reads as broken rather than as unshipped"),
-    ("exposure/exposure-2026-09-07.json.ots",
-     "its timestamp proof; the capture and its proof ship together or neither is checkable"),
-    ("DISTRIBUTION-PLAN.md",
-     "the exposure plan v18 supersedes. Shipped BECAUSE it is superseded: the withdrawal is only "
-     "judgeable beside the thing withdrawn"),
-    # ⛔ THE FINDINGS ARE NO LONGER LISTED HERE. They were, and the list sat inside a file the
-    #    protocol pins, so each new finding cost a protocol version. `_findings_send()` now collects
-    #    every FINDING-*.md and reads each one's description from its own first heading. The
-    #    fail-closed rule is untouched: a finding that does not match the pattern is still a stray
-    #    file and still refuses the build.
-    ("HOW-TO-RECHECK-THE-ANCHORS.md", "how to re-verify every proof here without trusting us"),
-    ("REPRODUCER-STATUS-NOTE.md", "what a reproducer can and cannot currently do"),
-    ("ZENODO-DEPOSIT.md", "the deposit record"),
-    # ⇒ THE DISPOSITIONS ARE THE ROUND'S WORK, so they ship and a reviewer can argue with each
-    # one. Each entry records a document, its digest, what that document does about the withdrawn
-    # claim, and -- crucially -- whether a human read it or a phrase scan proposed it.
-    #
-    # ⚠️ DELIBERATELY NOT PINNED BY ANY VERSION. A reading is meant to go stale the moment its
-    # file changes; pinning the record of the readings would make every re-reading a protocol
-    # amendment, which is the opposite of the intent.
-    #
-    # ⛔ AND ROUND 8'S REASON FOR THAT WAS HALF RIGHT AND SHIPPED AS IF IT WERE WHOLE. It said
-    # *the integrity that matters is the per-entry digest binding, and that is inside the file*.
-    # The binding defends against THE DOCUMENT changing. It never defended against THE RECORD OF
-    # THE READING changing, and a round-9 reviewer walked straight through the gap: every machine
-    # seed promoted to `human`, the one anchored carrier flipped to `clean`, and a clean exit --
-    # the document the tool exists for, gone from the published record.
-    #
-    # ⇒ The record is an append-only hash-chained log now, with a head file, the same
-    # construction `attempts.py` uses. Both halves ship: a chain says the entries have not been
-    # rewritten, a head says none has been deleted from the end, and one alone is not a control.
-    ("WITHDRAWN-DISPOSITIONS.jsonl",
-     "one entry per READING -- a file, its digest at the time, what it does about the withdrawn "
-     "claim, and `prev`, the SHA-256 of the previous entry's exact bytes. Append-only and chained"),
-    ("WITHDRAWN-DISPOSITIONS.head",
-     "what pins how many readings there are. A chain cannot see entries deleted from its END; "
-     "this can. Stamp it and the operator's own hand stops being the last word on it"),
-    # ⚠️ ITS PROOF SHIPS BESIDE IT, AND SAYS LESS THAN IT WILL. The whole-tree walk surfaced
-    # this one unaccounted -- the same remark about how long a file had been missing that the
-    # LICENSE entry below records.
-    ("WITHDRAWN-DISPOSITIONS.head.ots",
-     "the head's timestamp proof, upgraded to a Bitcoin attestation (block 967531), which "
-     "ANCHORS.json pins since round 14; the proof verifies against that pinned root offline"),
-    # ⚠️ THE SUPERSEDED FLAT RECORD SHIPS TOO, for the same reason DISTRIBUTION-PLAN.md does:
-    # ten of its entries are the provenance of the chain's first ten, and the other thirty-five
-    # are the thing that was dropped. A reviewer can only argue with that if they can see it.
-    ("WITHDRAWN-DISPOSITIONS.json.superseded-flat-20260914T110818Z",
-     "the flat record the chain replaced. Its 35 `seeded_from: phrase-scan` entries were written "
-     "by no code path in this tree and are not migrated; its 10 human readings are"),
-    ("LICENSE", "the terms this archive travels under -- surfaced by the whole-tree walk, which "
-                "is a remark about how long it had been missing"),
-    # The detached signatures' own timestamp proofs. A signature says WHO; its proof says the
-    # signature existed by a date. Both halves ship or neither is checkable.
-    ("anchor_status.py", "the proof check -- run it; a pass is narrower than it sounds"),
-    ("ENVIRONMENT-LOCK.json", "interpreter and library, recorded not locked"),
-    ("MEASUREMENT-2.json", "storage overhead, from measure_storage.py"),
-    ("measure_storage.py", "measurement 2's derivation, with its boundary declared"),
-    ("PILOT-2026-08-29.md", "the observation that made the thread pin part of the protocol"),
-    ("AMENDMENT-2026-08-30.md", "a deviation from section 2b, recorded on the day"),
-    ("PHASE-2-FINDINGS.md", "what the pipeline found"),
-    ("MEASUREMENT-1.json", "the cost of determinism, 11 interleaved reps"),
-    ("MEASUREMENT-6.md", "engineering hours, self-reported and flagged as the weakest evidence"),
-    ("REPRODUCTION-CALL.md", "the open request, written to section 2b"),
-    ("PUBLICATION-CHECKLIST.md", "the decisions that must be made in the act of publishing"),
-    ("train.py", "the pipeline"),
-    ("build_package.py", "what a reproducer receives"),
-    ("verify_package.py", "the package run as a stranger would"),
-    ("build_review_packet.py", "this packet's own builder -- a reviewer asked for it"),
-    ("REVIEW-ROUNDS.json", "the round record the covering note is generated from"),
-    ("measure_cost.py", "measurement 1's instrument"),
-    ("reproduce_findings.py",
-     "re-derives the headline findings from scratch -- five runs, no timing, so a"
-     " reviewer checks the RESULTS rather than the prose"),
-    ("corpus/MANIFEST.json", "the corpus and its Merkle root"),
-    ("corpus/MANIFEST.json.ots", "committed BEFORE the first training step, now anchored"),
-    # ⇒ The corpus manifest has retired proofs too, and they were invisible until the coverage
-    # check walked the tree. Same projection, same reason -- the kind of artifact does not depend
-    # on which file it happens to sit beside.
-    *_retired("corpus/MANIFEST.json"),
-    ("corpus/build_corpus.py", "the corpus derivation, pinned by digest"),
-    ("corpus/sources.json", "the ten texts and where they came from, pinned by digest"),
-    ("corpus/verify_shipped.py",
-     "checks a SHIPPED corpus using only what a package contains -- build_corpus.py --verify "
-     "cannot, because it re-derives from raw/ and raw/ is not shipped"),
-    ("check_commitments.py",
-     "the control that enforces the digest commitments -- v3 §2 was prose, and was broken the "
-     "next day without anything noticing"),
-    ("measure_hardware.py", "measurement 4's instrument, which labels the COMPARISON"),
-    ("MEASUREMENT-4-confounded-no-pyyaml.json",
-     "the first hardware pair: bit-identical AND confounded, retained as record"),
-    ("MEASUREMENT-4-RUNBOOK.md", "the second-machine procedure, and the two errors it contained"),
-    ("MEASUREMENT-5-7.json", "measurements 5 and 7, computed rather than typed"),
-    ("measure_divergence.py", "their instrument, including the seed-sensitivity arm"),
-    ("seed_sensitivity.py", "the seed arm's driver"),
-    # ⛔ THE ROUND'S ONE NEW RESULT SHIPPED WITH NONE OF ITS EVIDENCE. The packet printed
-    # "m4 ... MATCHED-STACK ... bit-identical True" from MEASUREMENT-4.json while that file was
-    # EXCLUDED with the reason "absent until measurement 4 is retaken" -- false, it was on disk and
-    # the packet could only print from it by opening it. Neither arm's run.json shipped either,
-    # because unclassified() globbed *.py/*.md/*.json beside the builder and never looked in
-    # runs/. A reviewer found all of it and called it round 4's own headline defect inside round
-    # 4's own fix. They were right.
-    ("MEASUREMENT-4.json", "THE RESULT, with both arms' environments and every condition"),
-    ("runs/det-1/run.json",
-     "the reference run build_package.py requires. ⛔ Without it the builder "
-     "refuses before reaching any control, so a round-9 reviewer could not exercise the "
-     "repaired build path from this packet at all -- the fix was untestable exactly "
-     "where it needed testing"),
-    ("runs/tpc-thr-1/run.json", "arm A's run record -- rehash it"),
-    ("runs/amd-thr-1/run.json", "arm B's run record -- rehash it"),
-    ("runs/tpc-thr-1/weights.npz", "arm A's artifact, so bit-identity can be recomputed"),
-    ("runs/amd-thr-1/weights.npz", "arm B's artifact, so bit-identity can be recomputed"),
-    ("runs/amd-thr-1-no-pyyaml/run.json",
-     "the first pair's arm B, retained: bit-identical AND inadmissible"),
-    # the divergence runs MEASUREMENT-5-7.json is computed from -- found by the same coverage
-    # check, one layer down: a measurement that names a run and does not ship it is the same
-    # defect as m4's, and there were five more of them.
-    ("runs/thr-1/run.json", "measurement 5/7 reference arm, 1 thread"),
-    ("runs/thr-2/run.json", "measurement 5/7, 2 threads"),
-    ("runs/thr-4/run.json", "measurement 5/7, 4 threads"),
-    ("runs/thr-8/run.json", "measurement 5/7, 8 threads"),
-    ("runs/thr-16/run.json", "measurement 5/7, 16 threads"),
-    ("test_controls.py",
-     "every attack round 4 used, as a suite -- the positive controls were prose and both "
-     "reviewers broke the tools they described"),
-)
+
+def _load_ship_list(path=SHIP_LIST):
+    """The inventory, validated before anything is packed. A malformed one refuses, never shrinks."""
+    try:
+        d = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        raise SystemExit("%s %s is missing: no inventory, so nothing can be shown to be shipped or "
+                         "excused" % (D, path.name))
+    except ValueError as e:
+        raise SystemExit("%s %s is not valid JSON (%s)" % (D, path.name, e))
+    keys = ("send", "dotfiles", "ship_dotpaths", "identity_expected", "excluded", "excluded_dirs",
+            "shipped_trees", "required_trees", "excluded_globs")
+    gone = [k for k in keys if k not in d]
+    if gone:
+        raise SystemExit("%s %s lacks %s" % (D, path.name, ", ".join(gone)))
+    bad, send = [], []
+    for e in d["send"]:
+        if isinstance(e, dict) and set(e) == {"retired_of"} and str(e["retired_of"]).strip():
+            send.extend(_retired(e["retired_of"]))
+        elif (isinstance(e, dict) and set(e) == {"glob", "why"} and str(e["glob"]).strip()
+              and str(e["why"]).strip()):
+            # v27: a family of files a tool writes under a pattern (a retired disposition-log head
+            # and its proof), each shipped under the one stated reason
+            send.extend((q.relative_to(HERE).as_posix(), e["why"])
+                        for q in sorted(HERE.glob(e["glob"])) if q.is_file())
+        elif isinstance(e, list) and len(e) == 2 and all(isinstance(x, str) and x.strip() for x in e):
+            send.append(tuple(e))
+        else:
+            bad.append("send: %r" % (e,))
+    for e in d["dotfiles"]:
+        if not (isinstance(e, list) and len(e) == 2 and all(isinstance(x, str) and x.strip() for x in e)):
+            bad.append("dotfiles: %r" % (e,))
+    for k in ("ship_dotpaths", "identity_expected", "excluded", "excluded_dirs", "excluded_globs"):
+        for n, why in d[k].items():
+            if not (isinstance(why, str) and why.strip()):
+                bad.append("%s: %s has no reason" % (k, n))
+    names = [e[0] for e in send]
+    dup = sorted({n for n in names if names.count(n) > 1})
+    # (A name both shipped and excused is permitted: REVIEW-ROUNDS.json is listed in both on purpose,
+    #  so the excuse list stays exhaustive -- the v26 lists did this and the migration keeps it.)
+    if bad or dup:
+        raise SystemExit("%s %s is malformed: %s" % (D, path.name, "; ".join(
+            bad + ["listed twice: %s" % n for n in dup])))
+    if path.name not in names:
+        raise SystemExit("%s %s does not list itself, so the packet would not carry its own inventory"
+                         % (D, path.name))
+    return (dict(d["ship_dotpaths"]), tuple(tuple(e) for e in d["dotfiles"]), tuple(send),
+            dict(d["identity_expected"]), dict(d["excluded"]), dict(d["excluded_dirs"]),
+            tuple(d["shipped_trees"]), tuple(d["required_trees"]), dict(d["excluded_globs"]))
+
+
+(SHIP_DOTPATHS, DOTFILES, _STATIC_SEND, IDENTITY_EXPECTED, EXCLUDED, EXCLUDED_DIRS, SHIPPED_TREES,
+ REQUIRED_TREES, EXCLUDED_GLOBS) = _load_ship_list()
+SEND = _protocol_send() + _findings_send() + DOTFILES + _STATIC_SEND
+
 
 # {D} SEND WAS A HAND-KEPT LIST AND IT HAD ALREADY DRIFTED TWICE OVER: `anchor_status.py` appeared
 # in it TWICE, so the zip carried a duplicate entry -- silently, because zipfile only warns -- and
@@ -359,28 +233,7 @@ SEND = _protocol_send() + _findings_send() + DOTFILES + (
 # GitHub Actions Windows runner's own account, recorded as part of the environment a measurement
 # ran in -- it identifies a public CI image, not a person or a machine of ours. The rule that
 # catches it is right to be broad and this is the declaration that says which side of it these are.
-IDENTITY_EXPECTED = {
-    "run.json": "the CI runner's workspace path; a hosted GitHub Actions account, not ours",
-    "MEASUREMENT-4.json": "the same runner path, in the measurement record it belongs to",
-    "MEASUREMENT-4-confounded-no-pyyaml.json": "the same",
-    "MEASUREMENT-4-recording-gap-no-pyyaml.json": "the same",
-    "pin_anchors.py": "the signing key's identity; an anchor nobody can attribute commits to "
-                      "nobody, which is the opposite of what an anchor is for",
-    "build_corpus.py": "the same key identity, in the corpus manifest it signs",
-    "ZENODO-DEPOSIT.md": "deposit metadata for a named, published record",
-    # ⇒ Surfaced the moment LICENSE started shipping, which is the control doing its job on a
-    # file that had been missing from the archive for the whole study. A copyright line names a
-    # legal person; that is what a copyright line is.
-    "LICENSE": "the copyright line; a licence that names nobody grants nothing",
-    # ⚠️ This file ships, and the note above SPELLS the runner path in order to declare it -- so
-    # the scan finds it here. A gate must spell what it forbids, and it must then say so about
-    # itself rather than be granted a quiet exemption for being a gate. This is that sentence.
-    "build_review_packet.py": "this declaration quotes the runner path it declares",
-}
 
-EXCLUDED = {
-    "REVIEW-ROUNDS.json": "listed above; kept here so the excuse list is exhaustive",
-}
 
 # ⛔ AN EXCUSE THAT CLAIMS ABSENCE MUST BE TRUE. MEASUREMENT-4.json was excused as "absent until
 # measurement 4 is retaken" while sitting on disk and being READ by this very script eighty lines
@@ -402,25 +255,6 @@ def false_excuses(here):
 # ⛔ DIRECTORIES EXCUSED AS A CLASS, each with a reason. A per-file excuse for 180 files is a
 # list nobody reads; a per-directory excuse is a DECISION, and it is written here where it can be
 # argued with.
-EXCLUDED_DIRS = {
-    "review": "this builder's own output and every previous round's packet; shipping it would put "
-              "a copy of the packet inside the packet",
-    # ⛔ THE REASON THIS CARRIED WAS FALSE. It said "the half-built package the transactional
-    # build renamed rather than deleted" -- and the transaction has always written `package.prev`,
-    # never `package.incomplete`. Nothing in this tree creates this directory; the one on disk was
-    # renamed by hand. So the excuse described an act that never happened, in the file whose job
-    # is to make every omission a stated decision, and `false_excuses()` could not catch it
-    # because it iterates `EXCLUDED` and never reached `EXCLUDED_DIRS`.
-    #
-    # ⚠️ `package.prev` IS DELIBERATELY NOT EXCUSED. A leftover one is the fingerprint of an
-    # interrupted build and may hold the only complete package; having it block the packet is the
-    # right failure mode, and a standing excuse would make it invisible.
-    "package.incomplete": "a half-built package renamed BY HAND, kept as evidence. No code path "
-                          "produces this name. Not shipped: a tree that looks like a finished "
-                          "package inside a review archive is exactly that confusion",
-    "runs": "measurement run directories. The ones a shipped measurement CITES are required "
-            "individually below; the rest are raw runs no claim rests on",
-}
 # Directories shipped wholesale by the walk in `main()` rather than named file by file.
 #
 # ⛔ AND A SHIPPED TREE THAT IS EMPTY CONTRIBUTES NOTHING TO EITHER PROJECTION. `shipped_rels()`
@@ -433,13 +267,11 @@ EXCLUDED_DIRS = {
 # that only hashes, an unshipped file and a deleted one are the same thing.* To a checker that
 # only walks, AN EMPTY TREE AND A TREE WITH NOTHING TO SAY ARE THE SAME THING. The instance was
 # fixed; the class was not.
-SHIPPED_TREES = ("package", "reference")
 # ⚠️ OF THOSE, WHICH MUST EXIST. `reference/` is cited by this packet's own text as the bundle
 # a reviewer audits the configuration-A figures against, so its absence is a defect. `package/` is
 # a BUILD OUTPUT that cannot exist while the governing document is not in force -- so its absence
 # is a STATE, and the packet has to say so out loud rather than print a 0 in a stats box beneath a
 # live instruction to run `verify_package.py` in it.
-REQUIRED_TREES = ("reference",)
 
 # ⚠️ Repository configuration, excused as a class. These are dot-FILES, not dot-directories:
 # the tooling-state rule is about directories and says so, so these needed a decision of their own
@@ -449,7 +281,6 @@ REQUIRED_TREES = ("reference",)
 # `corpus/.gitignore`). Five files in the tree and not in the archive, all text, all scanned:
 # the shipped record said 139 and a reviewer's extraction walked 134. They are small and
 # harmless, so they SHIP, and the one file that must not ship is skipped by the scan instead.
-EXCLUDED_GLOBS = {}
 
 
 
